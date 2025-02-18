@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand DNA - Image Generation</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap">
+    <link rel="stylesheet" href="styles.css">
+    <script src="nav-template.js"></script>
+    <style>
+        .aspect-ratio-selector {
+            margin: 0 8px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .aspect-ratio-dropdown {
+            height: 45px;
+            padding: 0 35px 0 15px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            background-color: #fff;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 14px;
+            position: relative;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .aspect-ratio-option {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+
+        .ratio-icon {
+            display: inline-block;
+            border: 1.5px solid #000;
+            margin-right: 4px;
+        }
+
+        .ratio-4-3 {
+            width: 16px;
+            height: 12px;
+        }
+
+        .ratio-1-1 {
+            width: 14px;
+            height: 14px;
+        }
+
+        .ratio-3-4 {
+            width: 12px;
+            height: 16px;
+        }
+
+        .aspect-ratio-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            margin-top: 5px;
+            z-index: 1000;
+        }
+
+        .aspect-ratio-selector.open .aspect-ratio-options {
+            display: block;
+        }
+
+        .aspect-ratio-option:hover {
+            background-color: #f5f5f5;
+        }
+
+        .selected-ratio {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0px;
+        }
+
+        .image-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 100%;
+            grid-auto-rows: min-content;
+        }
+
+        .image-wrapper {
+            width: 100%;
+            position: relative;
+            border-radius: 8px;
+            display: block;
+            background: #f5f5f5;
+        }
+
+        .generated-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            border-radius: 8px;
+        }
+
+        /* Aspect ratio specific styles */
+        .image-wrapper[class*="4:3"] {
+            aspect-ratio: 4/3;
+        }
+
+        .image-wrapper[class*="1:1"] {
+            aspect-ratio: 1/1;
+        }
+
+        .image-wrapper[class*="3:4"] {
+            aspect-ratio: 3/4;
+        }
+
+        /* Download button styles */
+        .download-button {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .download-button:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="nav-placeholder"></div>
+        <main class="content">
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" placeholder="Describe your image idea..." class="brand-input" id="imagePrompt" data-translation-key="image-placeholder">
+                </div>
+                <div class="aspect-ratio-selector">
+                    <div class="aspect-ratio-dropdown" onclick="toggleAspectRatioDropdown()">
+                        <div class="selected-ratio">
+                            <div class="ratio-icon ratio-4-3"></div>
+                            <span>4:3</span>
+                        </div>
+                    </div>
+                    <div class="aspect-ratio-options">
+                        <div class="aspect-ratio-option" data-value="4:3" onclick="selectAspectRatio(this)">
+                            <div class="ratio-icon ratio-4-3"></div>
+                            <span>4:3</span>
+                        </div>
+                        <div class="aspect-ratio-option" data-value="1:1" onclick="selectAspectRatio(this)">
+                            <div class="ratio-icon ratio-1-1"></div>
+                            <span>1:1</span>
+                        </div>
+                        <div class="aspect-ratio-option" data-value="3:4" onclick="selectAspectRatio(this)">
+                            <div class="ratio-icon ratio-3-4"></div>
+                            <span>3:4</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="get-dna-btn" onclick="generateImages()" data-translation-key="image-generate-button">GENERATE IMAGES</button>
+            </div>
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">generating...</div>
+            </div>
+            <div class="generation-results"></div>
+        </main>
+    </div>
+
+    <script>
+        let selectedCardIndex = -1;
+        let selectedAspectRatio = '4:3';
+
+        function toggleAspectRatioDropdown() {
+            const selector = document.querySelector('.aspect-ratio-selector');
+            selector.classList.toggle('open');
+        }
+
+        function selectAspectRatio(option) {
+            const value = option.getAttribute('data-value');
+            selectedAspectRatio = value;
+            
+            // Update the selected ratio display
+            const selectedRatio = document.querySelector('.selected-ratio');
+            selectedRatio.innerHTML = option.innerHTML;
+            
+            // Close the dropdown
+            document.querySelector('.aspect-ratio-selector').classList.remove('open');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const selector = document.querySelector('.aspect-ratio-selector');
+            if (!selector.contains(e.target)) {
+                selector.classList.remove('open');
+            }
+        });
+
+        async function generateImages() {
+            const imagePrompt = document.getElementById('imagePrompt').value.trim();
+            const loadingContainer = document.querySelector('.loading-container');
+            const resultsContainer = document.querySelector('.generation-results');
+            
+            if (!imagePrompt) {
+                console.error('Please enter an image description');
+                return;
+            }
+
+            try {
+                loadingContainer.style.display = 'flex';
+                resultsContainer.innerHTML = '';
+
+                const currentDNA = getClientDNA();
+                
+                const requestBody = {
+                    prompt: imagePrompt,
+                    brandDNA: currentDNA || null,
+                    aspectRatio: selectedAspectRatio
+                };
+
+                const response = await fetch(`${window.API_BASE_URL}/generateImages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                // Clean the response by removing markdown code block syntax
+                const cleanJSON = data.replace(/```json\n|\n```/g, '').trim();
+                
+                // Parse the cleaned JSON response
+                const concepts = JSON.parse(cleanJSON).concepts;
+                
+                loadingContainer.style.display = 'none';
+                resultsContainer.innerHTML = '';
+
+                // Create cards for each concept
+                concepts.forEach((concept, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'brand-card concept-card expanded';
+                    card.setAttribute('data-index', index);
+                    
+                    const cardHeader = document.createElement('div');
+                    cardHeader.className = 'card-header';
+                    
+                    const title = document.createElement('h2');
+                    title.className = 'brand-card-title';
+                    title.textContent = concept.concept_title;
+                    
+                    const iconContainer = document.createElement('div');
+                    iconContainer.className = 'icon-container';
+                    iconContainer.innerHTML = `
+                        <img src="/icons/edit.svg" alt="Edit" class="card-icon edit-icon" />
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" class="card-icon generate-icon">
+                            <path d="M480-80q2 0 2-2 0-82 31-154t85-126q54-54 126-85t154-31q2 0 2-2t-2-2q-82 0-154-31t-126-85q-54-54-85-126t-31-154q0-2-2-2t-2 2q0 82-31 154t-85 126q-54 54-126 85T82-482q-2 0-2 2t2 2q82 0 154 31t126 85q54 54 85 126t31 154q0 2 2 2Z"/>
+                        </svg>
+                    `;
+                    
+                    cardHeader.appendChild(title);
+                    cardHeader.appendChild(iconContainer);
+                    
+                    const body = document.createElement('div');
+                    body.className = 'brand-card-body';
+                    body.contentEditable = 'false'; // Will be made editable on edit click
+                    body.textContent = concept.prompt;
+                    
+                    const imageContainer = document.createElement('div');
+                    imageContainer.className = 'image-container';
+                    
+                    card.appendChild(cardHeader);
+                    card.appendChild(body);
+                    card.appendChild(imageContainer);
+                    
+                    // Add event listeners for icons
+                    const generateIcon = iconContainer.querySelector('.generate-icon');
+                    const editIcon = iconContainer.querySelector('.edit-icon');
+                    
+                    generateIcon.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        handleCardClick(index, body.textContent);
+                    });
+                    
+                    editIcon.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleEditMode(body, editIcon);
+                    });
+                    
+                    resultsContainer.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+                loadingContainer.style.display = 'none';
+            }
+        }
+
+        async function handleCardClick(index, prompt) {
+            const cards = document.querySelectorAll('.concept-card');
+            const imageContainer = cards[index].querySelector('.image-container');
+            
+            // Create and show loading state
+            imageContainer.innerHTML = `
+                <div class="card-loading">
+                    <div class="card-loading-spinner"></div>
+                    <div class="card-loading-text">generating...</div>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/generateImagesFromPrompt`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        prompt,
+                        aspectRatio: selectedAspectRatio
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Clear loading animation
+                imageContainer.innerHTML = '';
+
+                // Create and append new images
+                data.images.forEach(base64Image => {
+                    const imageWrapper = document.createElement('div');
+                    imageWrapper.className = `image-wrapper ${selectedAspectRatio}`;
+                    
+                    const img = document.createElement('img');
+                    img.src = `data:image/png;base64,${base64Image}`;
+                    img.className = 'generated-image';
+                    
+                    const downloadButton = document.createElement('button');
+                    downloadButton.className = 'download-button';
+                    downloadButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white">
+                            <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+                        </svg>
+                    `;
+                    
+                    downloadButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const link = document.createElement('a');
+                        link.href = img.src;
+                        link.download = `generated-image-${Date.now()}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    });
+                    
+                    imageWrapper.appendChild(img);
+                    imageWrapper.appendChild(downloadButton);
+                    imageContainer.appendChild(imageWrapper);
+                });
+
+            } catch (error) {
+                console.error('Error generating images:', error);
+                imageContainer.innerHTML = '';
+            }
+        }
+        function toggleEditMode(bodyElement, editIcon) {
+                const isEditing = bodyElement.contentEditable === 'true';
+                
+                if (isEditing) {
+                    // Exit edit mode
+                    bodyElement.contentEditable = 'false';
+                    bodyElement.classList.remove('editing');
+                    bodyElement.blur();
+                } else {
+                    // Enter edit mode
+                    bodyElement.contentEditable = 'true';
+                    bodyElement.classList.add('editing');
+                    bodyElement.focus();
+                    
+                    // Add handlers for auto-saving
+                    bodyElement.addEventListener('blur', () => {
+                        bodyElement.contentEditable = 'false';
+                        bodyElement.classList.remove('editing');
+                    }, { once: true }); // Remove listener after it fires once
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', async () => {
+            await translateUI(); // Translate UI on page load
+        });
+    </script>
+</body>
+</html>

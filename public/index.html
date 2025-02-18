@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand DNA</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap">
+    
+    <link rel="stylesheet" href="styles.css">
+    <script src="nav-template.js"></script>
+    <style>
+              .dna-buttons-container {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .edit-dna-btn,
+        .reprompt-dna-btn {
+            padding: 0.8rem 1.5rem;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+            position: relative;
+            min-width: 120px;
+            transition: opacity 0.2s ease;
+        }
+
+        .edit-dna-btn::before,
+        .reprompt-dna-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 24px;
+            box-shadow: inset 0 0 15px #FDB5E3;
+            pointer-events: none;
+        }
+
+        .edit-dna-btn:hover,
+        .reprompt-dna-btn:hover {
+            opacity: 0.9;
+        }
+
+        .brand-card-body[contenteditable="true"] {
+            padding: 1rem;
+            background-color: rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+            outline: none;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        /* Add to your styles.css */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.overlay-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.overlay-title {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    color: #26201F;
+}
+
+.feedback-textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    resize: vertical;
+}
+
+.overlay-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.color-inputs-container {
+    display: none; /* Initially hidden */
+    gap: 1rem; /* Spacing between color inputs */
+    align-items: center;
+}
+
+.color-input-row {
+    width: 100%; /* Full width row */
+    margin-top: 1rem; /* Space between header and inputs */
+    display: flex;
+    justify-content: flex-start; /* Align inputs to the left */
+}
+
+
+.color-inputs-container.edit-mode {
+    display: flex; /* Make visible in edit mode */
+}
+
+.color-input {
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.8rem;
+    color: #26201F;
+    background: #ffffff;
+    outline: none;
+    width: 120px; /* Increased width from 80px to 120px - adjust as needed */
+    transition: border-color 0.2s ease;
+}
+
+.color-input:disabled {
+    background-color: #eee; /* Slightly different background when disabled */
+    cursor: not-allowed;
+    border-color: #ddd;
+    color: #666;
+}
+
+.color-input:not(:disabled):hover {
+    border-color: #F53151;
+}
+
+.color-input:not(:disabled):focus {
+    border-color: #F53151;
+    box-shadow: 0 0 0 2px rgba(245, 49, 81, 0.1);
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="nav-placeholder"></div>
+        <main class="content">
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" placeholder="Name of brand" class="brand-input" data-translation-key="index-placeholder">
+                    <div class="search-icons">
+                        <img src="/icons/add.svg" alt="Add Brand" class="plus-icon-svg" onclick="document.getElementById('fileInput').click()"></span>
+                        <img src="/icons/drop_down.svg" class="dropdown-arrow"></img>
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" multiple onchange="handleFileSelect(event)">
+                    <div class="dropdown-menu" id="brandsDropdown"></div>
+                </div>
+                <button class="get-dna-btn" onclick="getBrandDNA()" data-translation-key="index-get-dna-button">GET DNA</button>
+            </div>
+            <div class="file-list" id="fileList"></div>
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">generating...</div>
+            </div>
+            <div class="brand-results"></div>
+        </main>
+    </div>
+    <div class="overlay" id="repromptOverlay">
+        <div class="overlay-content">
+            <h3 class="overlay-title">What would you like to adjust about the DNA?</h3>
+            <textarea class="feedback-textarea" placeholder="Enter your feedback here..."></textarea>
+            <div class="overlay-buttons">
+                <button class="get-dna-btn" onclick="cancelReprompt()">CANCEL</button>
+                <button class="get-dna-btn" onclick="regenerateDNA()">REGENERATE DNA</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+document.addEventListener('DOMContentLoaded', async () => {
+        await translateUI(); // Translate UI on page load
+           const dropdownArrow = document.querySelector('.dropdown-arrow');
+            const dropdownMenu = document.getElementById('brandsDropdown');
+
+            // Add click event with logging for debugging
+            dropdownArrow.addEventListener('click', async (e) => {
+                e.stopPropagation(); // Prevent event from bubbling up
+                console.log('Dropdown arrow clicked'); // Debug log
+                dropdownMenu.classList.toggle('active');
+                if (dropdownMenu.classList.contains('active')) {
+                    await loadSavedBrands();
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!dropdownMenu.contains(e.target) && !dropdownArrow.contains(e.target)) {
+                    dropdownMenu.classList.remove('active');
+                }
+            });
+    });
+
+    // Load saved brands into dropdown
+    async function loadSavedBrands() {
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
+        const dnas = await response.json();
+        const dropdownMenu = document.getElementById('brandsDropdown');
+        dropdownMenu.innerHTML = '';
+        
+        // Sort brand names alphabetically (case-insensitive)
+        const sortedBrandNames = Object.keys(dnas).sort((a, b) => 
+            a.toLowerCase().localeCompare(b.toLowerCase())
+        );
+        
+        sortedBrandNames.forEach(brandName => {
+            const item = document.createElement('div');
+            item.className = 'dropdown-item';
+            
+            // Create wrapper for brand name
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = brandName;
+            
+            // Create delete icon
+            const deleteIcon = document.createElement('img');
+            deleteIcon.src = '/icons/delete.svg'; // Or '/icons/svgs/delete.svg' if you named it 'delete.svg'
+            deleteIcon.alt = 'Delete Brand';
+            deleteIcon.className = 'delete-icon-svg'; // Use a different class name for SVG delete icon
+            deleteIcon.addEventListener('click', (e) => deleteBrandDNA(brandName, e));
+            
+            // Add both elements to the item
+            item.appendChild(nameSpan);
+            item.appendChild(deleteIcon);
+            
+            // Add click handler for loading DNA
+            item.addEventListener('click', () => loadBrandDNA(dnas[brandName]));
+            
+            dropdownMenu.appendChild(item);
+        });
+    } catch (error) {
+        console.error('Error loading saved brands:', error);
+    }
+}
+
+async function deleteBrandDNA(brandName, event) {
+    event.stopPropagation(); // Prevent triggering the parent click event
+    
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/deleteDNA/${encodeURIComponent(brandName)}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Refresh the dropdown list
+        await loadSavedBrands();
+    } catch (error) {
+        console.error('Error deleting brand:', error);
+    }
+}
+
+    // Load and display a saved brand's DNA
+    function loadBrandDNA(dnaData) {
+        const resultsContainer = document.querySelector('.brand-results');
+        document.querySelector('.brand-input').value = dnaData.brandName;
+        document.getElementById('brandsDropdown').classList.remove('active');
+        
+        // Use the existing display logic
+        resultsContainer.innerHTML = '';
+        displayBrandResults(dnaData);
+    }
+
+            let selectedFiles = new Set();
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            const fileList = document.getElementById('fileList');
+            
+            for (const file of files) {
+                if (!selectedFiles.has(file.name)) {
+                    selectedFiles.add(file.name);
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <span>${file.name}</span>
+                        <span class="remove-file" onclick="removeFile('${file.name}')">×</span>
+                    `;
+                    fileList.appendChild(fileItem);
+                }
+            }
+        }
+
+        function removeFile(fileName) {
+            selectedFiles.delete(fileName);
+            const fileList = document.getElementById('fileList');
+            const fileItems = fileList.getElementsByClassName('file-item');
+            for (const item of Array.from(fileItems)) {
+                if (item.firstElementChild.textContent === fileName) {
+                    fileList.removeChild(item);
+                    break;
+                }
+            }
+        }
+
+        async function getBrandDNA() {
+    const brandInput = document.querySelector('.brand-input');
+    const brandName = brandInput.value.trim();
+    const fileInput = document.getElementById('fileInput');
+    const resultsContainer = document.querySelector('.brand-results');
+    const loadingContainer = document.querySelector('.loading-container');
+    
+    if (!brandName) {
+        console.error('Please enter a brand name');
+        return;
+    }
+
+    try {
+        // Show loading animation
+        loadingContainer.style.display = 'flex';
+        resultsContainer.innerHTML = '';
+
+        const formData = new FormData();
+        formData.append('brandName', brandName);
+        
+        // Append all selected files with the correct field name 'file'
+        const fileList = document.getElementById('fileList');
+        const fileItems = fileList.getElementsByClassName('file-item');
+        for (const item of Array.from(fileItems)) {
+            const fileName = item.firstElementChild.textContent;
+            const fileObj = Array.from(fileInput.files).find(f => f.name === fileName);
+            if (fileObj) {
+                formData.append('file', fileObj);
+            }
+        }
+
+        const response = await fetch(`${window.API_BASE_URL}/getBrandDNA`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Save the DNA data
+        await fetch(`${window.API_BASE_URL}/saveDNA`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        // Hide loading animation and display results
+        loadingContainer.style.display = 'none';
+        displayBrandResults(data);
+        
+        // Clear file list after successful submission
+        fileList.innerHTML = '';
+        selectedFiles.clear();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        loadingContainer.style.display = 'none';
+    }
+}
+
+    // Extract the display logic into a separate function
+    async function displayBrandResults(data) {
+        const resultsContainer = document.querySelector('.brand-results');
+        resultsContainer.innerHTML = '';
+
+        const header = document.createElement('div');
+        header.className = 'brand-header';
+
+        const nameElement = document.createElement('h1');
+        nameElement.className = 'brand-name';
+        nameElement.textContent = data.brandName;
+        nameElement.style.color = data.brandColors[0];
+
+        const colorSquares = document.createElement('div');
+        colorSquares.className = 'color-squares';
+        colorSquares.innerHTML = data.brandColors
+            .map((color) => `<div class="color-square" style="background-color: ${color}"></div>`)
+            .join('');
+
+        header.appendChild(nameElement);
+        header.appendChild(colorSquares);
+        resultsContainer.appendChild(header);
+
+        const colorInputRow = document.createElement('div');
+        colorInputRow.className = 'color-input-row';
+
+        const colorInputsContainer = document.createElement('div');
+        colorInputsContainer.className = 'color-inputs-container';
+
+        const colorInput1 = document.createElement('input');
+        colorInput1.type = 'text';
+        colorInput1.className = 'color-input';
+        colorInput1.value = data.brandColors[0];
+        colorInput1.disabled = true;
+
+        const colorInput2 = document.createElement('input');
+        colorInput2.type = 'text';
+        colorInput2.className = 'color-input';
+        colorInput2.value = data.brandColors[1] || ''; // Handle potential undefined
+        colorInput2.disabled = true;
+
+        colorInputsContainer.appendChild(colorInput1);
+        colorInputsContainer.appendChild(colorInput2);
+        colorInputRow.appendChild(colorInputsContainer);
+        resultsContainer.appendChild(colorInputRow);
+
+        data.brandAnalysis.forEach(section => {
+            const card = document.createElement('div');
+            card.className = 'brand-card';
+            card.style.borderColor = data.brandColors[1] || 'currentColor'; // Handle potential undefined
+
+            const title = document.createElement('h2');
+            title.className = 'brand-card-title';
+            title.textContent = section.sectionTitle;
+            title.style.color = data.brandColors[0];
+
+            const body = document.createElement('div');
+            body.className = 'brand-card-body';
+            body.textContent = section.sectionBody;
+            body.setAttribute('contenteditable', 'false');
+
+            card.appendChild(title);
+            card.appendChild(body);
+            resultsContainer.appendChild(card);
+        });
+
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'dna-buttons-container';
+        buttonsContainer.innerHTML = `
+            <button class="edit-dna-btn" onclick="toggleEdit(this)" data-translation-key="index-edit-button">EDIT</button>
+            <button class="reprompt-dna-btn" onclick="showRepromptOverlay()" data-translation-key="index-reprompt-button">RE-PROMPT</button>
+        `;
+        resultsContainer.appendChild(buttonsContainer);
+
+        await translateDynamicElements(); // Await the translation, and call with no arguments
+    }
+
+    async function translateDynamicElements() {
+        //Regular Buttons
+        const buttonsContainer = document.querySelector('.dna-buttons-container');
+        if(buttonsContainer){
+            const elementsToTranslate = buttonsContainer.querySelectorAll('[data-translation-key]');
+            for (const element of elementsToTranslate) {
+                const key = element.dataset.translationKey;
+                if (translations[key] && translations[key][window.currentLanguage]) {
+                    if ((element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') && element.hasAttribute('placeholder')) {
+                        element.setAttribute('placeholder', translations[key][window.currentLanguage]);
+                    } else {
+                        element.textContent = translations[key][window.currentLanguage];
+                    }
+                }
+            }
+        }
+        //Reprompt Overlay
+        const overlay = document.getElementById('repromptOverlay');
+        if(overlay){
+             const overlayElementsToTranslate = overlay.querySelectorAll('[data-translation-key]');
+            for (const element of overlayElementsToTranslate) {
+                const key = element.dataset.translationKey;
+                if (translations[key] && translations[key][window.currentLanguage]) {
+                    if ((element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') && element.hasAttribute('placeholder')) {
+                        element.setAttribute('placeholder', translations[key][window.currentLanguage]);
+                    } else {
+                        element.textContent = translations[key][window.currentLanguage];
+                    }
+                }
+            }
+        }
+    }
+
+
+    async function toggleEdit(button) {
+    const resultsContainer = document.querySelector('.brand-results');
+    const cardBodies = resultsContainer.querySelectorAll('.brand-card-body');
+    const colorInput1 = resultsContainer.querySelector('.color-input:nth-of-type(1)');
+    const colorInput2 = resultsContainer.querySelector('.color-input:nth-of-type(2)');
+    const colorInputsContainer = resultsContainer.querySelector('.color-inputs-container'); // Get the container
+
+    if (button.textContent === 'EDIT' || button.textContent === 'EDITAR') {
+        // Enable editing for text areas
+        cardBodies.forEach(body => {
+            body.setAttribute('contenteditable', 'true');
+            body.classList.add('editing');
+        });
+        // Enable color inputs
+        colorInput1.disabled = false;
+        colorInput2.disabled = false;
+        // Show color inputs container
+        colorInputsContainer.classList.add('edit-mode'); // Add 'edit-mode' class
+        button.textContent = window.currentLanguage === 'spanish' ? 'GUARDAR' : 'SAVE'; // Translate the save button
+    } else {
+        // Save changes
+        // --- KEY CHANGE: AWAIT saveChanges() ---
+        const updatedDNA = await saveChanges();
+        // --- END KEY CHANGE ---
+        if (updatedDNA) {
+            // Disable editing for text areas
+            cardBodies.forEach(body => {
+                body.setAttribute('contenteditable', 'false');
+                body.classList.remove('editing');
+            });
+            // Disable color inputs
+            colorInput1.disabled = true;
+            colorInput2.disabled = true;
+            // Hide color inputs container
+            colorInputsContainer.classList.remove('edit-mode'); // Remove 'edit-mode' class
+
+             // --- KEY CHANGE:  Await display ---
+            await displayBrandResults(updatedDNA); //NOW we await displayBrandResults
+             // --- END KEY CHANGE ---
+            button.textContent = window.currentLanguage === 'spanish' ? 'EDITAR' : 'EDIT'; //translate back the edit button
+        }
+    }
+}
+
+async function saveChanges() {
+    try {
+        const resultsContainer = document.querySelector('.brand-results');
+        const cardBodies = resultsContainer.querySelectorAll('.brand-card-body');
+        const brandName = resultsContainer.querySelector('.brand-name').textContent;
+        const colorInput1 = resultsContainer.querySelector('.color-input:nth-of-type(1)'); // Select first color input
+        const colorInput2 = resultsContainer.querySelector('.color-input:nth-of-type(2)'); // Select second color input
+
+        const brandColors = [colorInput1.value, colorInput2.value]; // Get color input values
+
+        const analysis = Array.from(cardBodies).map((body, index) => ({
+            sectionTitle: body.parentElement.querySelector('.brand-card-title').textContent,
+            sectionBody: body.textContent
+        }));
+
+        const updatedDNA = {
+            brandName: brandName,
+            brandColors: brandColors, // Use color input values
+            brandAnalysis: analysis
+        };
+
+        // Save to server
+        const response = await fetch(`${window.API_BASE_URL}/saveDNA`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedDNA)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save changes');
+        }
+
+        return updatedDNA;
+    } catch (error) {
+        console.error('Error saving changes:', error);
+        alert('Failed to save changes. Please try again.');
+        return null;
+    }
+}
+
+function showRepromptOverlay() {
+        const overlay = document.getElementById('repromptOverlay');
+        overlay.innerHTML = `
+            <div class="overlay-content">
+                <h3 class="overlay-title" data-translation-key="reprompt-title">What would you like to adjust about the DNA?</h3>
+                <textarea class="feedback-textarea" placeholder="Enter your feedback here..." data-translation-key="reprompt-placeholder"></textarea>
+                <div class="overlay-buttons">
+                    <button class="get-dna-btn" onclick="cancelReprompt()" data-translation-key="reprompt-cancel-button">CANCEL</button>
+                    <button class="get-dna-btn" onclick="regenerateDNA()" data-translation-key="reprompt-regenerate-button">REGENERATE DNA</button>
+                </div>
+            </div>
+        `;
+         translateDynamicElements();
+        overlay.style.display = 'flex';
+
+    }
+    
+function cancelReprompt() {
+    document.getElementById('repromptOverlay').style.display = 'none';
+    document.querySelector('.feedback-textarea').value = '';
+}
+
+function translateDialog(dialogElement) {
+    const elementsToTranslate = dialogElement.querySelectorAll('[data-translation-key]');
+    elementsToTranslate.forEach(element => {
+        const key = element.dataset.translationKey;
+        if (translations[key] && translations[key][window.currentLanguage]) {
+             // Check if it's an input or textarea with a placeholder
+            if ((element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') && element.hasAttribute('placeholder')) {
+                element.setAttribute('placeholder', translations[key][window.currentLanguage]);
+            } else {
+                element.textContent = translations[key][window.currentLanguage];
+            }
+        }
+    });
+}
+
+async function regenerateDNA() {
+    const userFeedback = document.querySelector('.feedback-textarea').value.trim();
+    const loadingContainer = document.querySelector('.loading-container');
+    const resultsContainer = document.querySelector('.brand-results');
+    
+    try {
+        // Get current DNA data
+        const currentDNA = {
+            brandName: resultsContainer.querySelector('.brand-name').textContent,
+            brandColors: Array.from(resultsContainer.querySelectorAll('.color-square'))
+                .map(square => square.style.backgroundColor),
+            brandAnalysis: Array.from(resultsContainer.querySelectorAll('.brand-card'))
+                .map(card => ({
+                    sectionTitle: card.querySelector('.brand-card-title').textContent,
+                    sectionBody: card.querySelector('.brand-card-body').textContent
+                }))
+        };
+
+        // Show loading animation
+        loadingContainer.style.display = 'flex';
+        resultsContainer.innerHTML = '';
+
+        // Create analysis prompt with context
+        const analysisPrompt = `REVISION REQUEST: The following is a request to revise a brand's DNA analysis.
+
+BRAND FEEDBACK:
+${userFeedback}
+
+CURRENT DNA ANALYSIS:
+${JSON.stringify(currentDNA.brandAnalysis, null, 2)}
+
+Please analyze the brand "${currentDNA.brandName}" with the above feedback in mind.
+
+Remember you MUST GENERATE THE OUTPUT IN THE FOLLOWING EXACT JSON FORMAT. Never give any additional thoughts or commentary.
+{
+  "brandName": "<brand name>",
+  "brandColors": ["#hexvalue1", "#hexvalue2"],
+  "brandAnalysis": [
+    {
+      "sectionTitle": "BrandDNA", //The core essence and DNA of the brand, the qualities to stay true to when 'bending without breaking'
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Brand Personality", //Describe the brand as if it were a person, including their characteristics, behaviors, and way of being in the world.
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Core Values", //Most important principles that guide the brand's actions and decisions
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Emotional Connection", //Describe how the brand builds emotional bonds with its audience and what feelings it evokes
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Brand Story", //A fluid 3-4 sentence narrative that weaves together the key elements above into a cohesive brand story
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Visual Aesthetic", //Descriptors of the unique visual aesthetic of the brand's photography, website, or any other visual elements (generate a comma seperated list of key descriptors). Make sure this list is detailed and captures aesthetic nuances. Imagine as if you were an art director tryingto really pinpoint the visual aesthetic of the brand
+      "sectionBody": "<content>"
+    }
+  ]
+}`;
+
+        const formData = new FormData();
+        formData.append('brandName', analysisPrompt);
+
+        const response = await fetch(`${window.API_BASE_URL}/getBrandDNA`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Create the full updated DNA data
+        const updatedDNA = {
+            brandName: currentDNA.brandName,
+            brandColors: currentDNA.brandColors,
+            brandAnalysis: data.brandAnalysis
+        };
+
+        // Save the updated DNA
+        await fetch(`${window.API_BASE_URL}/saveDNA`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedDNA)
+        });
+
+        // Hide overlay and loading
+        cancelReprompt();
+        loadingContainer.style.display = 'none';
+        
+        // Display results
+        displayBrandResults(updatedDNA);
+
+    } catch (error) {
+        console.error('Error:', error);
+        loadingContainer.style.display = 'none';
+        resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+    }
+}
+    </script>
+</body>
+</html>

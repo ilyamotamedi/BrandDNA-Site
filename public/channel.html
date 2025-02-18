@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Channel DNA</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap">
+    <link rel="stylesheet" href="styles.css">
+    <script src="nav-template.js"></script>
+    <style>
+        .channel-link {
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            display: inline-block;
+            transition: color 0.2s ease;
+        }
+
+        .channel-link:hover {
+            color: #F742BD;
+        }
+
+        .channel-link .arrow {
+            margin-left: 4px;
+            font-size: 0.9em;
+        }
+
+        .channel-link .underline {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -2px;
+            height: 2px;
+            background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+            transform: scaleX(0);
+            transition: transform 0.2s ease;
+            transform-origin: left;
+        }
+
+        .channel-link:hover .underline {
+            transform: scaleX(1);
+        }
+
+        .dna-buttons-container {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .edit-dna-btn,
+        .reprompt-dna-btn {
+            padding: 0.8rem 1.5rem;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+            position: relative;
+            min-width: 120px;
+            transition: opacity 0.2s ease;
+        }
+
+        .edit-dna-btn::before,
+        .reprompt-dna-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 24px;
+            box-shadow: inset 0 0 15px #FDB5E3;
+            pointer-events: none;
+        }
+
+        .edit-dna-btn:hover,
+        .reprompt-dna-btn:hover {
+            opacity: 0.9;
+        }
+
+        .brand-card-body[contenteditable="true"] {
+            padding: 1rem;
+            background-color: rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+            outline: none;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        /* Add to your styles.css */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.overlay-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.overlay-title {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    color: #26201F;
+}
+
+.feedback-textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    resize: vertical;
+}
+
+.overlay-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.subscriber-count {
+    margin-bottom: 0.5rem; /* Adds space below the subscriber count */
+    font-size: 0.9rem;
+    color: #26201F;
+}
+
+.channel-description {
+    font-size: 0.9rem;
+    color: #26201F;
+    opacity: 0.8;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="nav-placeholder"></div>
+        <main class="content">
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" placeholder="Enter name of channel here" class="brand-input" oninput="debounceChannelSearch(event)" data-translation-key="channel-placeholder">
+                    <div class="search-icons">
+                        <img src="/icons/add.svg" alt="Add Files" class="plus-icon-svg" onclick="document.getElementById('fileInput').click()">
+                        <img src="/icons/drop_down.svg" alt="Dropdown" class="dropdown-arrow">
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" multiple onchange="handleFileSelect(event)">
+                    <div class="dropdown-menu" id="channelsDropdown"></div>
+                </div>
+                <button class="get-dna-btn" onclick="getChannelDNA()" data-translation-key="channel-get-dna-button">GET DNA</button>
+            </div>
+            <div class="file-list" id="fileList"></div>
+            <div id="channel-preview" style="max-width: 600px; width: 100%; margin: 1rem auto; display: none;">
+                <div style="display: flex; align-items: center; background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <img id="preview-thumbnail" alt="Channel thumbnail" style="width: 80px; height: 80px; border-radius: 50%; margin-right: 1.5rem; object-fit: cover;">
+                    <div>
+                        <h3 id="preview-title" style="margin: 0 0 0.5rem 0; font-size: 1.1rem; color: #26201F;">
+                            <a id="preview-link" href="" target="_blank" style="text-decoration: none; color: inherit; position: relative;">
+                                <span id="preview-name"></span>
+                                <span style="margin-left: 4px; font-size: 0.9em;">↗</span>
+                                <span style="position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%); transform: scaleX(0); transition: transform 0.2s ease; transform-origin: left;"></span>
+                            </a>
+                        </h3>
+                        <p id="preview-description" style="margin: 0; font-size: 0.9rem; color: #26201F; opacity: 0.8; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="loading-container" style="margin-top: 3rem;">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">generating...</div>
+            </div>
+            <div class="channel-results" style="max-width: 600px; width: 100%; margin: 3rem auto;"></div>
+        </main>
+    </div>
+
+    <div class="overlay" id="repromptOverlay">
+        <div class="overlay-content">
+            <h3 class="overlay-title">What would you like to adjust about the DNA?</h3>
+            <textarea class="feedback-textarea" placeholder="Enter your feedback here..."></textarea>
+            <div class="overlay-buttons">
+                <button class="get-dna-btn" onclick="cancelReprompt()">CANCEL</button>
+                <button class="get-dna-btn" onclick="regenerateDNA()">REGENERATE DNA</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store channel details globally
+        let currentChannelDetails = null;
+        let selectedFiles = new Set();
+
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            const fileList = document.getElementById('fileList');
+            
+            for (const file of files) {
+                if (!selectedFiles.has(file.name)) {
+                    selectedFiles.add(file.name);
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <span>${file.name}</span>
+                        <span class="remove-file" onclick="removeFile('${file.name}')">×</span>
+                    `;
+                    fileList.appendChild(fileItem);
+                }
+            }
+        }
+
+        function removeFile(fileName) {
+            selectedFiles.delete(fileName);
+            const fileList = document.getElementById('fileList');
+            const fileItems = fileList.getElementsByClassName('file-item');
+            for (const item of Array.from(fileItems)) {
+                if (item.firstElementChild.textContent === fileName) {
+                    fileList.removeChild(item);
+                    break;
+                }
+            }
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        const debounceChannelSearch = debounce(async (event) => {
+            const query = event.target.value.trim();
+            const previewElement = document.getElementById('channel-preview');
+            const previewImage = document.getElementById('preview-thumbnail');
+            const previewTitle = document.getElementById('preview-title');
+            const previewDescription = document.getElementById('preview-description');
+
+            if (query.length < 2) {
+                previewElement.style.display = 'none';
+                currentChannelDetails = null;
+                return;
+            }
+
+            try {
+                // First search for the channel ID
+                const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&key=${API_KEY}`;
+                const searchResponse = await fetch(searchUrl);
+                const searchData = await searchResponse.json();
+
+                if (searchData.items && searchData.items.length > 0) {
+                    // Get the channel ID from search results
+                    const channelId = searchData.items[0].id.channelId;
+                    const channelUrl = `https://www.youtube.com/channel/${channelId}`;
+
+                    // Then get the full channel details, INCLUDING STATISTICS
+                    const channelDetailsUrl = `${CHANNELS_URL}?part=snippet,statistics&id=${channelId}&key=${API_KEY}`;
+                    const channelResponse = await fetch(channelDetailsUrl);
+                    const channelData = await channelResponse.json();
+
+                    if (channelData.items && channelData.items.length > 0) {
+                        const channel = channelData.items[0].snippet;
+                        const statistics = channelData.items[0].statistics;
+                        // Store channel details
+                        currentChannelDetails = {
+                            name: channel.title,
+                            thumbnail: channel.thumbnails.medium.url,
+                            description: channel.description,
+                            channelUrl: channelUrl,
+                            subscriberCount: statistics.subscriberCount
+                        };
+
+                        // Update preview
+                        previewImage.src = `/proxy-image?url=${encodeURIComponent(currentChannelDetails.thumbnail)}`;
+                        previewTitle.innerHTML = `
+                            <a href="${currentChannelDetails.channelUrl}" target="_blank" class="channel-link">
+                                ${currentChannelDetails.name}
+                                <span class="arrow">↗</span>
+                                <span class="underline"></span>
+                            </a>
+                        `;
+
+                        // --- MODIFIED SECTION START ---
+                        previewDescription.innerHTML = `
+                            <div class="subscriber-count">${formatSubscriberCount(currentChannelDetails.subscriberCount)} subscribers</div>
+                            <div class="channel-description">${currentChannelDetails.description}</div>
+                        `;
+                        // --- MODIFIED SECTION END ---
+
+                        previewElement.style.display = 'block';
+                    }
+                } else {
+                    previewElement.style.display = 'none';
+                    currentChannelDetails = null;
+                }
+            } catch (error) {
+                console.error('Error searching channel:', error);
+                previewElement.style.display = 'none';
+                currentChannelDetails = null;
+            }
+        }, 300);
+
+        const API_KEY = 'AIzaSyDwFkoH0_iCXFy559_HKveTlZYWEjUhXGQ'; // BrandDNA Key - AIzaSyDwFkoH0_iCXFy559_HKveTlZYWEjUhXGQ - DreamTeam Video - AIzaSyCn-POpcBdtSgoS1c8TBLNbZJkw3cUBmM8
+        const CHANNELS_URL = 'https://www.googleapis.com/youtube/v3/channels';
+        const PLAYLIST_ITEMS_URL = 'https://www.googleapis.com/youtube/v3/playlistItems';
+        const NUM_VIDEOS = 3;
+
+        async function findChannel(query) {
+            const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&key=${API_KEY}`;
+            
+            const response = await fetch(searchUrl);
+            const data = await response.json();
+            
+            if (!data.items || data.items.length === 0) {
+                throw new Error('No channels found matching that name.');
+            }
+
+            const channelId = data.items[0].id.channelId;
+            const channelUrl = `${CHANNELS_URL}?part=snippet,contentDetails,statistics&id=${channelId}&key=${API_KEY}`;
+            const channelResponse = await fetch(channelUrl);
+            return await channelResponse.json();
+        }
+
+        async function getRecentVideoUrls(channelId) {
+            const playlistResponse = await fetch(`${CHANNELS_URL}?part=contentDetails&id=${channelId}&key=${API_KEY}`);
+            const playlistData = await playlistResponse.json();
+            const uploadsPlaylistId = playlistData.items[0].contentDetails.relatedPlaylists.uploads;
+
+            const videosResponse = await fetch(
+                `${PLAYLIST_ITEMS_URL}?part=contentDetails&playlistId=${uploadsPlaylistId}&maxResults=${NUM_VIDEOS}&key=${API_KEY}`
+            );
+            const videosData = await videosResponse.json();
+
+            return videosData.items.map(item => 
+                `https://www.youtube.com/watch?v=${item.contentDetails.videoId}`
+            );
+        }
+
+        function formatSubscriberCount(count) {
+            if (count >= 1000000) {
+                return (count / 1000000).toFixed(1) + 'M';
+            } else if (count >= 1000) {
+                return (count / 1000).toFixed(1) + 'K';
+            }
+            return count;
+        }
+
+        async function getChannelDNA() {
+            if (!currentChannelDetails) {
+                console.error('No channel selected');
+                return;
+            }
+
+            const resultsContainer = document.querySelector('.channel-results');
+            const loadingContainer = document.querySelector('.loading-container');
+            const fileInput = document.getElementById('fileInput');
+
+            try {
+                loadingContainer.style.display = 'flex';
+                loadingContainer.querySelector('.loading-text').textContent = 'downloading transcripts...';
+                resultsContainer.innerHTML = '';
+
+                // Find channel and get recent video URLs
+                const channelData = await findChannel(currentChannelDetails.name);
+                const channelId = channelData.items[0].id;
+                const videoUrls = await getRecentVideoUrls(channelId);
+
+                // Get transcripts
+                const transcriptResponse = await fetch(`${window.API_BASE_URL}/getChannelTranscripts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ videoUrls })
+                });
+
+                const transcriptData = await transcriptResponse.json();
+                if (!transcriptData.success) {
+                    throw new Error(transcriptData.error);
+                }
+
+                // Prepare form data with files and transcripts
+                const formData = new FormData();
+                formData.append('channelName', currentChannelDetails.name);
+                formData.append('transcripts', JSON.stringify(transcriptData.transcripts));
+                
+                // Add selected files to form data
+                const fileList = document.getElementById('fileList');
+                const fileItems = fileList.getElementsByClassName('file-item');
+                for (const item of Array.from(fileItems)) {
+                    const fileName = item.firstElementChild.textContent;
+                    const fileObj = Array.from(fileInput.files).find(f => f.name === fileName);
+                    if (fileObj) {
+                        formData.append('file', fileObj);
+                    }
+                }
+
+                // Analyze with Gemini
+                loadingContainer.querySelector('.loading-text').textContent = 'analyzing channel DNA...';
+                
+                const analysisResponse = await fetch(`${window.API_BASE_URL}/analyzeChannel`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const analysisData = await analysisResponse.json();
+                if (!analysisData.success) {
+                    throw new Error(analysisData.error);
+                }
+
+                // Save the complete DNA with channel details
+                const fullDNAData = {
+                    channelName: currentChannelDetails.name,
+                    ...analysisData.analysis,
+                    channelThumbnail: currentChannelDetails.thumbnail,
+                    channelDescription: currentChannelDetails.description,
+                    channelUrl: currentChannelDetails.channelUrl,
+                    subscriberCount: currentChannelDetails.subscriberCount
+                };
+
+                await fetch(`${window.API_BASE_URL}/saveCreatorDNA`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(fullDNAData)
+                });
+
+                // Clear file list after successful submission
+                fileList.innerHTML = '';
+                selectedFiles.clear();
+
+                // Display results
+                loadingContainer.style.display = 'none';
+                displayChannelResults(fullDNAData);
+
+            } catch (error) {
+                console.error('Error:', error);
+                loadingContainer.style.display = 'none';
+                resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        async function displayChannelResults(data) {
+                const resultsContainer = document.querySelector('.channel-results');
+                resultsContainer.innerHTML = '';
+                
+                // Add channel name without link at the top
+                const channelHeader = document.createElement('div');
+                channelHeader.style.marginBottom = '2rem';
+                channelHeader.innerHTML = `
+                    <h2 style="font-size: 1.5rem; color: #26201F;">
+                        ${data.channelName}
+                    </h2>
+                `;
+                resultsContainer.appendChild(channelHeader);
+                
+                // Create a container for the DNA cards
+                const cardsContainer = document.createElement('div');
+                cardsContainer.className = 'dna-cards-container';
+                
+                // Rest of the cards display
+                data.channelAnalysis.forEach((section, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'brand-card';
+                    card.style.borderColor = "#F742BD";
+                    card.style.marginBottom = "1rem";
+                    card.setAttribute('data-index', index);
+                    
+                    const title = document.createElement('h2');
+                    title.className = 'brand-card-title';
+                    title.textContent = section.sectionTitle;
+                    title.style.color = "#26201F";
+                    
+                    const body = document.createElement('div');
+                    body.className = 'brand-card-body';
+                    body.textContent = section.sectionBody;
+                    body.setAttribute('contenteditable', 'false');
+                    
+                    card.appendChild(title);
+                    card.appendChild(body);
+                    cardsContainer.appendChild(card);
+                });
+                
+                resultsContainer.appendChild(cardsContainer);
+                
+                // Add buttons container
+                const buttonsContainer = document.createElement('div');
+                buttonsContainer.className = 'dna-buttons-container';
+                buttonsContainer.innerHTML = `
+                    <button class="edit-dna-btn" onclick="toggleEdit(this)" data-translation-key="channel-edit-button">EDIT</button>
+                    <button class="reprompt-dna-btn" onclick="showRepromptOverlay()" data-translation-key="channel-reprompt-button">RE-PROMPT</button>
+                `;
+                
+                resultsContainer.appendChild(buttonsContainer);
+                await translateDynamicElements();
+            }
+
+            async function translateDynamicElements() {
+        //Regular Buttons
+        const buttonsContainer = document.querySelector('.dna-buttons-container');
+        if(buttonsContainer){
+            const elementsToTranslate = buttonsContainer.querySelectorAll('[data-translation-key]');
+            for (const element of elementsToTranslate) {
+                const key = element.dataset.translationKey;
+                if (translations[key] && translations[key][window.currentLanguage]) {
+                    if ((element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') && element.hasAttribute('placeholder')) {
+                        element.setAttribute('placeholder', translations[key][window.currentLanguage]);
+                    } else {
+                        element.textContent = translations[key][window.currentLanguage];
+                    }
+                }
+            }
+        }
+        //Reprompt Overlay
+        const overlay = document.getElementById('repromptOverlay');
+        if(overlay){
+             const overlayElementsToTranslate = overlay.querySelectorAll('[data-translation-key]');
+            for (const element of overlayElementsToTranslate) {
+                const key = element.dataset.translationKey;
+                if (translations[key] && translations[key][window.currentLanguage]) {
+                    if ((element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') && element.hasAttribute('placeholder')) {
+                        element.setAttribute('placeholder', translations[key][window.currentLanguage]);
+                    } else {
+                        element.textContent = translations[key][window.currentLanguage];
+                    }
+                }
+            }
+        }
+    }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await translateUI();
+
+            const dropdownArrow = document.querySelector('.dropdown-arrow');
+            const dropdownMenu = document.getElementById('channelsDropdown');
+            
+            dropdownArrow.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('active');
+                if (dropdownMenu.classList.contains('active')) {
+                    await loadSavedChannels();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!dropdownMenu.contains(e.target) && !dropdownArrow.contains(e.target)) {
+                    dropdownMenu.classList.remove('active');
+                }
+            });
+        });
+
+        async function loadSavedChannels() {
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/getCreatorDNAs`);
+                const channels = await response.json();
+                const dropdownMenu = document.getElementById('channelsDropdown');
+                dropdownMenu.innerHTML = '';
+                
+                const sortedChannelNames = Object.keys(channels).sort((a, b) => 
+                    a.toLowerCase().localeCompare(b.toLowerCase())
+                );
+                
+                sortedChannelNames.forEach(channelName => {
+                    const item = document.createElement('div');
+                    item.className = 'dropdown-item';
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = channelName;
+                    
+                    const deleteIcon = document.createElement('img');
+                    deleteIcon.src = '/icons/delete.svg';
+                    deleteIcon.alt = 'Delete Channel';
+                    deleteIcon.className = 'delete-icon-svg';
+                    deleteIcon.addEventListener('click', (e) => deleteChannelDNA(channelName, e));
+                    
+                    item.appendChild(nameSpan);
+                    item.appendChild(deleteIcon);
+                    
+                    item.addEventListener('click', () => loadChannelDNA(channels[channelName]));
+                    
+                    dropdownMenu.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error loading saved channels:', error);
+            }
+        }
+
+        async function deleteChannelDNA(channelName, event) {
+            event.stopPropagation();
+            try {
+                // Properly encode the channel name for the URL
+                const encodedChannelName = encodeURIComponent(channelName);
+                console.log('Deleting channel:', channelName);
+                console.log('Encoded channel name:', encodedChannelName);
+                
+                const response = await fetch(`${window.API_BASE_URL}/deleteCreatorDNA/${encodedChannelName}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server response:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                await loadSavedChannels();
+            } catch (error) {
+                console.error('Error deleting channel:', error);
+                alert(`Failed to delete channel: ${error.message}`);
+            }
+        }
+
+        function loadChannelDNA(channelData) {
+            // Update the preview card with saved data
+            const previewImage = document.getElementById('preview-thumbnail');
+            const previewTitle = document.getElementById('preview-title');
+            const previewDescription = document.getElementById('preview-description');
+            const previewElement = document.getElementById('channel-preview');
+            
+            previewImage.src = `/proxy-image?url=${encodeURIComponent(channelData.channelThumbnail)}`;
+    
+            // Update title with channel link
+            previewTitle.innerHTML = `
+                <a href="${channelData.channelUrl}" target="_blank" class="channel-link">
+                    ${channelData.channelName}
+                    <span class="arrow">↗</span>
+                    <span class="underline"></span>
+                </a>
+            `;
+            previewDescription.innerHTML = `        <div class="subscriber-count">${formatSubscriberCount(channelData.subscriberCount)} subscribers</div>
+        <div class="channel-description">${channelData.channelDescription}</div>`; // Modified line
+            previewElement.style.display = 'block';
+            
+            // Store the channel details
+            currentChannelDetails = {
+                name: channelData.channelName,
+                thumbnail: channelData.channelThumbnail,
+                description: channelData.channelDescription,
+                channelUrl: channelData.channelUrl,
+                subscriberCount: channelData.subscriberCount
+            };
+            
+            document.querySelector('.brand-input').value = channelData.channelName;
+            document.getElementById('channelsDropdown').classList.remove('active');
+            
+            // Display the analysis
+            displayChannelResults(channelData);
+        }
+
+        async function toggleEdit(button) {
+            const resultsContainer = document.querySelector('.channel-results');
+            const cardBodies = resultsContainer.querySelectorAll('.brand-card-body');
+
+             let buttonText = button.textContent.toUpperCase().trim(); // Normalize for comparison
+
+            if (buttonText === 'EDIT' || buttonText === 'EDITAR') {
+                // Enable editing
+                cardBodies.forEach(body => {
+                    body.setAttribute('contenteditable', 'true');
+                    body.classList.add('editing');
+                });
+                button.textContent = window.currentLanguage === 'spanish' ? 'GUARDAR' : 'SAVE';
+            } else {
+                 // Save changes
+                const updatedDNA = await saveChanges();
+                if (updatedDNA) {
+                    // Disable editing
+                    cardBodies.forEach(body => {
+                        body.setAttribute('contenteditable', 'false');
+                        body.classList.remove('editing');
+                    });
+                    await displayChannelResults(updatedDNA); // Await the display
+                }
+            }
+        }
+
+async function saveChanges() {
+    try {
+        const resultsContainer = document.querySelector('.channel-results');
+        const cardBodies = resultsContainer.querySelectorAll('.brand-card-body');
+        const cards = Array.from(cardBodies).map((body, index) => ({
+            sectionTitle: body.parentElement.querySelector('.brand-card-title').textContent,
+            sectionBody: body.textContent
+        }));
+
+        // Get current channel details
+        const channelName = document.querySelector('.channel-results h2').textContent.trim();
+        
+        // Create updated DNA data
+        const updatedDNA = {
+            channelName: channelName,
+            channelThumbnail: currentChannelDetails.thumbnail,
+            channelDescription: currentChannelDetails.description,
+            channelUrl: currentChannelDetails.channelUrl,
+            channelAnalysis: cards
+        };
+
+        // Save to server
+        const response = await fetch(`${window.API_BASE_URL}/saveCreatorDNA`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updatedDNA)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save changes');
+        }
+
+        return updatedDNA;
+    } catch (error) {
+        console.error('Error saving changes:', error);
+        alert('Failed to save changes. Please try again.');
+        return null;
+    }
+}
+
+function showRepromptOverlay() {
+        const overlay = document.getElementById('repromptOverlay');
+        overlay.innerHTML = `
+            <div class="overlay-content">
+                <h3 class="overlay-title" data-translation-key="channel-reprompt-title">What would you like to adjust about the DNA?</h3>
+                <textarea class="feedback-textarea" placeholder="Enter your feedback here..." data-translation-key="channel-reprompt-placeholder"></textarea>
+                <div class="overlay-buttons">
+                    <button class="get-dna-btn" onclick="cancelReprompt()" data-translation-key="channel-reprompt-cancel-button">CANCEL</button>
+                    <button class="get-dna-btn" onclick="regenerateDNA()" data-translation-key="channel-reprompt-regenerate-button">REGENERATE DNA</button>
+                </div>
+            </div>
+        `;
+         translateDynamicElements();
+        overlay.style.display = 'flex';
+
+    }
+
+function cancelReprompt() {
+    document.getElementById('repromptOverlay').style.display = 'none';
+    document.querySelector('.feedback-textarea').value = '';
+}
+
+async function regenerateDNA() {
+    const userFeedback = document.querySelector('.feedback-textarea').value.trim();
+    const loadingContainer = document.querySelector('.loading-container');
+    const resultsContainer = document.querySelector('.channel-results');
+    
+    try {
+        // Show loading state
+        loadingContainer.style.display = 'flex';
+        loadingContainer.querySelector('.loading-text').textContent = 'downloading transcripts...';
+        resultsContainer.innerHTML = '';
+
+        // Get channel ID and recent videos
+        const channelData = await findChannel(currentChannelDetails.name);
+        const channelId = channelData.items[0].id;
+        const videoUrls = await getRecentVideoUrls(channelId);
+
+        // Get transcripts
+        const transcriptResponse = await fetch(`${window.API_BASE_URL}/getChannelTranscripts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ videoUrls })
+        });
+
+        const transcriptData = await transcriptResponse.json();
+        if (!transcriptData.success) {
+            throw new Error(transcriptData.error);
+        }
+
+        // Create the analysis prompt
+        const analysisPrompt = `REVISION REQUEST: The following is a request to revise a channel's DNA analysis.
+
+CREATOR FEEDBACK:
+${userFeedback}
+
+CURRENT DNA ANALYSIS:
+${JSON.stringify(currentChannelDetails.channelAnalysis, null, 2)}
+
+Please analyze the YouTube channel "${currentChannelDetails.name}" with the above feedback in mind.
+
+Remember you MUST FOLLOW THIS EXACT JSON format for your output. Never give any commentary:
+{
+  "channelAnalysis": [
+    {
+      "sectionTitle": "CreatorDNA", //The core essence and DNA of the creator/channel, the qualities to stay true to when 'bending without breaking'
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Creator Personality",
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Content Style",
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Audience Connection",
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Channel Story",
+      "sectionBody": "<content>"
+    }
+  ]
+}`;
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('channelName', analysisPrompt); // Send prompt for analysis
+        formData.append('transcripts', JSON.stringify(transcriptData.transcripts));
+
+        // Analyze with Gemini
+        loadingContainer.querySelector('.loading-text').textContent = 'analyzing channel DNA...';
+        
+        const analysisResponse = await fetch(`${window.API_BASE_URL}/analyzeChannel`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const analysisData = await analysisResponse.json();
+        if (!analysisData.success) {
+            throw new Error(analysisData.error);
+        }
+
+        // Create the full DNA data with the original channel name
+        const fullDNAData = {
+            channelName: currentChannelDetails.name, // Use the original channel name
+            channelAnalysis: analysisData.analysis.channelAnalysis, // Use just the analysis part
+            channelThumbnail: currentChannelDetails.thumbnail,
+            channelDescription: currentChannelDetails.description,
+            channelUrl: currentChannelDetails.channelUrl
+        };
+
+        // Save the DNA
+        await fetch(`${window.API_BASE_URL}/saveCreatorDNA`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fullDNAData)
+        });
+
+        // Hide overlay and loading
+        cancelReprompt();
+        loadingContainer.style.display = 'none';
+        
+        // Display results
+        displayChannelResults(fullDNAData);
+
+    } catch (error) {
+        console.error('Error:', error);
+        loadingContainer.style.display = 'none';
+        resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+    }
+}
+    </script>
+</body>
+</html>

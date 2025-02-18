@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand DNA</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap">
+    <link rel="stylesheet" href="styles.css">
+    <script src="nav-template.js"></script>
+    <style>
+        .match-results {
+            position: relative;
+            overflow: visible;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .creator-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+            position: relative;
+            width: 100%;
+            opacity: 1;
+        }
+        
+        .navigation-container {
+            position: fixed;
+            top: 50%;
+            left: 57%;
+            transform: translate(-50%, -50%);
+            width: 900px;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        .nav-arrow {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #ffffff;
+            background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            pointer-events: auto;
+            opacity: 1.0;
+            padding-bottom: 2px;
+        }
+        
+        .nav-arrow:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #ffffff;
+            color: #929292;
+        }
+        
+        .nav-arrow:not(:disabled):hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .brand-card {
+            border: none;
+            position: relative;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(to right, #F53151, #F742BD) border-box;
+            border: 1px solid transparent;
+        }
+
+        .brand-creator-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 120px; /* Fixed height to prevent layout shifts */
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.brand-card-mini {
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transform: rotate(-5deg);
+    position: relative;
+    z-index: 1;
+    margin-right: -20px; /* Create overlap */
+}
+
+.brand-square {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.brand-name {
+    font-weight: 700;
+    color: #26201F;
+    font-size: 1.2rem;
+}
+
+.creator-card-mini {
+    padding: 1.5rem;
+    border-radius: 16px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transform: rotate(5deg);
+    position: relative;
+    z-index: 2;
+    border: 1px solid #F6F6F6;
+}
+
+.creator-photo {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.creator-name {
+    font-weight: 700;
+    /*color: #F742BD;*/
+    font-size: 1.2rem;
+}
+
+.content-idea-item { /* New class for list items */
+        position: relative; /* Keep relative positioning for hover effect */
+        display: flex; /* Use flexbox to arrange content */
+        flex-direction: column; /* Stack idea text and button vertically */
+    }
+
+    .content-idea-item .get-dna-btn { /* Target the button within list items */
+        display: none; /* Initially hidden */
+        margin-top: 0.5rem; /* Add space between idea text and button */
+        padding: 1rem 0.75rem;
+        font-size: 0.7rem;
+        vertical-align: baseline;
+        border-radius: 12px;
+        font-weight: normal;
+        white-space: nowrap; /* Prevent text wrapping */
+        background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%); /* Re-apply gradient */
+        color: white; /* Set text color to white */
+        border: none; /* Remove border if any */
+        cursor: pointer;
+        align-self: flex-start; /* Align button to the start (left) */
+        z-index: 1
+    }
+
+    .content-idea-item:hover .get-dna-btn { /* Show button on list item hover */
+        display: inline-block; /* Make button visible on hover */
+    }
+
+    .brand-card-title a span:last-child {
+    transform: scaleX(0); /* Start with width 0 */
+    transform-origin: left; /* Grow from left to right */
+}
+
+/* Hover state - animate the underline to full width */
+.brand-card-title a:hover span:last-child {
+    transform: scaleX(1); /* Animate to full width on hover */
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="nav-placeholder"></div>
+        <main class="content">
+                    <div class="search-container">
+                        <div class="search-box">
+                            <input type="text" placeholder="Enter your concept or brief" class="brand-input" data-translation-key="match-placeholder">
+                            <div class="search-icons">
+                                <img src="/icons/add.svg" alt="Add Files" class="plus-icon-svg" onclick="document.getElementById('fileInput').click()">
+                            </div>
+                            <input type="file" id="fileInput" class="file-input" multiple onchange="handleFileSelect(event)">
+                        </div>
+                        <button class="get-dna-btn" onclick="getMatch()" data-translation-key="match-get-match-button">GET MATCH</button>
+                    </div>
+            <div class="file-list" id="fileList"></div>
+            <div class="brand-creator-display" style="max-width: 600px; width: 100%; margin: 2rem auto 1rem auto;">
+                <!-- Cards will be populated here -->
+            </div>
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">generating...</div>
+            </div>
+            <div class="match-results" style="max-width: 600px; width: 100%; margin: 3rem auto;">
+                <!-- Cards will be inserted here -->
+            </div>
+            <div class="navigation-container">
+                <button class="nav-arrow prev" onclick="navigateCreator('prev')" disabled>←</button>
+                <button class="nav-arrow next" onclick="navigateCreator('next')" disabled>→</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const BRANDFETCH_CLIENT_ID = '1id7i-AiLuukUclzd4L';
+        let currentCreatorIndex = 0;
+        let matchesData = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await translateUI(); // Initial translation
+        });
+        
+        async function getMatch() {
+            const loadingContainer = document.querySelector('.loading-container');
+            const resultsContainer = document.querySelector('.match-results');
+            const displayContainer = document.querySelector('.brand-creator-display');
+            const fileInput = document.getElementById('fileInput');
+            displayContainer.innerHTML = '';
+            
+            let brief = document.querySelector('.brand-input').value.trim();
+            const currentDNA = getClientDNA();
+            
+            if (!currentDNA) {
+                alert('Please select a brand DNA first using the DNA selector in the bottom left corner.');
+                return;
+            }
+            
+            if (!brief && selectedFiles.size === 0) {
+                alert('Please enter a brief or upload a document.');
+                return;
+            }
+            
+            try {
+                loadingContainer.style.display = 'flex';
+                resultsContainer.innerHTML = '';
+                
+                // If there's an uploaded PDF, add a note about it to the brief
+                if (selectedFiles.size > 0) {
+                    brief = `The brand has attached a brief for their concept:\n\n${brief}`;
+                }
+                
+                // Create FormData and append files
+                const formData = new FormData();
+                formData.append('brief', brief);
+                formData.append('brandDNA', JSON.stringify(currentDNA));
+                
+                // Add selected files
+                const fileList = document.getElementById('fileList');
+                const fileItems = fileList.getElementsByClassName('file-item');
+                for (const item of Array.from(fileItems)) {
+                    const fileName = item.firstElementChild.textContent;
+                    const fileObj = Array.from(fileInput.files).find(f => f.name === fileName);
+                    if (fileObj) {
+                        formData.append('file', fileObj);
+                    }
+                }
+                
+                const response = await fetch(`${window.API_BASE_URL}/getMatch`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
+                
+                matchesData = data.matches;
+                currentCreatorIndex = 0;
+                displayCurrentCreator();
+                updateNavigationButtons();
+                
+                // Clear file list after successful submission
+                fileList.innerHTML = '';
+                selectedFiles.clear();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+            } finally {
+                loadingContainer.style.display = 'none';
+            }
+        }
+        
+        function createCard(title, content, score = null, creatorName = null, contentIdeas = []) {
+    const card = document.createElement('div');
+    card.className = 'brand-card';
+
+    let formattedContent;
+    if (title === 'Content Ideas' || title === 'Ideas de Contenido') {
+        const ideas = content.split('.,').map(idea => idea.trim().replace(/\.$/, ''));
+        formattedContent = `
+            <ul style="list-style-type: none; padding: 0; margin: 0;">
+                ${ideas.map((idea) => `
+                    <li class="content-idea-item" style="margin-bottom: 1rem; padding-left: 1.5rem; position: relative;">
+                        <span style="position: absolute; left: 0; top: 0.5rem; width: 6px; height: 6px; background: linear-gradient(to right, #F53151, #F742BD); border-radius: 50%;"></span>
+                        ${idea}
+                        <button
+                            class="get-dna-btn"
+                            style="padding: 0.75rem 0.75rem; font-size: 0.7rem; margin-left: 0.5rem; vertical-align: baseline; border-radius: 100px; font-weight: normal;"
+                            onclick="handleStoryboardButtonClick(this)"
+                            data-idea="${encodeURIComponent(idea)}"
+                            data-creator-name="${encodeURIComponent(creatorName)}">
+                            STORYBOARD IDEA
+                        </button>
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+    } else {
+        formattedContent = `<p>${content}</p>`;
+    }
+
+    // Translate the title if a translation key exists
+    const translatedTitle = translations[title] ? translations[title][window.currentLanguage] || title : title;
+
+    let cardContent = `<div class="brand-card-title" style="color: #26201F;">${translatedTitle}</div>`; // Use translated title
+    if (score) {
+        cardContent += `
+            <div class="brand-card-body">
+                <p style="font-size: 0.9rem; margin-bottom: 1rem; color: #26201F;">
+                    Match Grade: ${score}
+                </p>
+                ${formattedContent}
+            </div>
+        `;
+    } else {
+        cardContent += `<div class="brand-card-body">${formattedContent}</div>`;
+    }
+
+    card.innerHTML = cardContent;
+    return card;
+}
+
+        async function displayCurrentCreator(direction = null) {
+    const displayContainer = document.querySelector('.brand-creator-display');
+    const currentDNA = getClientDNA();
+    const resultsContainer = document.querySelector('.match-results');
+    const currentCreator = matchesData[currentCreatorIndex];
+
+    if (!currentCreator || !currentDNA) {
+        console.error('Missing creator or brand data');
+        return;
+    }
+
+    let subscriberCount = 'N/A';
+    let channelUrl = '#';
+
+    try {
+        const response = await fetch(`${window.API_BASE_URL}/getCreatorDNAs`);
+        const creatorDNAs = await response.json();
+        const creatorData = creatorDNAs[currentCreator.creatorName];
+
+        if (creatorData) {
+          subscriberCount = formatSubscriberCount(creatorData.subscriberCount);
+          channelUrl = creatorData.channelUrl;
+        }
+
+        const brandDomain = currentDNA.brandName.toLowerCase()
+            .replace(/[^a-z0-9]/g, '')
+            .replace(/\s+/g, '') + '.com';
+
+        const brandLogoUrl = `https://cdn.brandfetch.io/${brandDomain}/icon?c=${BRANDFETCH_CLIENT_ID}`;
+
+        displayContainer.innerHTML = `
+            <div class="brand-card-mini">
+                <div class="brand-logo-container" style="width: 48px; height: 48px; border-radius: 8px; overflow: hidden;">
+                    <img
+                        src="${brandLogoUrl}"
+                        alt="${currentDNA.brandName} logo"
+                        style="width: 100%; height: 100%; object-fit: contain;"
+                        onerror="this.style.display='none'; this.parentElement.style.backgroundColor='${currentDNA.brandColors[0]}';"
+                    >
+                </div>
+                <div class="brand-name">${currentDNA.brandName}</div>
+            </div>
+            <div class="creator-card-mini">
+                <img
+                    src="/proxy-image?url=${encodeURIComponent(creatorData.channelThumbnail)}"
+                    alt="${currentCreator.creatorName}"
+                    class="creator-photo"
+                    crossorigin="anonymous"
+                >
+                <div class="creator-name">${currentCreator.creatorName}</div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error fetching creator data:', error);
+    }
+
+    const newCardsContainer = document.createElement('div');
+    newCardsContainer.className = 'creator-cards';
+
+    // --- Use createCard for the creator card ---
+    const whyThisMatchWorksKey = 'Why This Match Works'; // Define the translation key
+    newCardsContainer.appendChild(createCard(
+        `<a href="${channelUrl}" target="_blank" style="color: inherit; text-decoration: none; position: relative; display: inline-block;">
+            ${currentCreator.creatorName}
+            <span style="margin-left: 4px; font-size: 0.9em;">↗</span>
+            <span style="position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);  transition: transform 0.2s ease; transform-origin: left;"></span>
+        </a>`,
+        `<div style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #26201F;">${subscriberCount} subscribers</div>
+         <p style="font-size: 0.9rem; margin-bottom: 1rem; color: #26201F;">Match Grade: ${currentCreator.matchGrade}</p>
+         <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem;">${translations[whyThisMatchWorksKey][window.currentLanguage]}</h3>
+         <p>${currentCreator.reasonForMatch}</p>`,
+        null,
+        currentCreator.creatorName
+    ));
+    // --- End Use createCard ---
+
+    newCardsContainer.appendChild(createCard(
+        'Content Ideas',
+        `${currentCreator.contentIdeas}`,
+        null,
+        currentCreator.creatorName
+    ));
+
+    newCardsContainer.appendChild(createCard(
+        'Value Alignment',
+        `<p>${currentCreator.valueAlignment}</p>`
+    ));
+
+    newCardsContainer.appendChild(createCard(
+        'Potential Impact',
+        `<p>${currentCreator.potentialReach}</p>`
+    ));
+
+
+    if (direction === 'next') {
+        newCardsContainer.style.transform = 'translateX(100%)';
+    } else if (direction === 'prev') {
+        newCardsContainer.style.transform = 'translateX(-100%)';
+    }
+    newCardsContainer.style.opacity = '0';
+
+    const oldCardsContainer = resultsContainer.querySelector('.creator-cards');
+    if (oldCardsContainer) {
+        oldCardsContainer.style.transform = direction === 'next' ?
+            'translateX(-100%)' : 'translateX(100%)';
+        oldCardsContainer.style.opacity = '0';
+
+        setTimeout(() => {
+            oldCardsContainer.remove();
+        }, 500);
+    }
+
+    resultsContainer.appendChild(newCardsContainer);
+
+    requestAnimationFrame(() => {
+        newCardsContainer.style.transform = 'translateX(0)';
+        newCardsContainer.style.opacity = '1';
+    });
+
+    updateNavigationButtons();
+}
+        
+        function updateNavigationButtons() {
+            const prevButton = document.querySelector('.nav-arrow.prev');
+            const nextButton = document.querySelector('.nav-arrow.next');
+            
+            prevButton.disabled = currentCreatorIndex === 0;
+            nextButton.disabled = currentCreatorIndex === matchesData.length - 1;
+        }
+
+        function navigateCreator(direction) {
+            if (direction === 'next' && currentCreatorIndex < matchesData.length - 1) {
+                currentCreatorIndex++;
+                displayCurrentCreator('next');
+            } else if (direction === 'prev' && currentCreatorIndex > 0) {
+                currentCreatorIndex--;
+                displayCurrentCreator('prev');
+            }
+        }
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' && currentCreatorIndex > 0) {
+                navigateCreator('prev');
+            } else if (e.key === 'ArrowRight' && currentCreatorIndex < matchesData.length - 1) {
+                navigateCreator('next');
+            }
+        });
+
+        let selectedFiles = new Set();
+
+function handleFileSelect(event) {
+    const files = event.target.files;
+    const fileList = document.getElementById('fileList');
+    
+    for (const file of files) {
+        if (!selectedFiles.has(file.name)) {
+            selectedFiles.add(file.name);
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <span>${file.name}</span>
+                <span class="remove-file" onclick="removeFile('${file.name}')">×</span>
+            `;
+            fileList.appendChild(fileItem);
+        }
+    }
+}
+
+function removeFile(fileName) {
+    selectedFiles.delete(fileName);
+    const fileList = document.getElementById('fileList');
+    const fileItems = fileList.getElementsByClassName('file-item');
+    for (const item of Array.from(fileItems)) {
+        if (item.firstElementChild.textContent === fileName) {
+            fileList.removeChild(item);
+            break;
+        }
+    }
+}
+
+function handleStoryboardButtonClick(buttonElement) {
+    const idea = decodeURIComponent(buttonElement.dataset.idea);
+    const creatorName = decodeURIComponent(buttonElement.dataset.creatorName);
+    goToStoryboard(idea, creatorName);
+}
+
+function goToStoryboard(idea, creatorName) {
+    try {
+        const url = new URL('storyboard.html', window.location.href);
+        // Simple encoding but handle potential special characters
+        url.searchParams.set('concept', idea.replace(/['"]/g, '')); // Remove quotes that might cause issues
+        url.searchParams.set('integration', 'full_integration');
+        url.searchParams.set('creator', creatorName);
+        window.location.href = url.toString();
+    } catch (error) {
+        console.error('Error in goToStoryboard:', error);
+        alert('There was an error processing this idea. Please try another one.');
+    }
+}
+
+function formatSubscriberCount(count) {
+    if (count >= 1000000) {
+        return (count / 1000000).toFixed(1) + 'M';
+    } else if (count >= 1000) {
+        return (count / 1000).toFixed(1) + 'K';
+    }
+    return count;
+}
+
+    </script>
+</body>
+</html>

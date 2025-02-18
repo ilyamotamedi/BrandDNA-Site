@@ -1,0 +1,829 @@
+/* styles.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Unbounded', sans-serif;
+    background-color: #F6F6F6;
+}
+
+.container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Sidebar Styles */
+.sidebar {
+    position: fixed;
+    width: 300px;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: #F6F6F6;
+    height: 100vh;
+}
+
+.logo {
+    margin-bottom: 5rem;
+}
+
+.logo-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+    box-shadow: 0 0 8px #FDB5E3;
+    margin-right: 2px;
+    position: relative;
+    top: 0px;
+}
+
+.unbounded-logo {
+    font-weight: 700;
+    font-size: 1.5rem;
+    position: relative;
+}
+
+.unbounded-logo sup {
+    font-size: 0.6em;
+    font-weight: 500;
+}
+
+/* Navigation Items */
+.nav-items {
+    flex-grow: 1;
+}
+
+.nav-item {
+    display: block;
+    text-decoration: none;
+    color: #26201F;
+    padding: 0.5rem 0;
+    margin: 0.15rem 0; /*space between nav items */
+    font-size: 0.9rem;
+    font-weight: 400;
+    position: relative;
+    opacity: 0.6;
+}
+
+.nav-item:hover {
+    color: #000;
+    opacity: 0.8;
+}
+
+.nav-item.active {
+    font-weight: 700;
+    color: transparent;
+    background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    opacity: 1;
+}
+
+.dot {
+    position: absolute;
+    left: -7px;
+    top: 16px;
+    opacity: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+    box-shadow: 0 0 8px #FDB5E3;
+}
+
+.nav-item.active .dot {
+    opacity: 1;
+}
+
+.nav-top {
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* This allows the content to shrink if needed */
+}
+
+/* Bottom Section */
+.bottom-section {
+    margin-top: auto;
+}
+
+.settings-btn {
+    display: flex;
+    align-items: center;
+    position: relative;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 400;
+    margin-bottom: 1rem;
+    color: #26201F;
+}
+
+.settings-icon-svg {
+    width: 28px; /* Adjust size as needed for settings icon */
+    height: 28px;
+    vertical-align: middle; /* Align with text in the button */
+    margin-right: 2px; /* Add some spacing between icon and text */
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.settings-icon-svg:hover {
+    opacity: 1.0;
+}
+
+.built-by {
+    font-size: 0.8rem;
+    color: #26201F;
+    opacity: 0.6;
+    line-height: 1.4;
+}
+
+.built-by a {
+    text-decoration: none;
+    color: #26201F;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.built-by a:hover {
+    color: transparent;
+    background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* Settings Menu Styles */
+.settings-menu {
+    position: absolute;
+    bottom: calc(100% + 12px); /* Position above the settings button */
+    left: 0;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    padding: 1rem;
+    width: 280px;
+    display: none;
+    border: 1px solid #ddd;
+    z-index: 1000;
+}
+
+.settings-menu.active {
+    display: block;
+}
+
+.settings-section {
+    margin-bottom: 1rem;
+}
+
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.settings-label {
+    font-size: 0.8rem;
+    color: #26201F;
+    opacity: 0.8;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.settings-select {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.8rem;
+    color: #26201F;
+    background: #F6F6F6;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.settings-select:hover {
+    border-color: #F53151;
+}
+
+.settings-select:focus {
+    border-color: #F53151;
+    box-shadow: 0 0 0 2px rgba(245, 49, 81, 0.1);
+}
+
+/* Main Content Area */
+.content {
+    margin-left: 250px;  /* Same as sidebar width */
+    flex-grow: 1;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 3rem;
+    overflow-y: auto;  /* Enable scrolling for content */
+}
+
+/* Search Container */
+.search-container {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    gap: 1rem;
+}
+
+.search-box {
+    flex-grow: 1;
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 24px;
+    background: white;
+    overflow: visible; /* Change from hidden to visible */
+    display: flex;
+    align-items: center;
+}
+
+.search-icons {
+    position: absolute;
+    right: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.plus-icon-svg {
+    color: #666;
+    width: 24px; /* Adjust size as needed */
+    height: 24px;
+    cursor: pointer;
+    opacity: 0.7; /* Example styling */
+    transition: opacity 0.2s ease;
+}
+
+.plus-icon-svg:hover {
+    opacity: 1.0;
+}
+
+.dropdown-arrow {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    padding: 0px;
+    opacity: 0.7;
+}
+
+.dropdown-arrow:hover {
+    opacity: 1.0;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    /* Height calculation: 
+       - Each item is 1rem (padding-top) + 1rem (padding-bottom) + ~1.2rem (font-size) = ~3.2rem per item
+       - 5 items = ~16rem total
+       - Add a small buffer for borders
+    */
+    max-height: 16.5rem; /* Approximately 5 items tall */
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 1000;
+    display: none;
+}
+
+.dropdown-menu.active {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 1rem 1.5rem;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.9rem;
+    color: #26201F;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    height: 3.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Add this to position the delete icon */
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background: #F6F6F6;
+    color: transparent;
+    background-image: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* Add custom scrollbar for the dropdown */
+.dropdown-menu::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 4px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+    background: #ccc;
+}
+
+.delete-icon {
+    color: #999;
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.2s ease, color 0.2s ease;
+    padding: 4px;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.dropdown-item:hover .delete-icon {
+    opacity: 1;
+}
+
+.delete-icon:hover {
+    color: #666;
+}
+
+/* File input styling */
+.file-input {
+    display: none;
+}
+
+/* File name display */
+.file-list {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #666;
+    padding: 0.25rem 0;
+}
+
+.file-item .remove-file {
+    cursor: pointer;
+    color: #F53151;
+    opacity: 0.7;
+    margin-right: 1.5rem; /* Match the search box padding */
+}
+
+.file-item .remove-file:hover {
+    opacity: 1;
+}
+
+.brand-input {
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    font-family: 'Unbounded', sans-serif;
+    border: none;
+    outline: none;
+    background: transparent;
+}
+
+.get-dna-btn {
+    padding: 0.8rem 1.5rem;
+    color: white;
+    border: none;
+    border-radius: 24px;
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+    position: relative;
+}
+
+.get-dna-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 24px;
+    box-shadow: inset 0 0 15px #FDB5E3;
+    pointer-events: none;
+}
+
+.get-dna-btn:hover {
+    opacity: 0.9;
+}
+
+
+/* Brand Results Styling */
+.brand-results {
+    width: 100%;
+    max-width: 600px;
+    margin-top: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.brand-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0rem;
+    width: 100%;
+    justify-content: flex-start;  /* Aligns content to the left */
+}
+
+.brand-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    order: 2;  /* Moves name to the right of squares */
+}
+
+.color-squares {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    order: 1;  /* Moves squares to the left of name */
+}
+
+.color-square {
+    position: absolute;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.color-square:nth-child(1) {
+    width: 48px;
+    height: 48px;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.color-square:nth-child(2) {
+    width: 32px;
+    height: 32px;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+}
+
+.brand-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid;
+}
+
+.brand-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.brand-card-body {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #26201F;
+    opacity: 0.8;
+}
+
+/*loading animation */
+.loading-container {
+    display: none;  /* Hide by default */
+    flex-direction: column;
+    align-items: center;
+    margin-top: 3rem;
+    gap: 1rem;
+    width: 100%;
+    max-width: 600px;  /* Match other containers */
+}
+
+.loading-spinner {
+    width: 60px;  /* Increased size */
+    height: 60px;
+    border-radius: 50%;
+    border: 4px solid transparent;  /* Thicker border */
+    border-top-color: #F53151;
+    border-right-color: #F742BD;
+    animation: spin 1s linear infinite;
+}
+
+/* Remove the old gradient mask as it was making it too subtle */
+.loading-spinner::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    right: -8px;
+    bottom: -8px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, transparent 50%, rgba(247, 66, 189, 0.1) 100%);
+}
+
+.loading-text {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1rem;  /* Slightly larger */
+    color: #26201F;
+    opacity: 0.8;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.dna-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;  /* Match settings button gap */
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 400;
+    margin-bottom: 1rem;
+    color: #26201F;
+    position: relative;
+    padding: 0;  /* Remove padding to align with settings */
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+.dna-icon-wrapper {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.dna-btn.active .dna-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    opacity: 1;
+}
+
+.dna-btn.active .dna-icon {
+    color: var(--secondary-color, #ffffff);
+}
+
+.dna-btn.active .dna-icon-svg {
+    opacity: 1;
+}
+
+.dna-text {
+    text-align: left;
+    margin-right: auto;  /* Push any following content to the right */
+    font-size: 0.9rem;  /* Match settings text */
+}
+
+.dna-menu {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 0;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    padding: 1rem;
+    width: 280px;
+    display: none;
+    border: 1px solid #ddd;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.dna-menu.active {
+    display: block;
+}
+
+.dna-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.dna-btn:hover .dna-icon-svg {
+    opacity: 1.0;  /* Match settings icon hover */
+}
+
+.dna-option-color {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+}
+
+.dna-option-name {
+    font-size: 0.9rem;
+    color: #26201F;
+    text-align: left;
+}
+
+
+.dna-icon-svg {
+    width: 24px;
+    height: 24px;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+/* Image Generation Results */
+.generation-results {
+    width: 100%;
+    max-width: 1000px;
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.concept-card {
+    width: 100%;
+    padding: 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.brand-card-title {
+    margin-bottom: 1rem;
+}
+
+.brand-card-body {
+    line-height: 1.6;
+    margin-bottom: 0; /* Remove default bottom margin */
+}
+
+.image-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    width: 100%;
+    margin-top: 2rem; /* Only show margin when content exists */
+    min-height: 200px; /* Minimum height when loading */
+}
+
+.image-container:empty {
+    margin-top: 0; /* No margin when empty */
+    min-height: 0;
+}
+
+.generated-image {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4/3;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    object-fit: cover;
+}
+
+/* Card-specific loading animation */
+.card-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    width: 100%;
+    height: 200px; /* Fixed height for loading state */
+    grid-column: 1 / -1; /* Span full width of grid */
+}
+
+.card-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    border-top-color: #F53151;
+    border-right-color: #F742BD;
+    animation: spin 1s linear infinite;
+}
+
+.card-loading-text {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.9rem;
+    color: #26201F;
+    opacity: 0.8;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.icon-container {
+    display: flex;
+    gap: 1rem;
+    padding-top: 0.25rem;
+}
+
+.card-icon {
+    width: 28px;  /* Increased from 20px */
+    height: 28px;  /* Increased from 20px */
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.card-icon:hover {
+    opacity: 1;
+}
+
+/* Style for the generate icon specifically */
+.generate-icon {
+    border-radius: 50%;
+    padding: 4px;
+    background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+    fill: white;  /* Make the SVG icon white */
+}
+
+
+.brand-card-body.editing {
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    outline: none;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.image-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.download-button {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    padding: 6px;
+}
+
+.download-button:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.download-button svg {
+    width: 20px;
+    height: 20px;
+}

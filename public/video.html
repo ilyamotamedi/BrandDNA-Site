@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand DNA - Video Generation</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap">
+    <link rel="stylesheet" href="styles.css">
+    <script src="nav-template.js"></script>
+    <style>
+        .custom-dialog {
+            position: fixed;
+            top: 50%;
+            left: 55%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-width: 400px;
+            width: 90%;
+            font-family: 'Unbounded', sans-serif;
+        }
+
+        .custom-dialog p {
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .custom-dialog a {
+            color: #F53151;
+            text-decoration: none;
+        }
+
+        .custom-dialog button {
+            padding: 0.8rem 1.5rem;
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);
+        }
+
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="nav-placeholder"></div>
+        <main class="content">
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" placeholder="Describe your video idea..." class="brand-input" id="videoPrompt" data-translation-key="video-placeholder">
+                </div>
+                <button class="get-dna-btn" onclick="generateVideoConcepts()" data-translation-key="video-generate-button">GENERATE VIDEOS</button>
+            </div>
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">generating...</div>
+            </div>
+            <div class="generation-results"></div>
+        </main>
+    </div>
+
+    <script>
+        let selectedCardIndex = -1;
+
+        async function showDialog(prompt) {
+            console.log("showDialog called with prompt:", prompt);
+
+            let promptToCopy = prompt;
+
+            // --- USE window.currentLanguage ---
+            if (window.currentLanguage === 'spanish') {
+                // ONLY translate if the current language is Spanish.
+                try {
+                    console.log("Current language is Spanish, attempting translation...");
+
+                    const response = await fetch(`${window.API_BASE_URL}/translate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ text: prompt, targetLanguage: 'en' })
+                    });
+
+                    console.log("Translation API response status:", response.status);
+
+                    if (!response.ok) {
+                        throw new Error(`Translation API error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    console.log("Translation API response data:", data);
+
+                    promptToCopy = data.translatedText;
+                    console.log("Translated prompt:", promptToCopy);
+
+        } catch (error) {
+            console.error('Translation failed, copying original prompt:', error);
+            // Fallback to original.
+        }
+    } else {
+        console.log("Current language is not Spanish, no translation needed."); // Log 6: No translation needed
+    }
+
+    console.log("Prompt to be copied:", promptToCopy); // Log 7: Final prompt before copying
+
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(promptToCopy).then(() => {
+        // Create and show dialog
+        const overlay = document.createElement('div');
+        overlay.className = 'dialog-overlay';
+
+        const dialog = document.createElement('div');
+        dialog.className = 'custom-dialog';
+        dialog.innerHTML = `
+            <p data-translation-key="dialog-message">Video generation not yet available in this prototype. Prompt has been copied to your clipboard - use VideoFX for video generation.</p>
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="window.open('https://labs.google/fx/tools/video-fx', '_blank'); closeDialog();">Open VideoFX</button>
+                <button onclick="closeDialog()" style="background: #666;">Cancel</button>
+            </div>
+        `;
+        translateDialog(dialog);
+
+        document.body.appendChild(overlay);
+        document.body.appendChild(dialog);
+    }).catch(err => {
+        console.error('Failed to copy prompt:', err);
+        alert('Could not copy prompt automatically. Please copy it manually.');
+    });
+}
+
+function translateDialog(dialogElement) {
+    const elementsToTranslate = dialogElement.querySelectorAll('[data-translation-key]');
+    elementsToTranslate.forEach(element => {
+        const key = element.dataset.translationKey;
+        if (translations[key] && translations[key][window.currentLanguage]) {
+            element.textContent = translations[key][window.currentLanguage];
+        }
+    });
+}
+
+        function closeDialog() {
+            const overlay = document.querySelector('.dialog-overlay');
+            const dialog = document.querySelector('.custom-dialog');
+            if (overlay) overlay.remove();
+            if (dialog) dialog.remove();
+        }
+
+        async function generateVideoConcepts() {
+            const videoPrompt = document.getElementById('videoPrompt').value.trim();
+            const loadingContainer = document.querySelector('.loading-container');
+            const resultsContainer = document.querySelector('.generation-results');
+            
+            if (!videoPrompt) {
+                console.error('Please enter a video idea');
+                return;
+            }
+
+            try {
+                loadingContainer.style.display = 'flex';
+                resultsContainer.innerHTML = '';
+
+                const currentDNA = getClientDNA();
+                
+                const requestBody = {
+                    prompt: videoPrompt,
+                    brandDNA: currentDNA || null
+                };
+
+                // Update the endpoint to a new one for video concepts
+                const response = await fetch(`${window.API_BASE_URL}/generateVideoConcepts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                // Clean the response by removing markdown code block syntax
+                const cleanJSON = data.replace(/```json\n|\n```/g, '').trim();
+                
+                // Parse the cleaned JSON response
+                const concepts = JSON.parse(cleanJSON).concepts;
+                
+                loadingContainer.style.display = 'none';
+                resultsContainer.innerHTML = '';
+
+                // Create cards for each concept
+                concepts.forEach((concept, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'brand-card concept-card expanded';
+                    card.setAttribute('data-index', index);
+                    
+                    const cardHeader = document.createElement('div');
+                    cardHeader.className = 'card-header';
+                    
+                    const title = document.createElement('h2');
+                    title.className = 'brand-card-title';
+                    title.textContent = concept.concept_title;
+                    
+                    const iconContainer = document.createElement('div');
+                    iconContainer.className = 'icon-container';
+                    iconContainer.innerHTML = `
+                        <img src="/icons/edit.svg" alt="Edit" class="card-icon edit-icon" />
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" class="card-icon generate-icon">
+                            <path d="M480-80q2 0 2-2 0-82 31-154t85-126q54-54 126-85t154-31q2 0 2-2t-2-2q-82 0-154-31t-126-85q-54-54-85-126t-31-154q0-2-2-2t-2 2q0 82-31 154t-85 126q-54 54-126 85T82-482q-2 0-2 2t2 2q82 0 154 31t126 85q54 54 85 126t31 154q0 2 2 2Z"/>
+                        </svg>
+                    `;
+                    
+                    cardHeader.appendChild(title);
+                    cardHeader.appendChild(iconContainer);
+                    
+                    const body = document.createElement('div');
+                    body.className = 'brand-card-body';
+                    body.contentEditable = 'false'; // Will be made editable on edit click
+                    body.textContent = concept.prompt;
+                    
+                    const imageContainer = document.createElement('div');
+                    imageContainer.className = 'image-container'; // This can be repurposed for video thumbnails or other visual elements
+                    
+                    card.appendChild(cardHeader);
+                    card.appendChild(body);
+                    card.appendChild(imageContainer);
+                    
+                    // Add event listeners for icons
+                    const generateIcon = iconContainer.querySelector('.generate-icon');
+                    const editIcon = iconContainer.querySelector('.edit-icon');
+                    
+                    generateIcon.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showDialog(concept.prompt);  // Pass the prompt to the dialog function
+                    });
+                    
+                    editIcon.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleEditMode(body, editIcon);
+                    });
+                    
+                    resultsContainer.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+                loadingContainer.style.display = 'none';
+            }
+        }
+
+        // This function will be expanded for video generation
+        async function handleCardClick(index, prompt) {
+            const cards = document.querySelectorAll('.concept-card');
+            const imageContainer = cards[index].querySelector('.image-container');
+            
+            // Show dialog when card is clicked
+            showDialog();
+        }
+
+        function toggleEditMode(bodyElement, editIcon) {
+            const isEditing = bodyElement.contentEditable === 'true';
+            
+            if (isEditing) {
+                // Exit edit mode
+                bodyElement.contentEditable = 'false';
+                bodyElement.classList.remove('editing');
+                bodyElement.blur();
+            } else {
+                // Enter edit mode
+                bodyElement.contentEditable = 'true';
+                bodyElement.classList.add('editing');
+                bodyElement.focus();
+                
+                // Add handlers for auto-saving
+                bodyElement.addEventListener('blur', () => {
+                    bodyElement.contentEditable = 'false';
+                    bodyElement.classList.remove('editing');
+                }, { once: true }); // Remove listener after it fires once
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+           await translateUI(); // Add this
+           //you might need to get currentLanguage for the showDialog function, so I added it here for you:
+           try {
+                const response = await fetch(`${window.API_BASE_URL}/getCurrentLanguage`);
+                if (response.ok) {
+                    const data = await response.json();
+                    window.currentLanguage = data.currentLanguage; // Make it globally accessible.
+                }
+            } catch (error) {
+                console.error('Error fetching current language:', error);
+            }
+
+        });
+    </script>
+</body>
+</html>
