@@ -176,7 +176,8 @@ initializeDNAsFile();
 // Add these new endpoints to server.js
 app.get('/getDNAs', async (req, res) => {
     try {
-        const dnas = await readJSONFromStorage('dnas.json');
+        const filename = getDNAFilename(currentLanguage);
+        const dnas = await readJSONFromStorage(filename);
         res.json(dnas);
     } catch (error) {
         console.error('Error reading DNAs:', error);
@@ -184,12 +185,51 @@ app.get('/getDNAs', async (req, res) => {
     }
 });
 
+// Modify the saveDNAWithTranslation function to handle background translation
+async function saveDNAWithTranslation(dna, sourceLanguage, backgroundTranslation = false) {
+    try {
+        // Get filenames
+        const sourceFile = getDNAFilename(sourceLanguage);
+        
+        // Save to source language file immediately
+        const sourceDNAs = await readJSONFromStorage(sourceFile);
+        sourceDNAs[dna.brandName] = dna;
+        await writeJSONToStorage(sourceFile, sourceDNAs);
+        
+        if (!backgroundTranslation) {
+            return true; // Return immediately after saving source language
+        }
+        
+        // Handle translation and secondary save in the background
+        (async () => {
+            try {
+                const targetFile = getOppositeLanguageFile(sourceFile);
+                const targetLanguage = sourceLanguage === 'spanish' ? 'en' : 'es';
+                const translatedDNA = await translateDNAObject(dna, targetLanguage);
+                
+                const targetDNAs = await readJSONFromStorage(targetFile);
+                targetDNAs[dna.brandName] = translatedDNA;
+                await writeJSONToStorage(targetFile, targetDNAs);
+                
+                console.log(`Background translation completed for ${dna.brandName}`);
+            } catch (error) {
+                console.error('Error in background translation:', error);
+            }
+        })();
+        
+        return true;
+    } catch (error) {
+        console.error('Error in saveDNAWithTranslation:', error);
+        throw error;
+    }
+}
+
+// Modify the /saveDNA endpoint
 app.post('/saveDNA', express.json(), async (req, res) => {
     try {
         const dnaData = req.body;
-        const dnas = await readJSONFromStorage('dnas.json');
-        dnas[dnaData.brandName] = dnaData;
-        await writeJSONToStorage('dnas.json', dnas);
+        // Save immediately without waiting for translation
+        await saveDNAWithTranslation(dnaData, currentLanguage, true);
         res.json({ success: true });
     } catch (error) {
         console.error('Error saving DNA:', error);
@@ -199,16 +239,19 @@ app.post('/saveDNA', express.json(), async (req, res) => {
 
 app.delete('/deleteDNA/:brandName', async (req, res) => {
     try {
-        const brandName = req.params.brandName;
-        const dnas = await readJSONFromStorage('dnas.json');
+        const brandName = decodeURIComponent(req.params.brandName);
         
-        if (dnas[brandName]) {
-            delete dnas[brandName];
-            await writeJSONToStorage('dnas.json', dnas);
-            res.json({ success: true });
-        } else {
-            res.status(404).json({ error: 'Brand not found' });
-        }
+        // Delete from both language files
+        const englishDNAs = await readJSONFromStorage('dnas.json');
+        const spanishDNAs = await readJSONFromStorage('dnas-spanish.json');
+        
+        if (englishDNAs[brandName]) delete englishDNAs[brandName];
+        if (spanishDNAs[brandName]) delete spanishDNAs[brandName];
+        
+        await writeJSONToStorage('dnas.json', englishDNAs);
+        await writeJSONToStorage('dnas-spanish.json', spanishDNAs);
+        
+        res.json({ success: true });
     } catch (error) {
         console.error('Error deleting DNA:', error);
         res.status(500).json({ error: 'Failed to delete DNA' });
@@ -288,6 +331,83 @@ Please generate the output in the following exact JSON format. Never give any ad
     },
     {
       "sectionTitle": "Visual Aesthetic", //Detailed descriptors of the unique visual aesthetic. Consider: Color palettes (overall visual color feeling), Typography style, Imagery style (photography, illustration - e.g., minimalist, vibrant, documentary), Mood & Feeling (e.g., playful, sophisticated, edgy, calming), Visual Metaphors/Motifs. Be very percise and detailed especially in the imagery. Make this a comma seperate list describing this visual aesthetic in great detail. Be detailed as if briefing a visual designer. Never sya "this brand's visual aesthetic is... just start describing the aesthetic right away.
+      "sectionBody": "<content>"
+    }
+  ]
+}`;
+
+const BRAND_DNA_SYSTEM_INSTRUCTIONS_SPANISH = `You are an expert at analyzing and distilling the core essence and fundamental 'DNA' of any Brand.
+
+You will be given brand assets like their website, wikipedia page, and other brand media they want you to analyze. Your task is to look across all of this content and identify the key elements that define what this Brand truly is at its core - the unchangeable attributes, ideas, principles, or building blocks that are essential to its identity and purpose.
+
+Brand Identity Framework & On-Brandedness:
+
+To guide your analysis, consider the Brand Identity Framework, which includes these core elements:
+- Purpose: The brand's guiding star, its reason for existence.
+- Offering: The unique value the brand delivers within its industry.
+- Identity: The fundamental essence and traits that differentiate it from competitors.
+- Growth: Factors contributing to the brand's market reach and position.
+- Substance: The inherent value and quality of the product/service.
+- Expression: Elements embodying the brand's personality and spirit.
+- Association: Connections and relationships with its customer base.
+- Quality: Perceived trust, reliability, and quality of offerings.
+- Sentiment: Impressions, reactions, and perceptions from customers.
+
+Think about how these elements manifest in the brand's assets and contribute to the brand's overall identity.
+
+Pay close attention to On-Brandedness. Analyze how the brand's Core (Mission, Vision, Values - if discernible) informs its Expression - how it consistently shows up through style, voice, imagery, and personality across all touchpoints.  Assess if the brand maintains a cohesive and 'on-brand' experience.
+
+Analyzing Brand DNA:
+
+When determining the Brand DNA, consider these guiding questions, keeping the Brand Identity Framework and On-Brandedness in mind:
+
+- Core Essence: What consistent themes, messages, or narratives are fundamental to the brand's identity and appear across its assets and communications?
+- Foundational Principles: What core concepts, values, or philosophies guide the brand's actions, offerings, and decisions?
+- Distinctive Brand Traits: What are the distinctive visual elements, tone of voice, brand personality traits, and overall style that are consistently characteristic of this brand?
+- Differentiation: What immutable characteristics or qualities fundamentally differentiate this brand from competitors in similar industries or niches?
+- Consistent Manifestation: How does the brand's mission, vision, and core approach consistently manifest across all customer touchpoints and brand expressions?
+- Core Customer Experience: What product/service attributes or customer experiences are absolutely core and non-negotiable to the brand promise and customer perception?
+
+You provide the most critical aspects that make up the essence and 'DNA' of this particular Brand. Clearly define each aspect that is fundamental and indispensable to the Brand's nature.  Your assessment will be used to help brands understand their own essence, purpose, and overall BrandDNA. This DNA is very important because it helps brands understand the guardrails for how they can experiment and explore new ways of positioning their brand and "bend without breaking" this core DNA.
+
+Output guidelines:
+
+- Use a tone that is casual and approachable yet still highly credible and clearly knowledgeable. You are never cheesy.
+- The response for each section should be several sentences long at its maximum.
+- You will generate 6 separate sections as part of your analysis.
+- You will also include the brand name and brand colors (minimum of 1 and up to 2) as hex values.
+- Brand colors should be represented as a list of hex values.
+- Never repeat the section title in the section body. Instead, go right into the content (e.g., you would never say "This brand's core dna is..." you would just start with the DNA).
+
+JSON Output Format:
+
+Please generate the output in the following exact JSON format. Never give any additional thoughts or commentary outside of the JSON.
+{
+  "brandName": "<brand name>",
+  "brandColors": ["#hexvalue1", "#hexvalue2"],
+  "brandAnalysis": [
+    {
+      "sectionTitle": "ADN de Marca", //The core essence and DNA of the brand, the qualities to stay true to when 'bending without breaking'
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Personalidad de Marca", //Describe the brand as if it were a person, including their characteristics, behaviors, and way of being in the world.
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Valores Fundamentales", //Most important principles that guide the brand's actions and decisions
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Conexión Emocional", //Describe how the brand builds emotional bonds with its audience and what feelings it evokes
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Historia de Marca", //A fluid 3-4 sentence narrative that weaves together the key elements above into a cohesive brand story
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Estética Visual", //Detailed descriptors of the unique visual aesthetic. Consider: Color palettes (overall visual color feeling), Typography style, Imagery style (photography, illustration - e.g., minimalist, vibrant, documentary), Mood & Feeling (e.g., playful, sophisticated, edgy, calming), Visual Metaphors/Motifs. Be very percise and detailed especially in the imagery. Make this a comma seperate list describing this visual aesthetic in great detail. Be detailed as if briefing a visual designer. Never sya "this brand's visual aesthetic is... just start describing the aesthetic right away.
       "sectionBody": "<content>"
     }
   ]
@@ -650,7 +770,7 @@ Each prompt must:
 - Create emotional impact
 
 ONLY RETURN VALID JSON WITH NO ADDITIONAL COMMENTARY OR EXPLANATION
-`
+`;
 
 const MATCH_SYSTEM_INSTRUCTIONS = `You are a brand partnership expert specializing in matching brands with YouTube creators for collaborations, sponsorships, brand deals, and video integrations. Your task is to analyze a brand's DNA and a collection of creator DNAs to identify the most suitable matches.
 
@@ -798,9 +918,14 @@ async function callGeminiAPI(brandName, files = null) {
         });
     }
 
-    // Add the text prompt
+    // Add the text prompt with language instruction if Spanish
+    let promptText = `Get the brand DNA of ${brandName}`;
+    if (currentLanguage === 'spanish') {
+        promptText += "\nPLEASE RESPOND IN SPANISH";
+    }
+    
     parts.push({ 
-        text: `Get the brand DNA of ${brandName}`
+        text: promptText
     });
 
     // Base request configuration
@@ -811,7 +936,7 @@ async function callGeminiAPI(brandName, files = null) {
         }],
         systemInstruction: {
             parts: [{
-                text: BRAND_DNA_SYSTEM_INSTRUCTIONS
+                text: currentLanguage === 'spanish' ? BRAND_DNA_SYSTEM_INSTRUCTIONS_SPANISH : BRAND_DNA_SYSTEM_INSTRUCTIONS
             }]
         },
         generationConfig: {
@@ -1059,7 +1184,7 @@ app.post('/generateImagesFromPrompt', express.json(), async (req, res) => {
     }
 });
 
-// Updated endpoint to handle file uploads
+// Modify the /getBrandDNA endpoint
 app.post('/getBrandDNA', upload.array('file', 5), async (req, res) => {
     const brandName = req.body.brandName;
     if (!brandName) {
@@ -1069,6 +1194,10 @@ app.post('/getBrandDNA', upload.array('file', 5), async (req, res) => {
     try {
         const files = req.files;
         const result = await callGeminiAPI(brandName, files);
+        
+        // Save the DNA in current language and trigger background translation
+        await saveDNAWithTranslation(result, currentLanguage, true);
+        
         res.json(result);
     } catch (error) {
         console.error('Error processing request:', error);
@@ -1673,9 +1802,8 @@ app.get('/proxy-image', async (req, res) => {
 });
 
 async function readJSONFromStorage(filename) {
-    const actualFilename = filename === 'creator-dnas.json' ? currentCreatorDnaListFile : filename;
     try {
-        const file = bucket.file(actualFilename);
+        const file = bucket.file(filename);
         const [exists] = await file.exists();
 
         if (!exists) {
@@ -1686,18 +1814,17 @@ async function readJSONFromStorage(filename) {
         const [content] = await file.download();
         return JSON.parse(content.toString());
     } catch (error) {
-        console.error(`Error reading ${actualFilename}:`, error);
+        console.error(`Error reading ${filename}:`, error);
         return {};
     }
 }
 
 async function writeJSONToStorage(filename, data) {
-    const actualFilename = filename === 'creator-dnas.json' ? currentCreatorDnaListFile : filename;
     try {
-        const file = bucket.file(actualFilename);
+        const file = bucket.file(filename);
         await file.save(JSON.stringify(data, null, 2));
     } catch (error) {
-        console.error(`Error writing ${actualFilename}:`, error);
+        console.error(`Error writing ${filename}:`, error);
         throw error;
     }
 }
@@ -1790,6 +1917,36 @@ async function translateText(text, targetLanguage = 'en') {
     } catch (error) {
         console.error('Error during translation:', error);
         throw error; // Re-throw so calling function can handle
+    }
+}
+
+// Helper function to get the appropriate filename based on language
+function getDNAFilename(language) {
+    return language === 'spanish' ? 'dnas-spanish.json' : 'dnas.json';
+}
+
+// Helper function to get the opposite language's filename
+function getOppositeLanguageFile(currentFile) {
+    return currentFile === 'dnas.json' ? 'dnas-spanish.json' : 'dnas.json';
+}
+
+// Helper function to translate DNA object
+async function translateDNAObject(dna, targetLanguage) {
+    try {
+        // Create a deep copy of the DNA object
+        const translatedDNA = JSON.parse(JSON.stringify(dna));
+        
+        // Translate each section of the brand analysis
+        for (const section of translatedDNA.brandAnalysis) {
+            // Translate both the section title and body
+            section.sectionTitle = await translateText(section.sectionTitle, targetLanguage);
+            section.sectionBody = await translateText(section.sectionBody, targetLanguage);
+        }
+        
+        return translatedDNA;
+    } catch (error) {
+        console.error('Error translating DNA:', error);
+        throw error;
     }
 }
 
