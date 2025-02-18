@@ -458,6 +458,51 @@ Please generate the output in the following exact JSON format:
   ]
 }`;
 
+const CHANNEL_DNA_SYSTEM_INSTRUCTIONS_SPANISH = `You are an expert at analyzing and distilling the core essence and fundamental 'DNA' of any YouTube Creator.
+
+You will be given video transcripts from a YouTube Creator. Your task is to look across the videos and identify the key elements that define what this channel truly is at its core - the unchangeable attributes, ideas, principles, or building blocks that are essential to its identity and purpose. 
+
+When analyzing the videos, consider questions like:
+- What consistent themes, messages, or narratives appear across multiple videos?
+- What foundational concepts, theories, or methodologies are repeatedly employed?
+- What distinctive stylistic elements, structures, or formats are characteristic of this creator?
+- What immutable characteristics or qualities differentiate this channel from others in similar niches?
+- How does the creator's personality and approach manifest consistently across videos?
+- What content patterns or series types emerge across the channel?
+
+You provide the most critical aspects that make up the essence and 'DNA' of this particular creator. Clearly define each aspect that is fundamental and indispensable to the content's nature. This CreatorDNA helps make sure that we can always respect and follow the creator's overall intent and make sure we can 'bend without breaking'.
+
+Output guidelines:
+- Use a tone that is casual and approachable yet still highly credible
+- The response for each section should be several sentences long at its maximum
+- Never repeat the section title in the section body
+
+Please generate the output in the following exact JSON format:
+{
+  "channelAnalysis": [
+    {
+      "sectionTitle": "ADN del Creador", //The core essence and DNA of the creator/channel
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Personalidad del Creador",
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Estilo de Contenido",
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Conexión con la Audiencia",
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Historia del Canal",
+      "sectionBody": "<content>"
+    }
+  ]
+}`;
+
 const IMAGE_GENERATION_SYSTEM_INSTRUCTIONS = `
     You are an expert prompt engineer specializing in generating image prompts that align with brand identities. Your role is to create detailed, style-specific image generation prompts that authentically reflect a brand's DNA while achieving the desired creative concept.
 
@@ -1440,7 +1485,8 @@ app.post('/generateStoryboardImages', express.json(), async (req, res) => {
 
 app.get('/getCreatorDNAs', async (req, res) => {
     try {
-        const dnas = await readJSONFromStorage('creator-dnas.json'); // Still using 'creator-dnas.json' as key
+        const filename = currentLanguage === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
+        const dnas = await readJSONFromStorage(filename);
         res.json(dnas);
     } catch (error) {
         console.error('Error reading creator DNAs:', error);
@@ -1451,9 +1497,67 @@ app.get('/getCreatorDNAs', async (req, res) => {
 app.post('/saveCreatorDNA', express.json(), async (req, res) => {
     try {
         const dnaData = req.body;
-        const dnas = await readJSONFromStorage('creator-dnas.json'); // Still using 'creator-dnas.json' as key
-        dnas[dnaData.channelName] = dnaData;
-        await writeJSONToStorage('creator-dnas.json', dnas); // Still using 'creator-dnas.json' as key
+        
+        // Save to source language file
+        const sourceFile = currentLanguage === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
+        const sourceDNAs = await readJSONFromStorage(sourceFile);
+        sourceDNAs[dnaData.channelName] = dnaData;
+        await writeJSONToStorage(sourceFile, sourceDNAs);
+
+        // Translate and save to other language file in the background
+        (async () => {
+            try {
+                const targetFile = currentLanguage === 'spanish' ? 'creator-dnas.json' : 'creator-dnas-spanish.json';
+                const targetLanguage = currentLanguage === 'spanish' ? 'en' : 'es';
+                
+                // Translate the channel analysis
+                const translatedDNA = JSON.parse(JSON.stringify(dnaData));
+                
+                // Ensure channelName is preserved
+                const originalChannelName = translatedDNA.channelName;
+                
+                // Translate each section
+                for (const section of translatedDNA.channelAnalysis) {
+                    // First translate the body to maintain context
+                    section.sectionBody = await translateText(section.sectionBody, targetLanguage);
+                    
+                    // Then translate the title if needed
+                    if (currentLanguage === 'spanish') {
+                        // Map Spanish to English titles
+                        const titleMap = {
+                            'ADN del Creador': 'CreatorDNA',
+                            'Personalidad del Creador': 'Creator Personality',
+                            'Estilo de Contenido': 'Content Style',
+                            'Conexión con la Audiencia': 'Audience Connection',
+                            'Historia del Canal': 'Channel Story'
+                        };
+                        section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguage);
+                    } else {
+                        // Map English to Spanish titles
+                        const titleMap = {
+                            'CreatorDNA': 'ADN del Creador',
+                            'Creator Personality': 'Personalidad del Creador',
+                            'Content Style': 'Estilo de Contenido',
+                            'Audience Connection': 'Conexión con la Audiencia',
+                            'Channel Story': 'Historia del Canal'
+                        };
+                        section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguage);
+                    }
+                }
+                
+                // Restore original channel name
+                translatedDNA.channelName = originalChannelName;
+
+                const targetDNAs = await readJSONFromStorage(targetFile);
+                targetDNAs[dnaData.channelName] = translatedDNA;
+                await writeJSONToStorage(targetFile, targetDNAs);
+                
+                console.log(`Background translation completed for channel ${dnaData.channelName}`);
+            } catch (error) {
+                console.error('Error in background translation:', error);
+            }
+        })();
+
         res.json({ success: true });
     } catch (error) {
         console.error('Error saving creator DNA:', error);
@@ -1466,19 +1570,15 @@ app.delete('/deleteCreatorDNA/:channelName', async (req, res) => {
         const channelName = decodeURIComponent(req.params.channelName);
         console.log('Attempting to delete channel:', channelName);
 
-        const data = await readJSONFromStorage('creator-dnas.json'); // Still using 'creator-dnas.json' as key
+        // Delete from both language files
+        const englishDNAs = await readJSONFromStorage('creator-dnas.json');
+        const spanishDNAs = await readJSONFromStorage('creator-dnas-spanish.json');
 
-        if (!data || !data[channelName]) {
-            console.log('Channel not found in storage:', channelName);
-            return res.status(404).json({
-                error: 'Channel not found',
-                channelName: channelName,
-                availableChannels: Object.keys(data || {})
-            });
-        }
+        if (englishDNAs[channelName]) delete englishDNAs[channelName];
+        if (spanishDNAs[channelName]) delete spanishDNAs[channelName];
 
-        delete data[channelName];
-        await writeJSONToStorage('creator-dnas.json', data); // Still using 'creator-dnas.json' as key
+        await writeJSONToStorage('creator-dnas.json', englishDNAs);
+        await writeJSONToStorage('creator-dnas-spanish.json', spanishDNAs);
 
         console.log('Successfully deleted channel:', channelName);
         res.json({
@@ -1530,13 +1630,18 @@ app.post('/analyzeChannel', upload.array('file', 5), async (req, res) => {
         const parts = [];
         const maxTextSize = 500000; // 500KB limit for text content
         
-        // Add main text prompt part
+        // Add main text prompt part with language instruction
         let analysisPrompt = `Analyze the YouTube channel "${channelName}" based on the following content:
 
 1. Video Transcripts:
 ${processedTranscripts.join('\n\n=== NEXT VIDEO ===\n\n')}
 
 2. Additional Channel Content and Context:`;
+
+        // Add language instruction for Spanish
+        if (currentLanguage === 'spanish') {
+            analysisPrompt += "\n\nPLEASE GENERATE THE ENTIRE ANALYSIS IN SPANISH, INCLUDING ALL CONTENT AND DESCRIPTIONS.";
+        }
 
         parts.push({
             text: analysisPrompt
@@ -1589,7 +1694,9 @@ ${processedTranscripts.join('\n\n=== NEXT VIDEO ===\n\n')}
             }],
             systemInstruction: {
                 parts: [{
-                    text: CHANNEL_DNA_SYSTEM_INSTRUCTIONS
+                    text: currentLanguage === 'spanish' ? 
+                          CHANNEL_DNA_SYSTEM_INSTRUCTIONS_SPANISH : 
+                          CHANNEL_DNA_SYSTEM_INSTRUCTIONS
                 }]
             },
             generationConfig: {
