@@ -3,12 +3,12 @@
 // --- TRANSLATION OBJECT ---
 const translations = {
     'nav-get-dna': {
-        english: 'GET BRAND DNA',
-        spanish: 'OBTENER ADN DE MARCA'
+        english: 'BRAND DNA',
+        spanish: 'ADN DE LA MARCA'
     },
     'nav-get-channel-dna': {
-        english: 'GET CHANNEL DNA',
-        spanish: 'OBTENER ADN DEL CANAL'
+        english: 'CHANNEL DNA',
+        spanish: 'ADN DEL CREADOR'
     },
     'nav-image-generation': {
         english: 'IMAGE GENERATION',
@@ -20,15 +20,15 @@ const translations = {
     },
     'nav-match-making': {
         english: 'MATCH MAKING',
-        spanish: 'EMPAREJAMIENTO'
+        spanish: 'MATCH MAKING'
     },
     'nav-storyboarding': {
         english: 'STORYBOARDING',
-        spanish: 'GUION GRÁFICO'
+        spanish: 'STORYBOARDING'
     },
     'nav-conversational-generation': {
-        english: 'CONVERSATIONAL GENERATION',
-        spanish: 'GENERACIÓN CONVERSACIONAL' // Or "GENERACIÓN DE CONVERSACIONES"
+        english: 'TALK TO GENERATE',
+        spanish: 'GENERACIÓN POR VOZ' // Or "GENERACIÓN DE CONVERSACIONES"
     },
     'nav-no-dna-set': {
         english: 'No DNA set',
@@ -68,7 +68,7 @@ const translations = {
     },
     // --- INDEX PAGE TRANSLATIONS ---
     'index-placeholder': {
-        english: 'Name of brand',
+        english: 'Brand name',
         spanish: 'Nombre de la marca'
     },
     'index-get-dna-button': {
@@ -101,8 +101,8 @@ const translations = {
     },
     // --- CHANNEL PAGE TRANSLATIONS ---
     'channel-placeholder': {
-        english: 'Enter name of channel here',
-        spanish: 'Introduce el nombre del canal aquí'
+        english: 'Creator name',
+        spanish: 'Nombre del canal'
     },
     'channel-get-dna-button': {
         english: 'GET DNA',
@@ -157,7 +157,7 @@ const translations = {
     // --- MATCH PAGE TRANSLATIONS ---
     'match-placeholder': {
         english: 'Enter your concept or brief',
-        spanish: 'Introduce tu concepto o brief'
+        spanish: 'Describe tu concepto o brief'
     },
     'match-get-match-button': {
         english: 'GET MATCH',
@@ -206,7 +206,7 @@ const translations = {
     },
     'storyboard-generate-button': {
         english: 'GENERATE STORYBOARD',
-        spanish: 'GENERAR GUION GRÁFICO' // Or "CREAR GUION GRÁFICO"
+        spanish: 'GENERAR STORYBOARD' // Or "CREAR GUION GRÁFICO"
     },
     'storyboard-show-prompt': {
         english: 'Show Prompt',
@@ -292,10 +292,10 @@ function insertNav() {
             <div class="nav-items">
                 <div class="nav-section">
                     <a href="index.html" class="nav-item" id="nav-get-dna" data-translation-key="nav-get-dna">
-                        <span class="dot">•</span> GET BRAND DNA
+                        <span class="dot">•</span> BRAND DNA
                     </a>
                     <a href="channel.html" class="nav-item" data-translation-key="nav-get-channel-dna">
-                        <span class="dot">•</span> GET CHANNEL DNA
+                        <span class="dot">•</span> CHANNEL DNA
                     </a>
                     <a href="image.html" class="nav-item" data-translation-key="nav-image-generation">
                         <span class="dot">•</span> IMAGE GENERATION
@@ -310,7 +310,7 @@ function insertNav() {
                         <span class="dot">•</span> STORYBOARDING
                     </a>
                     <a href="https://multimodal-live-dot-branddna.googleplex.com/" target="_blank" class="nav-item" data-translation-key="nav-conversational-generation">
-                        <span class="dot">•</span> CONVERSATIONAL GENERATION
+                        <span class="dot">•</span> TALK TO GENERATE
                     </a>
                 </div>
             </div>
