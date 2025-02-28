@@ -837,6 +837,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         sessionStorage.removeItem('currentDNA');
         // Also clear language state on refresh
         sessionStorage.removeItem('currentLanguage');
+        // Clear match setting on refresh
+        sessionStorage.removeItem('currentMatch');
     }
 
     console.log('DOM loaded, initializing...');
