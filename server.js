@@ -343,6 +343,10 @@ Please generate the output in the following exact JSON format. Never give any ad
     {
       "sectionTitle": "Visual Aesthetic", //Detailed descriptors of the unique visual aesthetic. Consider: Color palettes (overall visual color feeling), Typography style, Imagery style (photography, illustration - e.g., minimalist, vibrant, documentary), Mood & Feeling (e.g., playful, sophisticated, edgy, calming), Visual Metaphors/Motifs. Be very percise and detailed especially in the imagery. Make this a comma seperate list describing this visual aesthetic in great detail. Be detailed as if briefing a visual designer. Never sya "this brand's visual aesthetic is... just start describing the aesthetic right away.
       "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "What to Avoid", //These 'avoidance' rules are crucial for maintaining brand distinctiveness and preventing unintentional brand dilution or negative associations (e.g., don't use certain colors, don't use certain words, don't use certain imagery, don't be associated with certain people, places, things, etc.). An example of this would be that Coke would never use the color blue because that would be associated with Pepsi. Don't just repeat the sections above, and instead think critically about what guidelines or guardrails you can provide.
+      "sectionBody": "<content>"
     }
   ]
 }`;
@@ -419,6 +423,10 @@ Please generate the output in the following exact JSON format. Never give any ad
     },
     {
       "sectionTitle": "Estética Visual", //Detailed descriptors of the unique visual aesthetic. Consider: Color palettes (overall visual color feeling), Typography style, Imagery style (photography, illustration - e.g., minimalist, vibrant, documentary), Mood & Feeling (e.g., playful, sophisticated, edgy, calming), Visual Metaphors/Motifs. Be very percise and detailed especially in the imagery. Make this a comma seperate list describing this visual aesthetic in great detail. Be detailed as if briefing a visual designer. Never sya "this brand's visual aesthetic is... just start describing the aesthetic right away.
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Qué Evitar", //These 'avoidance' rules are crucial for maintaining brand distinctiveness and preventing unintentional brand dilution or negative associations (e.g., don't use certain colors, don't use certain words, don't use certain imagery, don't be associated with certain people, places, things, etc.). An example of this would be that Coke would never use the color blue because that would be associated with Pepsi. Don't just repeat the sections above, and instead think critically about what guidelines or guardrails you can provide.
       "sectionBody": "<content>"
     }
   ]
