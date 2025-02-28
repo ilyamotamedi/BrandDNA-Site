@@ -253,6 +253,13 @@
                     brief = `The brand has attached a brief for their concept:\n\n${brief}`;
                 }
                 
+                // Check if a creator is selected in the Match setting
+                const selectedCreator = sessionStorage.getItem('currentMatch');
+                if (selectedCreator && selectedCreator.trim() !== '') {
+                    console.log('Match - Selected creator:', selectedCreator);
+                    brief += `\n\nIMPORTANT: One of the three matches MUST BE ${selectedCreator}.`;
+                }
+                
                 const clientLanguage = getClientLanguage();
                 console.log('Match - Client language detected:', clientLanguage);
                 

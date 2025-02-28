@@ -836,6 +836,7 @@ When analyzing potential matches, consider:
 - Creator's content style and how it could showcase the brand
 - Authenticity of potential partnership
 - Creative opportunities for integration
+- Any specific creator requirements mentioned in the brief (if a specific creator must be included, ensure they are one of your three matches)
 
 Based on the provided brand DNA and creator DNAs, you will:
 1. Identify the top 3 most compatible creators
@@ -1829,6 +1830,7 @@ app.post('/getMatch', upload.array('file', 5), async (req, res) => {
         let fullPrompt = `Please analyze this brand and their concept to find the best creator matches.
 
 Brand Brief: ${brief}
+<!-- The brief may contain a requirement to include a specific creator in the matches -->
 
 Brand DNA: ${brandDNA}
 

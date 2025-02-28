@@ -54,6 +54,10 @@ const translations = {
         english: 'Creator DNA List',
         spanish: 'Lista de ADN de Creadores'
     },
+    'nav-match': {
+        english: 'Match',
+        spanish: 'Match'
+    },
     'nav-language': {
         english: 'Language',
         spanish: 'Idioma'
@@ -348,6 +352,13 @@ function insertNav() {
                          </select>
                      </div>
                      <div class="settings-section">
+                         <div class="settings-label" data-translation-key="nav-match">Match</div>
+                         <select class="settings-select" id="matchSelect">
+                             <option value="">-</option>
+                             <!-- Creator options will be populated dynamically -->
+                         </select>
+                     </div>
+                     <div class="settings-section">
                             <div class="settings-label" data-translation-key="nav-language">Language</div>
                             <select class="settings-select" id="languageSelect">
                                 <option value="english">English</option>
@@ -379,6 +390,7 @@ async function initializeSettings() {
     const languageModelSelect = document.getElementById('languageModelSelect');
     const imageModelSelect = document.getElementById('imageModelSelect');
     const creatorDnaListSelect = document.getElementById('creatorDnaListSelect');
+    const matchSelect = document.getElementById('matchSelect');
     const languageSelect = document.getElementById('languageSelect');  // Moved up here
 
     // Toggle settings menu
@@ -411,6 +423,42 @@ async function initializeSettings() {
         }
     });
 
+    // Function to populate the Match dropdown with creator names
+    async function populateMatchDropdown() {
+        try {
+            const response = await fetch(`${window.API_BASE_URL}/getCreatorDNAs`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch creator DNAs');
+            }
+            const creatorDNAs = await response.json();
+            
+            // Start with the empty option
+            let options = '<option value="">-</option>';
+            
+            // Add creator names as options
+            options += Object.keys(creatorDNAs)
+                .sort((a, b) => a.localeCompare(b))
+                .map(creatorName => `<option value="${creatorName}">${creatorName}</option>`)
+                .join('');
+                
+            matchSelect.innerHTML = options;
+            
+            // Set the current selection if available
+            const currentMatch = sessionStorage.getItem('currentMatch');
+            if (currentMatch) {
+                matchSelect.value = currentMatch;
+            }
+        } catch (error) {
+            console.error('Error loading creator DNAs for match dropdown:', error);
+        }
+    }
+    
+    // Add event listener for the Match dropdown
+    matchSelect.addEventListener('change', (e) => {
+        const selectedCreator = e.target.value;
+        sessionStorage.setItem('currentMatch', selectedCreator);
+        console.log('Match creator set to:', selectedCreator);
+    });
 
     // Load available models and populate dropdowns
     async function loadAvailableModels() {
@@ -453,6 +501,9 @@ async function initializeSettings() {
                 };
 
                 await populateCreatorDnaListDropdown();
+                
+                // Populate the Match dropdown with creator names
+                await populateMatchDropdown();
 
             // After populating models, load current selections
             await loadCurrentModels();
