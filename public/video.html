@@ -82,9 +82,12 @@
 
             let promptToCopy = prompt;
 
-            // --- USE window.currentLanguage ---
-            if (window.currentLanguage === 'spanish') {
-                // ONLY translate if the current language is Spanish.
+            // Get the current language
+            const currentLanguage = getClientLanguage();
+            console.log("Current language detected:", currentLanguage);
+
+            // Translate the prompt if the language is Spanish
+            if (currentLanguage === 'spanish') {
                 try {
                     console.log("Current language is Spanish, attempting translation...");
 
@@ -107,52 +110,50 @@
 
                     promptToCopy = data.translatedText;
                     console.log("Translated prompt:", promptToCopy);
+                } catch (error) {
+                    console.error('Translation failed, copying original prompt:', error);
+                    // Fallback to original prompt if translation fails
+                }
+            } else {
+                console.log("Current language is not Spanish, no translation needed.");
+            }
 
-        } catch (error) {
-            console.error('Translation failed, copying original prompt:', error);
-            // Fallback to original.
+            console.log("Prompt to be copied:", promptToCopy);
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(promptToCopy).then(() => {
+                // Create and show dialog
+                const overlay = document.createElement('div');
+                overlay.className = 'dialog-overlay';
+
+                const dialog = document.createElement('div');
+                dialog.className = 'custom-dialog';
+                dialog.innerHTML = `
+                    <p data-translation-key="dialog-message">Video generation not yet available in this prototype. Prompt has been copied to your clipboard - use VideoFX for video generation.</p>
+                    <div style="display: flex; gap: 1rem;">
+                        <button onclick="window.open('https://labs.google/fx/tools/video-fx', '_blank'); closeDialog();">Open VideoFX</button>
+                        <button onclick="closeDialog()" style="background: #666;">Cancel</button>
+                    </div>
+                `;
+                translateDialog(dialog);
+
+                document.body.appendChild(overlay);
+                document.body.appendChild(dialog);
+            }).catch(err => {
+                console.error('Failed to copy prompt:', err);
+                alert('Could not copy prompt automatically. Please copy it manually.');
+            });
         }
-    } else {
-        console.log("Current language is not Spanish, no translation needed."); // Log 6: No translation needed
-    }
 
-    console.log("Prompt to be copied:", promptToCopy); // Log 7: Final prompt before copying
-
-
-    // Copy to clipboard
-    navigator.clipboard.writeText(promptToCopy).then(() => {
-        // Create and show dialog
-        const overlay = document.createElement('div');
-        overlay.className = 'dialog-overlay';
-
-        const dialog = document.createElement('div');
-        dialog.className = 'custom-dialog';
-        dialog.innerHTML = `
-            <p data-translation-key="dialog-message">Video generation not yet available in this prototype. Prompt has been copied to your clipboard - use VideoFX for video generation.</p>
-            <div style="display: flex; gap: 1rem;">
-                <button onclick="window.open('https://labs.google/fx/tools/video-fx', '_blank'); closeDialog();">Open VideoFX</button>
-                <button onclick="closeDialog()" style="background: #666;">Cancel</button>
-            </div>
-        `;
-        translateDialog(dialog);
-
-        document.body.appendChild(overlay);
-        document.body.appendChild(dialog);
-    }).catch(err => {
-        console.error('Failed to copy prompt:', err);
-        alert('Could not copy prompt automatically. Please copy it manually.');
-    });
-}
-
-function translateDialog(dialogElement) {
-    const elementsToTranslate = dialogElement.querySelectorAll('[data-translation-key]');
-    elementsToTranslate.forEach(element => {
-        const key = element.dataset.translationKey;
-        if (translations[key] && translations[key][window.currentLanguage]) {
-            element.textContent = translations[key][window.currentLanguage];
+        function translateDialog(dialogElement) {
+            const elementsToTranslate = dialogElement.querySelectorAll('[data-translation-key]');
+            elementsToTranslate.forEach(element => {
+                const key = element.dataset.translationKey;
+                if (translations[key] && translations[key][window.currentLanguage]) {
+                    element.textContent = translations[key][window.currentLanguage];
+                }
+            });
         }
-    });
-}
 
         function closeDialog() {
             const overlay = document.querySelector('.dialog-overlay');
@@ -176,11 +177,17 @@ function translateDialog(dialogElement) {
                 resultsContainer.innerHTML = '';
 
                 const currentDNA = getClientDNA();
+                const clientLanguage = getClientLanguage();
+                
+                console.log('Client language detected:', clientLanguage);
                 
                 const requestBody = {
                     prompt: videoPrompt,
-                    brandDNA: currentDNA || null
+                    brandDNA: currentDNA || null,
+                    language: clientLanguage
                 };
+                
+                console.log('Sending request with body:', requestBody);
 
                 // Update the endpoint to a new one for video concepts
                 const response = await fetch(`${window.API_BASE_URL}/generateVideoConcepts`, {
@@ -270,8 +277,8 @@ function translateDialog(dialogElement) {
             const cards = document.querySelectorAll('.concept-card');
             const imageContainer = cards[index].querySelector('.image-container');
             
-            // Show dialog when card is clicked
-            showDialog();
+            // Show dialog when card is clicked with the prompt
+            showDialog(prompt);
         }
 
         function toggleEditMode(bodyElement, editIcon) {
@@ -297,18 +304,10 @@ function translateDialog(dialogElement) {
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
-           await translateUI(); // Add this
-           //you might need to get currentLanguage for the showDialog function, so I added it here for you:
-           try {
-                const response = await fetch(`${window.API_BASE_URL}/getCurrentLanguage`);
-                if (response.ok) {
-                    const data = await response.json();
-                    window.currentLanguage = data.currentLanguage; // Make it globally accessible.
-                }
-            } catch (error) {
-                console.error('Error fetching current language:', error);
-            }
-
+            // Translate the UI
+            await translateUI();
+            
+            // No need to manually set window.currentLanguage as getClientLanguage() will handle it
         });
     </script>
 </body>

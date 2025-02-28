@@ -246,7 +246,8 @@
                 const requestBody = {
                     prompt: imagePrompt,
                     brandDNA: currentDNA || null,
-                    aspectRatio: selectedAspectRatio
+                    aspectRatio: selectedAspectRatio,
+                    language: getClientLanguage()
                 };
 
                 const response = await fetch(`${window.API_BASE_URL}/generateImages`, {
@@ -344,6 +345,9 @@
             `;
 
             try {
+                // Get the current language
+                const currentLanguage = getClientLanguage();
+                
                 const response = await fetch(`${window.API_BASE_URL}/generateImagesFromPrompt`, {
                     method: 'POST',
                     headers: {
@@ -351,7 +355,8 @@
                     },
                     body: JSON.stringify({ 
                         prompt,
-                        aspectRatio: selectedAspectRatio
+                        aspectRatio: selectedAspectRatio,
+                        language: currentLanguage
                     })
                 });
 

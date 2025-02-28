@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load saved brands into dropdown
     async function loadSavedBrands() {
     try {
-        const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
+        const response = await fetch(`${window.API_BASE_URL}/getDNAs?language=${getClientLanguage()}`);
         const dnas = await response.json();
         const dropdownMenu = document.getElementById('brandsDropdown');
         dropdownMenu.innerHTML = '';
@@ -261,7 +261,7 @@ async function deleteBrandDNA(brandName, event) {
     event.stopPropagation(); // Prevent triggering the parent click event
     
     try {
-        const response = await fetch(`${window.API_BASE_URL}/deleteDNA/${encodeURIComponent(brandName)}`, {
+        const response = await fetch(`${window.API_BASE_URL}/deleteDNA/${encodeURIComponent(brandName)}?language=${getClientLanguage()}`, {
             method: 'DELETE'
         });
 
@@ -350,6 +350,9 @@ async function deleteBrandDNA(brandName, event) {
             }
         }
 
+        // Add language to formData
+        formData.append('language', getClientLanguage());
+
         const response = await fetch(`${window.API_BASE_URL}/getBrandDNA`, {
             method: 'POST',
             body: formData
@@ -367,7 +370,10 @@ async function deleteBrandDNA(brandName, event) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                dna: data,
+                language: getClientLanguage()
+            })
         });
 
         // Hide loading animation and display results
@@ -566,7 +572,10 @@ async function saveChanges() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(updatedDNA)
+            body: JSON.stringify({
+                dna: updatedDNA,
+                language: getClientLanguage()
+            })
         });
 
         if (!response.ok) {
@@ -685,6 +694,7 @@ Remember you MUST GENERATE THE OUTPUT IN THE FOLLOWING EXACT JSON FORMAT. Never 
 
         const formData = new FormData();
         formData.append('brandName', analysisPrompt);
+        formData.append('language', getClientLanguage());
 
         const response = await fetch(`${window.API_BASE_URL}/getBrandDNA`, {
             method: 'POST',
@@ -710,7 +720,10 @@ Remember you MUST GENERATE THE OUTPUT IN THE FOLLOWING EXACT JSON FORMAT. Never 
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(updatedDNA)
+            body: JSON.stringify({
+                dna: updatedDNA,
+                language: getClientLanguage()
+            })
         });
 
         // Hide overlay and loading

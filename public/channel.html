@@ -395,7 +395,10 @@
                 const transcriptResponse = await fetch(`${window.API_BASE_URL}/getChannelTranscripts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ videoUrls })
+                    body: JSON.stringify({ 
+                        videoUrls,
+                        language: getClientLanguage()
+                    })
                 });
 
                 const transcriptData = await transcriptResponse.json();
@@ -434,18 +437,21 @@
 
                 // Save the complete DNA with channel details
                 const fullDNAData = {
+                    ...analysisData,
+                    channelId,
                     channelName: currentChannelDetails.name,
-                    ...analysisData.analysis,
-                    channelThumbnail: currentChannelDetails.thumbnail,
-                    channelDescription: currentChannelDetails.description,
                     channelUrl: currentChannelDetails.channelUrl,
+                    channelThumbnail: currentChannelDetails.thumbnail,
                     subscriberCount: currentChannelDetails.subscriberCount
                 };
 
                 await fetch(`${window.API_BASE_URL}/saveCreatorDNA`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(fullDNAData)
+                    body: JSON.stringify({
+                        creatorDNA: fullDNAData,
+                        language: getClientLanguage()
+                    })
                 });
 
                 // Clear file list after successful submission
@@ -574,7 +580,9 @@
 
         async function loadSavedChannels() {
             try {
-                const response = await fetch(`${window.API_BASE_URL}/getCreatorDNAs`);
+                // Use query parameter for language in GET request
+                const language = getClientLanguage();
+                const response = await fetch(`${window.API_BASE_URL}/getCreatorDNAs?language=${language}`);
                 const channels = await response.json();
                 const dropdownMenu = document.getElementById('channelsDropdown');
                 dropdownMenu.innerHTML = '';
@@ -616,7 +624,9 @@
                 console.log('Deleting channel:', channelName);
                 console.log('Encoded channel name:', encodedChannelName);
                 
-                const response = await fetch(`${window.API_BASE_URL}/deleteCreatorDNA/${encodedChannelName}`, {
+                // Use query parameter for language in DELETE request
+                const language = getClientLanguage();
+                const response = await fetch(`${window.API_BASE_URL}/deleteCreatorDNA/${encodedChannelName}?language=${language}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
@@ -724,10 +734,11 @@ async function saveChanges() {
         // Save to server
         const response = await fetch(`${window.API_BASE_URL}/saveCreatorDNA`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(updatedDNA)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                creatorDNA: updatedDNA,
+                language: getClientLanguage()
+            })
         });
 
         if (!response.ok) {
@@ -860,7 +871,10 @@ Remember you MUST FOLLOW THIS EXACT JSON format for your output. Never give any 
         await fetch(`${window.API_BASE_URL}/saveCreatorDNA`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(fullDNAData)
+            body: JSON.stringify({
+                creatorDNA: fullDNAData,
+                language: getClientLanguage()
+            })
         });
 
         // Hide overlay and loading

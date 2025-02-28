@@ -176,12 +176,20 @@ initializeDNAsFile();
 // Add these new endpoints to server.js
 app.get('/getDNAs', async (req, res) => {
     try {
-        const filename = getDNAFilename(currentLanguage);
-        const dnas = await readJSONFromStorage(filename);
+        const language = req.query.language || currentLanguage;
+        const filename = getDNAFilename(language);
+        
+        let dnas = {};
+        try {
+            dnas = await readJSONFromStorage(filename);
+        } catch (error) {
+            console.log('No existing DNAs file, returning empty object');
+        }
+        
         res.json(dnas);
     } catch (error) {
-        console.error('Error reading DNAs:', error);
-        res.status(500).json({ error: 'Failed to retrieve DNAs' });
+        console.error('Error getting DNAs:', error);
+        res.status(500).json({ error: 'Failed to get DNAs' });
     }
 });
 
@@ -227,9 +235,11 @@ async function saveDNAWithTranslation(dna, sourceLanguage, backgroundTranslation
 // Modify the /saveDNA endpoint
 app.post('/saveDNA', express.json(), async (req, res) => {
     try {
-        const dnaData = req.body;
+        const { dna, language } = req.body;
+        const requestLanguage = language || currentLanguage;
+        
         // Save immediately without waiting for translation
-        await saveDNAWithTranslation(dnaData, currentLanguage, true);
+        await saveDNAWithTranslation(dna, requestLanguage, true);
         res.json({ success: true });
     } catch (error) {
         console.error('Error saving DNA:', error);
@@ -240,8 +250,9 @@ app.post('/saveDNA', express.json(), async (req, res) => {
 app.delete('/deleteDNA/:brandName', async (req, res) => {
     try {
         const brandName = decodeURIComponent(req.params.brandName);
+        const language = req.query.language || currentLanguage;
         
-        // Delete from both language files
+        // Delete from both language files to ensure consistency
         const englishDNAs = await readJSONFromStorage('dnas.json');
         const spanishDNAs = await readJSONFromStorage('dnas-spanish.json');
         
@@ -944,7 +955,7 @@ Remember:
 ONLY RETURN VALID JSON WITH NO ADDITIONAL COMMENTARY OR EXPLANATION
 `;
 
-async function callGeminiAPI(brandName, files = null) {
+async function callGeminiAPI(brandName, files = null, language = 'english') {
     const fetch = await import('node-fetch').then(module => module.default);
     
     // Prepare the parts array
@@ -965,7 +976,7 @@ async function callGeminiAPI(brandName, files = null) {
 
     // Add the text prompt with language instruction if Spanish
     let promptText = `Get the brand DNA of ${brandName}`;
-    if (currentLanguage === 'spanish') {
+    if (language === 'spanish') {
         promptText += "\nPLEASE RESPOND IN SPANISH";
     }
     
@@ -981,7 +992,7 @@ async function callGeminiAPI(brandName, files = null) {
         }],
         systemInstruction: {
             parts: [{
-                text: currentLanguage === 'spanish' ? BRAND_DNA_SYSTEM_INSTRUCTIONS_SPANISH : BRAND_DNA_SYSTEM_INSTRUCTIONS
+                text: language === 'spanish' ? BRAND_DNA_SYSTEM_INSTRUCTIONS_SPANISH : BRAND_DNA_SYSTEM_INSTRUCTIONS
             }]
         },
         generationConfig: {
@@ -1058,7 +1069,7 @@ async function callGeminiAPI(brandName, files = null) {
     }
 }
 
-async function generateImagePrompts(prompt, brandDNA = null) {
+async function generateImagePrompts(prompt, brandDNA = null, language = 'english') {
     const fetch = await import('node-fetch').then(module => module.default);
     
     // Prepare the prompt with brand DNA if available
@@ -1068,7 +1079,7 @@ async function generateImagePrompts(prompt, brandDNA = null) {
     }
 
     // --- LANGUAGE MODIFICATION ---
-    if (currentLanguage === 'spanish') {
+    if (language === 'spanish') {
         fullPrompt += "\nPLEASE RESPOND IN SPANISH";
     }
 
@@ -1131,13 +1142,14 @@ async function generateImagePrompts(prompt, brandDNA = null) {
 
 app.post('/generateImages', express.json(), async (req, res) => {
     const { prompt, brandDNA } = req.body;
+    const language = getLanguageFromRequest(req);
     
     if (!prompt) {
         return res.status(400).json({ error: 'Prompt is required' });
     }
 
     try {
-        const result = await generateImagePrompts(prompt, brandDNA);
+        const result = await generateImagePrompts(prompt, brandDNA, language);
         res.json(result);
     } catch (error) {
         console.error('Error processing request:', error);
@@ -1145,7 +1157,7 @@ app.post('/generateImages', express.json(), async (req, res) => {
     }
 });
 
-async function generateImagesFromPrompt(prompt, aspectRatio = '4:3') {
+async function generateImagesFromPrompt(prompt, aspectRatio = '4:3', language = currentLanguage) {
     const aiplatform = require('@google-cloud/aiplatform');
     const {PredictionServiceClient} = aiplatform.v1;
     const {helpers} = aiplatform;
@@ -1159,14 +1171,15 @@ async function generateImagesFromPrompt(prompt, aspectRatio = '4:3') {
     const endpoint = `projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentVisionModel.modelId}`;
 
     let promptToUse = prompt; // Initialize with the original prompt
-    if (currentLanguage === 'spanish') {
+    if (language === 'spanish') {
         try {
-            promptToUse = await translateText(prompt, 'en'); // Translate to English
+            // Translate Spanish prompt to English for better image generation results
+            promptToUse = await translateText(prompt, 'en'); 
             console.log('Original Prompt (Spanish):', prompt);
             console.log('Translated Prompt (English):', promptToUse);
         } catch (error) {
             console.error('Translation failed, using original prompt:', error);
-            // Fallback to original prompt if translation fails.
+            // If translation fails, we'll use the original prompt
         }
     }
 
@@ -1215,13 +1228,14 @@ async function generateImagesFromPrompt(prompt, aspectRatio = '4:3') {
 // Add new endpoint for image generation
 app.post('/generateImagesFromPrompt', express.json(), async (req, res) => {
     const { prompt, aspectRatio } = req.body;
+    const language = getLanguageFromRequest(req);
     
     if (!prompt) {
         return res.status(400).json({ error: 'Prompt is required' });
     }
 
     try {
-        const images = await generateImagesFromPrompt(prompt, aspectRatio);
+        const images = await generateImagesFromPrompt(prompt, aspectRatio, language);
         res.json({ images });
     } catch (error) {
         console.error('Error processing request:', error);
@@ -1232,16 +1246,18 @@ app.post('/generateImagesFromPrompt', express.json(), async (req, res) => {
 // Modify the /getBrandDNA endpoint
 app.post('/getBrandDNA', upload.array('file', 5), async (req, res) => {
     const brandName = req.body.brandName;
+    const language = req.body.language || currentLanguage;
+    
     if (!brandName) {
         return res.status(400).json({ error: 'Brand name is required' });
     }
 
     try {
         const files = req.files;
-        const result = await callGeminiAPI(brandName, files);
+        const result = await callGeminiAPI(brandName, files, language);
         
         // Save the DNA in current language and trigger background translation
-        await saveDNAWithTranslation(result, currentLanguage, true);
+        await saveDNAWithTranslation(result, language, true);
         
         res.json(result);
     } catch (error) {
@@ -1259,7 +1275,9 @@ app.post('/setDNA', express.json(), async (req, res) => {
 });
 
 
-async function generateVideoConcepts(prompt, brandDNA = null) {
+async function generateVideoConcepts(prompt, brandDNA = null, language = 'english') {
+    console.log('generateVideoConcepts function called with language:', language);
+    
     const fetch = await import('node-fetch').then(module => module.default);
     
     // Prepare the prompt with brand DNA if available
@@ -1268,7 +1286,10 @@ async function generateVideoConcepts(prompt, brandDNA = null) {
         fullPrompt = `Brand DNA:\n${JSON.stringify(brandDNA)}\n\nOverall creative concept for this video: ${prompt}`;
     }
 
-    if (currentLanguage === 'spanish') {
+    // --- LANGUAGE MODIFICATION ---
+    console.log('Language check in generateVideoConcepts:', language);
+    if (language === 'spanish') {
+        console.log('Adding Spanish instruction to prompt');
         fullPrompt += "\nPLEASE RESPOND IN SPANISH";
     }
 
@@ -1331,13 +1352,18 @@ async function generateVideoConcepts(prompt, brandDNA = null) {
 
 app.post('/generateVideoConcepts', express.json(), async (req, res) => {
     const { prompt, brandDNA } = req.body;
+    const language = getLanguageFromRequest(req);
+    
+    console.log('Video Concepts Request - Body:', req.body);
+    console.log('Video Concepts Request - Extracted Language:', language);
     
     if (!prompt) {
         return res.status(400).json({ error: 'Prompt is required' });
     }
 
     try {
-        const result = await generateVideoConcepts(prompt, brandDNA);
+        console.log('Calling generateVideoConcepts with language:', language);
+        const result = await generateVideoConcepts(prompt, brandDNA, language);
         res.json(result);
     } catch (error) {
         console.error('Error processing request:', error);
@@ -1346,7 +1372,7 @@ app.post('/generateVideoConcepts', express.json(), async (req, res) => {
 });
 
 // Helper function
-async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integrationType) {
+async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integrationType, language) {
     const fetch = await import('node-fetch').then(module => module.default);
 
     // Prepare the prompt with brand DNA, creator DNA, video concept, and integration type
@@ -1366,7 +1392,7 @@ async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integratio
         Please create a storyboard that effectively incorporates this specific type of brand integration while maintaining authenticity with the creator's DNA, style, and content approach.
     `;
 
-    if (currentLanguage === 'spanish') {
+    if (language === 'spanish') {
         fullPrompt += "\nPLEASE RESPOND IN SPANISH";
     }
 
@@ -1430,6 +1456,9 @@ async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integratio
 // Endpoint handler
 app.post('/generateStoryboard', express.json(), async (req, res) => {
     const { videoConcept, brandDNA, creatorDNA, integrationType } = req.body;
+    const language = getLanguageFromRequest(req);
+    
+    console.log('Storyboard Request - Extracted Language:', language);
 
     if (!videoConcept) {
         return res.status(400).json({ error: 'Video concept is required' });
@@ -1448,7 +1477,7 @@ app.post('/generateStoryboard', express.json(), async (req, res) => {
     }
 
     try {
-        const result = await generateStoryboard(videoConcept, brandDNA, creatorDNA, integrationType);
+        const result = await generateStoryboard(videoConcept, brandDNA, creatorDNA, integrationType, language);
         res.json(result);
     } catch (error) {
         console.error('Error processing request:', error);
@@ -1460,6 +1489,9 @@ app.post('/generateStoryboard', express.json(), async (req, res) => {
 // Add this new endpoint for storyboard image generation
 app.post('/generateStoryboardImages', express.json(), async (req, res) => {
     const { imagePrompts } = req.body;
+    const language = getLanguageFromRequest(req);
+    
+    console.log('Storyboard Images Request - Extracted Language:', language);
     
     if (!Array.isArray(imagePrompts)) {
         return res.status(400).json({ error: 'Image prompts must be an array' });
@@ -1467,7 +1499,7 @@ app.post('/generateStoryboardImages', express.json(), async (req, res) => {
 
     try {
         // Generate all images in parallel
-        const imagePromises = imagePrompts.map(prompt => generateImagesFromPrompt(prompt));
+        const imagePromises = imagePrompts.map(prompt => generateImagesFromPrompt(prompt, '4:3', language));
         const results = await Promise.all(imagePromises);
         
         // For storyboards, we only want the first image from each generation
@@ -1485,8 +1517,16 @@ app.post('/generateStoryboardImages', express.json(), async (req, res) => {
 
 app.get('/getCreatorDNAs', async (req, res) => {
     try {
-        const filename = currentLanguage === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
-        const dnas = await readJSONFromStorage(filename);
+        const language = req.query.language || currentLanguage;
+        const filename = language === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
+        
+        let dnas = {};
+        try {
+            dnas = await readJSONFromStorage(filename);
+        } catch (error) {
+            console.log('No existing creator DNAs file, returning empty object');
+        }
+        
         res.json(dnas);
     } catch (error) {
         console.error('Error reading creator DNAs:', error);
@@ -1496,22 +1536,30 @@ app.get('/getCreatorDNAs', async (req, res) => {
 
 app.post('/saveCreatorDNA', express.json(), async (req, res) => {
     try {
-        const dnaData = req.body;
+        const { creatorDNA, language } = req.body;
+        const requestLanguage = language || currentLanguage;
         
         // Save to source language file
-        const sourceFile = currentLanguage === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
-        const sourceDNAs = await readJSONFromStorage(sourceFile);
-        sourceDNAs[dnaData.channelName] = dnaData;
+        const sourceFile = requestLanguage === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
+        
+        let sourceDNAs = {};
+        try {
+            sourceDNAs = await readJSONFromStorage(sourceFile);
+        } catch (error) {
+            console.log('No existing creator DNAs file, creating new one');
+        }
+        
+        sourceDNAs[creatorDNA.channelName] = creatorDNA;
         await writeJSONToStorage(sourceFile, sourceDNAs);
 
         // Translate and save to other language file in the background
         (async () => {
             try {
-                const targetFile = currentLanguage === 'spanish' ? 'creator-dnas.json' : 'creator-dnas-spanish.json';
-                const targetLanguage = currentLanguage === 'spanish' ? 'en' : 'es';
+                const targetFile = requestLanguage === 'spanish' ? 'creator-dnas.json' : 'creator-dnas-spanish.json';
+                const targetLanguage = requestLanguage === 'spanish' ? 'en' : 'es';
                 
                 // Translate the channel analysis
-                const translatedDNA = JSON.parse(JSON.stringify(dnaData));
+                const translatedDNA = JSON.parse(JSON.stringify(creatorDNA));
                 
                 // Ensure channelName is preserved
                 const originalChannelName = translatedDNA.channelName;
@@ -1522,7 +1570,7 @@ app.post('/saveCreatorDNA', express.json(), async (req, res) => {
                     section.sectionBody = await translateText(section.sectionBody, targetLanguage);
                     
                     // Then translate the title if needed
-                    if (currentLanguage === 'spanish') {
+                    if (requestLanguage === 'spanish') {
                         // Map Spanish to English titles
                         const titleMap = {
                             'ADN del Creador': 'CreatorDNA',
@@ -1549,10 +1597,10 @@ app.post('/saveCreatorDNA', express.json(), async (req, res) => {
                 translatedDNA.channelName = originalChannelName;
 
                 const targetDNAs = await readJSONFromStorage(targetFile);
-                targetDNAs[dnaData.channelName] = translatedDNA;
+                targetDNAs[creatorDNA.channelName] = translatedDNA;
                 await writeJSONToStorage(targetFile, targetDNAs);
                 
-                console.log(`Background translation completed for channel ${dnaData.channelName}`);
+                console.log(`Background translation completed for channel ${creatorDNA.channelName}`);
             } catch (error) {
                 console.error('Error in background translation:', error);
             }
@@ -1754,6 +1802,11 @@ ${processedTranscripts.join('\n\n=== NEXT VIDEO ===\n\n')}
 app.post('/getMatch', upload.array('file', 5), async (req, res) => {
     try {
         const { brief, brandDNA } = req.body;
+        const language = req.body.language || 'english';
+        
+        console.log('Match Request - Body:', req.body);
+        console.log('Match Request - Language from body:', language);
+        
         const files = req.files || [];
         
         // Read available creator DNAs
@@ -1786,7 +1839,7 @@ Please analyze the brand DNA and above creator DNAs to find the best top 3 match
 
 YOU MUST OUTPUT the matches in the specified JSON format. NEVER GIVE ANY ADDITIONAL COMMENTARY. ONLY OUTPUT THE JSON`;
 
-        if (currentLanguage === 'spanish') {
+        if (language === 'spanish') {
             fullPrompt += "\nPLEASE RESPOND IN SPANISH";
         }
 
@@ -1939,6 +1992,26 @@ async function writeJSONToStorage(filename, data) {
 
 // Initialize current language
 let currentLanguage = 'english'; // Default language
+
+// Helper function to get language from request or use default
+function getLanguageFromRequest(req) {
+    console.log('getLanguageFromRequest - Request body:', req.body);
+    console.log('getLanguageFromRequest - Request query:', req.query);
+    
+    // First check if language is in the request body
+    if (req.body && req.body.language) {
+        console.log('getLanguageFromRequest - Found language in body:', req.body.language);
+        return req.body.language === 'spanish' ? 'spanish' : 'english';
+    }
+    // Then check if it's in query parameters
+    if (req.query && req.query.language) {
+        console.log('getLanguageFromRequest - Found language in query:', req.query.language);
+        return req.query.language === 'spanish' ? 'spanish' : 'english';
+    }
+    // Finally fall back to the server's global setting
+    console.log('getLanguageFromRequest - Using default language:', currentLanguage);
+    return currentLanguage;
+}
 
 // Endpoint to get the current language
 app.get('/getCurrentLanguage', (req, res) => {

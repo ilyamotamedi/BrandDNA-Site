@@ -237,11 +237,8 @@ const translations = {
 // --- translateUI FUNCTION ---
 async function translateUI() {
     try {
-        const response = await fetch(`${window.API_BASE_URL}/getCurrentLanguage`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch current language');
-        }
-        const { currentLanguage } = await response.json();
+        // Get language from sessionStorage instead of API call
+        const currentLanguage = getClientLanguage() || 'english'; // Default to English
 
         const elementsToTranslate = document.querySelectorAll('[data-translation-key]');
         elementsToTranslate.forEach(element => {
@@ -402,24 +399,13 @@ async function initializeSettings() {
         }
     });
 
-    // --- ADDED LANGUAGE SELECTION HANDLER --- (Corrected placement)
+    // --- MODIFIED LANGUAGE SELECTION HANDLER ---
     languageSelect.addEventListener('change', async (e) => {
         const selectedLanguage = e.target.value;
         try {
-            const response = await fetch(`${window.API_BASE_URL}/setCurrentLanguage`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ language: selectedLanguage })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update language');
-            }
-            await translateUI(); // Translate the UI after updating the language.
-            window.currentLanguage = selectedLanguage;
-
+            // Store language in sessionStorage instead of server API
+            setClientLanguage(selectedLanguage);
+            await translateUI(); // Translate the UI after updating the language
         } catch (error) {
             console.error('Error updating language:', error);
         }
@@ -470,7 +456,7 @@ async function initializeSettings() {
 
             // After populating models, load current selections
             await loadCurrentModels();
-            await loadCurrentLanguage();  // Moved inside loadAvailableModels
+            await loadCurrentLanguage();  // Still call this to set the dropdown value
         } catch (error) {
             console.error('Error loading models:', error);
         }
@@ -549,16 +535,20 @@ creatorDnaListSelect.addEventListener('change', (e) => {
 
 }
 
-// --- ADDED FUNCTION TO LOAD CURRENT LANGUAGE --- (Corrected placement)
+// --- MODIFIED FUNCTION TO LOAD CURRENT LANGUAGE ---
 async function loadCurrentLanguage() {
     try {
-        const response = await fetch(`${window.API_BASE_URL}/getCurrentLanguage`);
-        if (response.ok) {
-            const { currentLanguage } = await response.json();
-            languageSelect.value = currentLanguage;  // Set the dropdown to the current language
-            await translateUI(); // Translate the UI after loading the language.
-            window.currentLanguage = currentLanguage; //Store language in window object
-        }
+        // Get language from sessionStorage
+        const currentLanguage = getClientLanguage();
+        
+        // Set the dropdown to the current language
+        languageSelect.value = currentLanguage;
+        
+        // Translate the UI
+        await translateUI();
+        
+        // Store language in window object for immediate use
+        window.currentLanguage = currentLanguage;
     } catch (error) {
         console.error('Error loading current language:', error);
     }
@@ -766,12 +756,36 @@ function setupEnterKeyHandler() {
     });
 }
 
+// Add functions to get and set client language (similar to DNA functions)
+function setClientLanguage(language) {
+    if (language) {
+        sessionStorage.setItem('currentLanguage', language);
+    } else {
+        sessionStorage.removeItem('currentLanguage');
+    }
+    // Also set in window object for immediate use
+    window.currentLanguage = language || 'english';
+}
+
+function getClientLanguage() {
+    const storedLanguage = sessionStorage.getItem('currentLanguage');
+    return storedLanguage || 'english'; // Default to English
+}
+
+// Helper function to add language parameter to API requests
+function addLanguageToRequest(requestBody = {}) {
+    const language = getClientLanguage();
+    return { ...requestBody, language };
+}
+
 // Initialize everything when the DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
     // Clear any existing DNA state
     if (performance.navigation.type === 1) { // 1 indicates a page refresh
         // Clear DNA state only on refresh
         sessionStorage.removeItem('currentDNA');
+        // Also clear language state on refresh
+        sessionStorage.removeItem('currentLanguage');
     }
 
     console.log('DOM loaded, initializing...');

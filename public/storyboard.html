@@ -441,6 +441,9 @@ document.addEventListener('keydown', (e) => {
         loadingContainer.style.display = 'flex';
         resultsContainer.innerHTML = '';
 
+        const clientLanguage = getClientLanguage();
+        console.log('Client language detected:', clientLanguage);
+        
         const requestBody = {
             videoConcept: videoConcept,
             brandDNA: currentBrandDNA,
@@ -448,8 +451,11 @@ document.addEventListener('keydown', (e) => {
             integrationType: {
                 type: integrationType,
                 description: integrationDescriptions[integrationType]
-            }
+            },
+            language: clientLanguage
         };
+        
+        console.log('Sending storyboard request with language:', clientLanguage);
 
         const response = await fetch(`${window.API_BASE_URL}/generateStoryboard`, {
             method: 'POST',
@@ -469,6 +475,8 @@ document.addEventListener('keydown', (e) => {
 
         // Extract image prompts
         const imagePrompts = storyboard.map(act => act.image_prompt);
+        
+        console.log('Sending image generation request with language:', clientLanguage);
 
         // Generate images for all prompts
         const imageResponse = await fetch(`${window.API_BASE_URL}/generateStoryboardImages`, {
@@ -476,7 +484,10 @@ document.addEventListener('keydown', (e) => {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ imagePrompts })
+            body: JSON.stringify({ 
+                imagePrompts,
+                language: getClientLanguage()
+            })
         });
 
         if (!imageResponse.ok) {

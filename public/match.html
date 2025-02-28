@@ -253,10 +253,16 @@
                     brief = `The brand has attached a brief for their concept:\n\n${brief}`;
                 }
                 
+                const clientLanguage = getClientLanguage();
+                console.log('Match - Client language detected:', clientLanguage);
+                
                 // Create FormData and append files
                 const formData = new FormData();
                 formData.append('brief', brief);
                 formData.append('brandDNA', JSON.stringify(currentDNA));
+                formData.append('language', clientLanguage);
+                
+                console.log('Match - Sending request with language:', clientLanguage);
                 
                 // Add selected files
                 const fileList = document.getElementById('fileList');
