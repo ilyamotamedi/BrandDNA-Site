@@ -1573,33 +1573,44 @@ app.post('/saveCreatorDNA', express.json(), async (req, res) => {
                 // Ensure channelName is preserved
                 const originalChannelName = translatedDNA.channelName;
                 
-                // Translate each section
-                for (const section of translatedDNA.channelAnalysis) {
-                    // First translate the body to maintain context
-                    section.sectionBody = await translateText(section.sectionBody, targetLanguage);
-                    
-                    // Then translate the title if needed
-                    if (requestLanguage === 'spanish') {
-                        // Map Spanish to English titles
-                        const titleMap = {
-                            'ADN del Creador': 'CreatorDNA',
-                            'Personalidad del Creador': 'Creator Personality',
-                            'Estilo de Contenido': 'Content Style',
-                            'Conexión con la Audiencia': 'Audience Connection',
-                            'Historia del Canal': 'Channel Story'
-                        };
-                        section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguage);
-                    } else {
-                        // Map English to Spanish titles
-                        const titleMap = {
-                            'CreatorDNA': 'ADN del Creador',
-                            'Creator Personality': 'Personalidad del Creador',
-                            'Content Style': 'Estilo de Contenido',
-                            'Audience Connection': 'Conexión con la Audiencia',
-                            'Channel Story': 'Historia del Canal'
-                        };
-                        section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguage);
+                // Log the structure for troubleshooting
+                console.log(`DNA structure for ${originalChannelName}:`, 
+                    `channelAnalysis type: ${translatedDNA.channelAnalysis ? 
+                    (Array.isArray(translatedDNA.channelAnalysis) ? 'array' : typeof translatedDNA.channelAnalysis) : 
+                    'undefined'}`
+                );
+                
+                // Translate each section if channelAnalysis exists and is an array
+                if (translatedDNA.channelAnalysis && Array.isArray(translatedDNA.channelAnalysis)) {
+                    for (const section of translatedDNA.channelAnalysis) {
+                        // First translate the body to maintain context
+                        section.sectionBody = await translateText(section.sectionBody, targetLanguage);
+                        
+                        // Then translate the title if needed
+                        if (requestLanguage === 'spanish') {
+                            // Map Spanish to English titles
+                            const titleMap = {
+                                'ADN del Creador': 'CreatorDNA',
+                                'Personalidad del Creador': 'Creator Personality',
+                                'Estilo de Contenido': 'Content Style',
+                                'Conexión con la Audiencia': 'Audience Connection',
+                                'Historia del Canal': 'Channel Story'
+                            };
+                            section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguage);
+                        } else {
+                            // Map English to Spanish titles
+                            const titleMap = {
+                                'CreatorDNA': 'ADN del Creador',
+                                'Creator Personality': 'Personalidad del Creador',
+                                'Content Style': 'Estilo de Contenido',
+                                'Audience Connection': 'Conexión con la Audiencia',
+                                'Channel Story': 'Historia del Canal'
+                            };
+                            section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguage);
+                        }
                     }
+                } else {
+                    console.log(`Warning: channelAnalysis not found or not an array for channel ${creatorDNA.channelName}`);
                 }
                 
                 // Restore original channel name

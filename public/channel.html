@@ -437,12 +437,14 @@
 
                 // Save the complete DNA with channel details
                 const fullDNAData = {
-                    ...analysisData,
+                    // Extract channelAnalysis from the nested analysis property
+                    channelAnalysis: analysisData.analysis.channelAnalysis,
                     channelId,
                     channelName: currentChannelDetails.name,
                     channelUrl: currentChannelDetails.channelUrl,
                     channelThumbnail: currentChannelDetails.thumbnail,
-                    subscriberCount: currentChannelDetails.subscriberCount
+                    subscriberCount: currentChannelDetails.subscriberCount,
+                    channelDescription: currentChannelDetails.description // Also add this for completeness
                 };
 
                 await fetch(`${window.API_BASE_URL}/saveCreatorDNA`, {
