@@ -621,6 +621,9 @@ async function initializeDNASelector() {
     console.log('Initializing DNA selector...'); // Debug log
     const dnaButton = document.getElementById('dnaButton');
     const dnaMenu = document.querySelector('.dna-menu');
+    
+    // Store brand options for reference
+    let brandOptions = new Map();
 
     // First load the current DNA
     await loadCurrentDNA();
@@ -636,6 +639,15 @@ async function initializeDNASelector() {
 
     dnaMenu.addEventListener('click', (e) => {
         e.stopPropagation();
+        
+        // Handle DNA option clicks
+        const option = e.target.closest('.dna-option');
+        if (option) {
+            const optionId = option.dataset.id;
+            if (brandOptions.has(optionId)) {
+                setDNA(brandOptions.get(optionId));
+            }
+        }
     });
 
     document.addEventListener('click', () => {
@@ -647,15 +659,24 @@ async function initializeDNASelector() {
         try {
             const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
             const dnas = await response.json();
-
+            
+            // Clear previous brand options
+            brandOptions.clear();
+            
+            // Generate HTML for DNA options
             dnaMenu.innerHTML = Object.entries(dnas)
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(([brandName, data]) => `
-                <div class="dna-option" onclick='setDNA("${brandName.replace(/["']/g, "'")}")'>
+            .map(([brandName, data], index) => {
+                const optionId = `dna-option-${index}`;
+                brandOptions.set(optionId, brandName);
+                
+                return `
+                <div class="dna-option" data-id="${optionId}">
                     <div class="dna-option-color" style="background-color: ${data.brandColors[0]}"></div>
                     <div class="dna-option-name">${brandName}</div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         } catch (error) {
             console.error('Error loading DNAs:', error);
         }
