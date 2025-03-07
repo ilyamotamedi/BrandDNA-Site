@@ -7,6 +7,7 @@ env_variables:
   API_ENDPOINT: "us-central1-aiplatform.googleapis.com"
   GENERATE_CONTENT_API: "streamGenerateContent"
   BUCKET_NAME: "branddna-storage"
+  SUPADATA_API_KEY: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImtpZCI6IjEifQ.eyJpc3MiOiJuYWRsZXMiLCJpYXQiOiIxNzQxMzYzMTA0IiwicHVycG9zZSI6ImFwaV9hdXRoZW50aWNhdGlvbiIsInN1YiI6Ijc0MmVjOTYwNzg4NDQzZjQ5ZWNjNTliNDExMDJiZDRjIn0.vuuE4v728jrwdt4gvmvMffay_RtK8XRIts_KB12HdJI"
 
 instance_class: F2
 

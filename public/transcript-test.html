@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcript Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .input-container {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 70%;
+            padding: 8px;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>YouTube Transcript Test</h1>
+    <div class="input-container">
+        <input type="text" id="videoUrl" placeholder="Enter YouTube URL">
+        <button onclick="getTranscript()">Get Transcript</button>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        async function getTranscript() {
+            const videoUrl = document.getElementById('videoUrl').value;
+            const resultDiv = document.getElementById('result');
+            
+            if (!videoUrl) {
+                resultDiv.innerHTML = '<div class="error">Please enter a YouTube URL</div>';
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = 'Loading...';
+                
+                const response = await fetch('/test-transcript', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ videoUrl })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to get transcript');
+                }
+
+                resultDiv.innerHTML = `
+                    <h3>Transcript:</h3>
+                    <p>Language: ${data.lang}</p>
+                    <p>Available Languages: ${data.availableLangs.join(', ')}</p>
+                    <div style="margin-top: 10px;">${data.content}</div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html> 

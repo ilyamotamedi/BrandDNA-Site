@@ -1,12 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const { GoogleAuth } = require('google-auth-library');
-const TranscriptAPI = require('youtube-transcript-api');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs').promises;
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const { Supadata } = require('@supadata/js');
 
 const { Storage } = require('@google-cloud/storage');
 const storage = new Storage();
@@ -37,6 +37,37 @@ const LOCATION_ID = process.env.LOCATION_ID;
 
 const auth = new GoogleAuth({
     scopes: 'https://www.googleapis.com/auth/cloud-platform'
+});
+
+// Initialize Supadata client
+const supadata = new Supadata({
+    apiKey: process.env.SUPADATA_API_KEY,
+});
+
+// Test endpoint for transcripts
+app.post('/test-transcript', async (req, res) => {
+    try {
+        const { videoUrl } = req.body;
+        
+        // Extract video ID from URL
+        const videoId = videoUrl.split('v=')[1]?.split('&')[0];
+        if (!videoId) {
+            throw new Error('Invalid YouTube URL');
+        }
+
+        // Get transcript with plain text option
+        const transcript = await supadata.youtube.transcript({
+            videoId,
+            text: true
+        });
+
+        res.json(transcript);
+    } catch (error) {
+        console.error('Transcript error:', error);
+        res.status(500).json({ 
+            error: error instanceof Error ? error.message : 'Failed to get transcript'
+        });
+    }
 });
 
 // REMEMBER TO UPDATE THE 'currentLlmModel' + 'TOOL USE' FOR BRAND DNA WHEN UPDATING THESE MODELS
@@ -1666,18 +1697,41 @@ app.post('/getChannelTranscripts', async (req, res) => {
     const { videoUrls } = req.body;
     
     try {
-        const transcriptPromises = videoUrls.map(async (url) => {
-            const videoId = url.split('v=')[1];
+        // Helper function to delay execution
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Process transcripts sequentially instead of in parallel
+        const transcripts = [];
+        for (const url of videoUrls) {
+            const videoId = url.split('v=')[1]?.split('&')[0];
             if (!videoId) {
                 throw new Error(`Invalid YouTube URL: ${url}`);
             }
-            const transcript = await TranscriptAPI.getTranscript(videoId);
-            return { videoUrl: url, transcript };
-        });
+            
+            // Use Supadata API with rate limiting
+            const transcriptData = await supadata.youtube.transcript({
+                videoId,
+                text: false // Keep the detailed transcript format with timestamps
+            });
 
-        const transcripts = await Promise.all(transcriptPromises);
+            // Transform Supadata format to match your existing format
+            const transcript = transcriptData.content.map(segment => ({
+                text: segment.text,
+                offset: segment.offset,
+                duration: segment.duration
+            }));
+
+            transcripts.push({ videoUrl: url, transcript });
+
+            // Wait 1 second before the next request (except for the last one)
+            if (videoUrls.indexOf(url) < videoUrls.length - 1) {
+                await delay(1000);
+            }
+        }
+
         res.json({ success: true, transcripts });
     } catch (error) {
+        console.error('Transcript error:', error);
         res.status(500).json({ 
             success: false, 
             error: error.message 
