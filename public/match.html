@@ -373,6 +373,8 @@
 
     let subscriberCount = 'N/A';
     let channelUrl = '#';
+    let averageViews = null;
+    let viewsTimeframe = null;
 
     try {
         const response = await fetch(`${window.API_BASE_URL}/getCreatorDNAs`);
@@ -382,6 +384,12 @@
         if (creatorData) {
           subscriberCount = formatSubscriberCount(creatorData.subscriberCount);
           channelUrl = creatorData.channelUrl;
+          
+          // Get average views data if available
+          if (creatorData.averageViews) {
+              averageViews = formatSubscriberCount(creatorData.averageViews);
+              viewsTimeframe = creatorData.viewsTimeframe || "past 3 months";
+          }
         }
 
         const brandDomain = currentDNA.brandName.toLowerCase()
@@ -419,6 +427,16 @@
     const newCardsContainer = document.createElement('div');
     newCardsContainer.className = 'creator-cards';
 
+    // Create the average views label based on timeframe
+    let averageViewsLabel = "Avg views/video";
+    if (viewsTimeframe) {
+        if (viewsTimeframe === "past 3 months") {
+            averageViewsLabel = "Avg views/video (past 3 months)";
+        } else if (viewsTimeframe === "5 most recent videos") {
+            averageViewsLabel = "Avg views/video (5 most recent)";
+        }
+    }
+
     // --- Use createCard for the creator card ---
     const whyThisMatchWorksKey = 'Why This Match Works'; // Define the translation key
     newCardsContainer.appendChild(createCard(
@@ -428,6 +446,7 @@
             <span style="position: absolute; left: 0; right: 0; bottom: -2px; height: 2px; background: radial-gradient(circle at center, #F53151 0%, #F742BD 100%);  transition: transform 0.2s ease; transform-origin: left;"></span>
         </a>`,
         `<div style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #26201F;">${subscriberCount} subscribers</div>
+         ${averageViews ? `<div style="margin-bottom: 0.5rem; font-size: 0.9rem; color: #26201F;">${averageViews} ${averageViewsLabel}</div>` : ''}
          <p style="font-size: 0.9rem; margin-bottom: 1rem; color: #26201F;">Match Grade: ${currentCreator.matchGrade}</p>
          <h3 style="margin-bottom: 0.5rem; font-size: 0.9rem;">${translations[whyThisMatchWorksKey][window.currentLanguage]}</h3>
          <p>${currentCreator.reasonForMatch}</p>`,
