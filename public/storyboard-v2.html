@@ -540,7 +540,7 @@
         <main class="content">
             <div class="search-row">
                 <div class="search-box" style="flex: 0.4;">
-                    <input type="text" placeholder="Campaign brief/goal..." class="brand-input" id="campaignBrief">
+                    <input type="text" placeholder="Campaign brief/goal..." class="brand-input" id="campaignBrief" data-translation-key="storyboard-campaign-brief">
                 </div>
                 <div class="search-box" style="flex: 0.6;">
                     <input type="text" placeholder="Describe your video concept..." class="brand-input" id="videoConcept" data-translation-key="storyboard-concept-placeholder">
@@ -900,7 +900,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#666" class="regenerate-icon">
                             <path d="M482-160q-134 0-228-93t-94-227v-7l-64 64-56-56 160-160 160 160-56 56-64-64v7q0 100 70.5 170T482-240q26 0 51-6t49-18l60 60q-38 22-78 33t-82 11Zm278-161L600-481l56-56 64 64v-7q0-100-70.5-170T478-720q-26 0-51 6t-49 18l-60-60q38-22 78-33t82-11q134 0 228 93t94 227v7l64-64 56 56-160 160Z"/>
                         </svg>
-                        <span>Regenerate Frame</span>
+                        <span data-translation-key="storyboard-regenerate-frame">Regenerate Frame</span>
                     `;
                     regenerateBtn.addEventListener('click', () => toggleFeedbackArea(index));
                     cardFooter.appendChild(regenerateBtn);
@@ -923,11 +923,13 @@
                     
                     const submitBtn = document.createElement('button');
                     submitBtn.className = 'submit-feedback-btn';
+                    submitBtn.setAttribute('data-translation-key', 'storyboard-submit-button');
                     submitBtn.textContent = 'Submit';
                     submitBtn.addEventListener('click', () => regenerateFrame(index));
                     
                     const cancelBtn = document.createElement('button');
                     cancelBtn.className = 'cancel-feedback-btn';
+                    cancelBtn.setAttribute('data-translation-key', 'storyboard-cancel-button');
                     cancelBtn.textContent = 'Cancel';
                     cancelBtn.addEventListener('click', () => toggleFeedbackArea(index));
                     
@@ -1123,11 +1125,11 @@
             popup.innerHTML = `
                 <div class="popup-overlay"></div>
                 <div class="popup-content">
-                    <h3>Add New Scene</h3>
+                    <h3 data-translation-key="storyboard-add-scene">Add New Scene</h3>
                     <textarea placeholder="Describe the new scene you'd like to add..." id="new-scene-description"></textarea>
                     <div class="popup-actions">
-                        <button class="add-scene-confirm-btn">Add Scene</button>
-                        <button class="add-scene-cancel-btn">Cancel</button>
+                        <button class="add-scene-confirm-btn" data-translation-key="storyboard-add-scene-button">Add Scene</button>
+                        <button class="add-scene-cancel-btn" data-translation-key="storyboard-cancel-button">Cancel</button>
                     </div>
                 </div>
             `;
@@ -1599,7 +1601,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#666" class="regenerate-icon">
                     <path d="M482-160q-134 0-228-93t-94-227v-7l-64 64-56-56 160-160 160 160-56 56-64-64v7q0 100 70.5 170T482-240q26 0 51-6t49-18l60 60q-38 22-78 33t-82 11Zm278-161L600-481l56-56 64 64v-7q0-100-70.5-170T478-720q-26 0-51 6t-49 18l-60-60q38-22 78-33t82-11q134 0 228 93t94 227v7l64-64 56 56-160 160Z"/>
                 </svg>
-                <span>Regenerate Frame</span>
+                <span data-translation-key="storyboard-regenerate-frame">Regenerate Frame</span>
             `;
             
             cardFooter.appendChild(regenerateBtn);
@@ -1618,11 +1620,15 @@
             
             const submitBtn = document.createElement('button');
             submitBtn.className = 'submit-feedback-btn';
+            submitBtn.setAttribute('data-translation-key', 'storyboard-submit-button');
             submitBtn.textContent = 'Submit';
+            submitBtn.addEventListener('click', () => regenerateFrame(index));
             
             const cancelBtn = document.createElement('button');
             cancelBtn.className = 'cancel-feedback-btn';
+            cancelBtn.setAttribute('data-translation-key', 'storyboard-cancel-button');
             cancelBtn.textContent = 'Cancel';
+            cancelBtn.addEventListener('click', () => toggleFeedbackArea(index));
             
             feedbackActions.appendChild(submitBtn);
             feedbackActions.appendChild(cancelBtn);

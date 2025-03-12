@@ -54,6 +54,7 @@
             height: 40px;
             border: 1px solid #E0E0E0;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
         }
         
         .match-type-option {
@@ -70,20 +71,17 @@
             color: #26201f37;
             z-index: 2;
             transition: color 0.3s ease;
+            white-space: nowrap;
         }
         
         .match-type-option.active {
-            background: #26201F;
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            font-weight: 700;
+            color: #26201F;
         }
         
         .match-type-slider {
             position: absolute;
             height: calc(100% - 6px);
-            width: 32%;
+            width: calc(33.33% - 8px);
             background-color: #d8d8d8;
             border-radius: 18px;
             top: 3px;
@@ -91,18 +89,10 @@
             transition: transform 0.3s ease;
             z-index: 1;
         }
-        
-        .match-type-slider.position-1 {
-            transform: translateX(0);
-        }
-        
-        .match-type-slider.position-2 {
-            transform: translateX(100%);
-        }
-        
-        .match-type-slider.position-3 {
-            transform: translateX(200%);
-        }
+
+        .match-type-slider.position-1 { transform: translateX(0); }
+        .match-type-slider.position-2 { transform: translateX(100%); }
+        .match-type-slider.position-3 { transform: translateX(200%); }
         
         .search-input-container {
             display: flex;
@@ -618,32 +608,28 @@
                 });
             });
             
-            // Calculate and set exact slider positions
+            // Replace the entire adjustSliderPositions function with this simpler version
             function adjustSliderPositions() {
                 const selector = document.querySelector('.match-type-selector');
                 if (!selector) return;
-                
-                const optionWidth = selector.offsetWidth / 3;
-                const sliderWidth = optionWidth - 6; // Account for padding
-                
+
                 const slider = document.querySelector('.match-type-slider');
-                if (slider) {
-                    slider.style.width = `${sliderWidth}px`;
-                    
-                    // Update the CSS for position classes
-                    const style = document.createElement('style');
-                    style.textContent = `
-                        .match-type-slider.position-1 { transform: translateX(0); }
-                        .match-type-slider.position-2 { transform: translateX(${optionWidth}px); }
-                        .match-type-slider.position-3 { transform: translateX(${optionWidth * 2}px); }
-                    `;
-                    document.head.appendChild(style);
-                }
+                if (!slider) return;
+
+                // Set the width to one-third of the container minus padding
+                const containerWidth = selector.offsetWidth;
+                const optionWidth = (containerWidth - 12) / 3; // 12px for container padding
+                slider.style.width = `${optionWidth}px`;
             }
-            
-            // Run on load and on window resize
-            adjustSliderPositions();
+
+            // Call on window resize and language change
             window.addEventListener('resize', adjustSliderPositions);
+            document.getElementById('languageSelect').addEventListener('change', () => {
+                setTimeout(adjustSliderPositions, 100);
+            });
+
+            // Initial setup
+            adjustSliderPositions();
         }
         
         function handleFileSelect(event) {

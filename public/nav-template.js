@@ -263,6 +263,47 @@ const translations = {
     'scene-5': {
         english: 'Scene 5',
         spanish: 'Escena 5'
+    },
+    // --- STORYBOARD V2 PAGE TRANSLATIONS ---
+    'storyboard-campaign-brief': {
+        english: 'Campaign brief/goal...',
+        spanish: 'Brief/objetivo de campaña...'
+    },
+    'storyboard-regenerate-frame': {
+        english: 'Regenerate Frame',
+        spanish: 'Regenerar Escena'
+    },
+    'storyboard-change-frame-help': {
+        english: 'Describe how you want to change this frame...',
+        spanish: 'Describe cómo quieres cambiar esta escena...'
+    },
+    'storyboard-submit-button': {
+        english: 'Submit',
+        spanish: 'Enviar'
+    },
+    'storyboard-cancel-button': {
+        english: 'Cancel',
+        spanish: 'Cancelar'
+    },
+    'storyboard-add-scene': {
+        english: 'Add New Scene',
+        spanish: 'Añadir Nueva Escena'
+    },
+    'storyboard-describe-new-scene': {
+        english: 'Describe the new scene you\'d like to add...',
+        spanish: 'Describe la nueva escena que te gustaría añadir...'
+    },
+    'storyboard-add-scene-button': {
+        english: 'Add Scene',
+        spanish: 'Añadir Escena'
+    },
+    'storyboard-regenerating-frame': {
+        english: 'Regenerating frame...',
+        spanish: 'Regenerando escena...'
+    },
+    'storyboard-generating-scene': {
+        english: 'Generating scene...',
+        spanish: 'Generando escena...'
     }
 };
 
