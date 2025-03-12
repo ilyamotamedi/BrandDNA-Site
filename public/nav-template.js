@@ -203,6 +203,14 @@ const translations = {
         english: 'REGENERATE IDEAS',
         spanish: 'REGENERAR IDEAS'
     },
+    'match-storyboard-idea': {
+        english: 'STORYBOARD IDEA',
+        spanish: 'GUION GRÁFICO'
+    },
+    'match-regenerating-ideas': {
+        english: 'Regenerating ideas...',
+        spanish: 'Regenerando ideas...'
+    },
     // --- STORYBOARD PAGE TRANSLATIONS ---
     'storyboard-concept-placeholder': {
         english: 'Describe your video concept...',

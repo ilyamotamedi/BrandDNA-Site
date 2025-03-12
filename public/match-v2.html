@@ -70,8 +70,6 @@
             color: #26201f37;
             z-index: 2;
             transition: color 0.3s ease;
-            text-align: center;
-            white-space: nowrap;
         }
         
         .match-type-option.active {
@@ -85,7 +83,7 @@
         .match-type-slider {
             position: absolute;
             height: calc(100% - 6px);
-            width: calc(33.33% - 6px);
+            width: 32%;
             background-color: #d8d8d8;
             border-radius: 18px;
             top: 3px;
@@ -99,11 +97,11 @@
         }
         
         .match-type-slider.position-2 {
-            transform: translateX(calc(100% + 3px));
+            transform: translateX(100%);
         }
         
         .match-type-slider.position-3 {
-            transform: translateX(calc(200% + 6px));
+            transform: translateX(200%);
         }
         
         .search-input-container {
@@ -580,6 +578,20 @@
             // Add event listener to the overlay to close details when clicked
             document.getElementById('creatorDetailsOverlay').addEventListener('click', closeCreatorDetails);
             
+            // Add event listener for language changes to update placeholders
+            document.getElementById('languageSelect').addEventListener('change', () => {
+                // Update placeholders for textareas after language change
+                setTimeout(() => {
+                    const textareas = document.querySelectorAll('textarea[data-translation-key]');
+                    textareas.forEach(textarea => {
+                        const key = textarea.dataset.translationKey;
+                        const currentLanguage = getClientLanguage() || 'english';
+                        if (translations[key] && translations[key][currentLanguage]) {
+                            textarea.setAttribute('placeholder', translations[key][currentLanguage]);
+                        }
+                    });
+                }, 100); // Small delay to ensure translateUI has completed
+            });
         });
         
         // Initialize the match type selector
@@ -611,27 +623,22 @@
                 const selector = document.querySelector('.match-type-selector');
                 if (!selector) return;
                 
-                // Remove any previously added style tag
-                const existingStyle = document.getElementById('slider-positions-style');
-                if (existingStyle) {
-                    existingStyle.remove();
+                const optionWidth = selector.offsetWidth / 3;
+                const sliderWidth = optionWidth - 6; // Account for padding
+                
+                const slider = document.querySelector('.match-type-slider');
+                if (slider) {
+                    slider.style.width = `${sliderWidth}px`;
+                    
+                    // Update the CSS for position classes
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        .match-type-slider.position-1 { transform: translateX(0); }
+                        .match-type-slider.position-2 { transform: translateX(${optionWidth}px); }
+                        .match-type-slider.position-3 { transform: translateX(${optionWidth * 2}px); }
+                    `;
+                    document.head.appendChild(style);
                 }
-                
-                const selectorWidth = selector.offsetWidth;
-                const optionWidth = selectorWidth / 3;
-                
-                // Create new style element
-                const style = document.createElement('style');
-                style.id = 'slider-positions-style';
-                style.textContent = `
-                    .match-type-slider {
-                        width: calc(${optionWidth}px - 12px);
-                    }
-                    .match-type-slider.position-1 { transform: translateX(6px); }
-                    .match-type-slider.position-2 { transform: translateX(${optionWidth + 0}px); }
-                    .match-type-slider.position-3 { transform: translateX(${optionWidth * 2 - 6}px); }
-                `;
-                document.head.appendChild(style);
             }
             
             // Run on load and on window resize
@@ -719,6 +726,11 @@
                 // For "expected" type, no additional instructions needed
                 
                 const clientLanguage = getClientLanguage();
+                
+                // Add language-specific instructions if Spanish is selected
+                if (clientLanguage === 'spanish') {
+                    brief += `\n\nIMPORTANT: Please generate all content ideas and explanations in Spanish.`;
+                }
                 
                 // Create FormData and append files
                 const formData = new FormData();
@@ -809,6 +821,15 @@
                     subscriberCount = formatSubscriberCount(creator.subscriberCount);
                 }
                 
+                // Get the current language for translations
+                const currentLanguage = getClientLanguage() || 'english';
+                
+                // Get translated text for storyboard button
+                const storyboardBtnText = translations['match-storyboard-idea'] && 
+                                         translations['match-storyboard-idea'][currentLanguage] ? 
+                                         translations['match-storyboard-idea'][currentLanguage] : 
+                                         'STORYBOARD IDEA';
+                
                 // Parse content ideas for the expanded view
                 let ideasHtml = '';
                 if (creator.contentIdeas) {
@@ -843,7 +864,7 @@
                         <ul class="creator-card-ideas">
                             ${ideas.map(idea => `
                                 <li class="creator-card-idea-item">${idea}
-                                    <button class="storyboard-idea-btn" onclick="openStoryboardWithIdea('${creator.creatorName}', this.parentElement.textContent)">STORYBOARD IDEA</button>
+                                    <button class="storyboard-idea-btn" onclick="openStoryboardWithIdea('${creator.creatorName}', this.parentElement.textContent)" data-translation-key="match-storyboard-idea">${storyboardBtnText}</button>
                                 </li>
                             `).join('')}
                         </ul>
@@ -882,13 +903,13 @@
                                 ${ideasHtml}
                                 <div class="ideas-loading">
                                     <div class="ideas-loading-spinner"></div>
-                                    <span>Regenerating ideas...</span>
+                                    <span data-translation-key="match-regenerating-ideas">Regenerating ideas...</span>
                                 </div>
                                 <div class="ideas-feedback-container">
                                     <textarea 
                                         class="ideas-feedback-input" 
-                                        data-translation-placeholder-key="match-change-ideas"
                                         placeholder="Change these ideas..."
+                                        data-translation-key="match-change-ideas"
                                     ></textarea>
                                     <button class="regenerate-ideas-btn" data-creator-index="${index}" data-translation-key="match-regenerate-ideas">REGENERATE IDEAS</button>
                                 </div>
@@ -906,10 +927,20 @@
                     
                     // Toggle the current card
                     card.classList.toggle('expanded');
-                    toggleButton.setAttribute('data-translation-key', 
-                        card.classList.contains('expanded') ? 'match-hide-details' : 'match-view-details'
-                    );
-                    translateUI(); // Update the text based on current language
+                    
+                    // Get the appropriate translation key based on expanded state
+                    const translationKey = card.classList.contains('expanded') ? 'match-hide-details' : 'match-view-details';
+                    
+                    // Get the current language
+                    const currentLanguage = getClientLanguage() || 'english';
+                    
+                    // Set the button text based on the translation
+                    if (translations[translationKey] && translations[translationKey][currentLanguage]) {
+                        toggleButton.textContent = translations[translationKey][currentLanguage];
+                    } else {
+                        // Fallback if translation not found
+                        toggleButton.textContent = card.classList.contains('expanded') ? 'Hide Details' : 'View Details';
+                    }
                 });
                 
                 // Also add click event to the card header for easier toggling
@@ -917,10 +948,20 @@
                 cardHeader.addEventListener('click', () => {
                     // Toggle the current card
                     card.classList.toggle('expanded');
-                    toggleButton.setAttribute('data-translation-key', 
-                        card.classList.contains('expanded') ? 'match-hide-details' : 'match-view-details'
-                    );
-                    translateUI(); // Update the text based on current language
+                    
+                    // Get the appropriate translation key based on expanded state
+                    const translationKey = card.classList.contains('expanded') ? 'match-hide-details' : 'match-view-details';
+                    
+                    // Get the current language
+                    const currentLanguage = getClientLanguage() || 'english';
+                    
+                    // Set the button text based on the translation
+                    if (translations[translationKey] && translations[translationKey][currentLanguage]) {
+                        toggleButton.textContent = translations[translationKey][currentLanguage];
+                    } else {
+                        // Fallback if translation not found
+                        toggleButton.textContent = card.classList.contains('expanded') ? 'Hide Details' : 'View Details';
+                    }
                 });
                 cardHeader.style.cursor = 'pointer';
                 
@@ -1000,13 +1041,29 @@
                 // Get the brief from the input
                 const brief = document.querySelector('.brand-input').value.trim();
                 
+                // Get the current language
+                const clientLanguage = getClientLanguage() || 'english';
+                
+                // Get translated text for storyboard button
+                const storyboardBtnText = translations['match-storyboard-idea'] && 
+                                         translations['match-storyboard-idea'][clientLanguage] ? 
+                                         translations['match-storyboard-idea'][clientLanguage] : 
+                                         'STORYBOARD IDEA';
+                
+                // Prepare feedback with language instruction if Spanish is selected
+                let enhancedFeedback = feedback;
+                if (clientLanguage === 'spanish') {
+                    enhancedFeedback += "\n\nIMPORTANT: Please generate these content ideas in Spanish.";
+                }
+                
                 // Prepare the data for the API call
                 const requestData = {
                     brandDNA: currentDNA,
                     creatorDNA: creator,
                     currentIdeas: currentIdeas,
-                    feedback: feedback,
-                    brief: brief
+                    feedback: enhancedFeedback,
+                    brief: brief,
+                    language: clientLanguage
                 };
                 
                 // Make the API call
@@ -1028,6 +1085,15 @@
                 if (data.contentIdeas) {
                     matchesData[creatorIndex].contentIdeas = data.contentIdeas;
                     
+                    // Get the current language for translations
+                    const currentLanguage = getClientLanguage() || 'english';
+                    
+                    // Get translated text for storyboard button
+                    const storyboardBtnText = translations['match-storyboard-idea'] && 
+                                             translations['match-storyboard-idea'][currentLanguage] ? 
+                                             translations['match-storyboard-idea'][currentLanguage] : 
+                                             'STORYBOARD IDEA';
+                    
                     // Update the display
                     let newIdeasHtml = '';
                     if (Array.isArray(data.contentIdeas)) {
@@ -1035,29 +1101,184 @@
                             <ul class="creator-card-ideas">
                                 ${data.contentIdeas.map(idea => `
                                     <li class="creator-card-idea-item">${idea}
-                                        <button class="storyboard-idea-btn" onclick="openStoryboardWithIdea('${creator.creatorName}', this.parentElement.textContent)">STORYBOARD IDEA</button>
+                                        <button class="storyboard-idea-btn" onclick="openStoryboardWithIdea('${creator.creatorName}', this.parentElement.textContent)" data-translation-key="match-storyboard-idea">${storyboardBtnText}</button>
                                     </li>
                                 `).join('')}
                             </ul>
                         `;
                     } else {
+                        // Handle string format
+                        const ideas = data.contentIdeas.split('.').filter(idea => idea.trim().length > 0).map(idea => idea.trim());
                         newIdeasHtml = `
-                            <p>${data.contentIdeas}</p>
+                            <ul class="creator-card-ideas">
+                                ${ideas.map(idea => `
+                                    <li class="creator-card-idea-item">${idea}
+                                        <button class="storyboard-idea-btn" onclick="openStoryboardWithIdea('${creator.creatorName}', this.parentElement.textContent)" data-translation-key="match-storyboard-idea">${storyboardBtnText}</button>
+                                    </li>
+                                `).join('')}
+                            </ul>
                         `;
                     }
                     
-                    ideasContainer.innerHTML = newIdeasHtml;
+                    // Replace the old ideas list with the new one
+                    if (ideasList) {
+                        ideasList.remove();
+                    }
+                    ideasContainer.insertAdjacentHTML('afterbegin', newIdeasHtml);
+                    
+                    // Clear the feedback input
+                    feedbackInput.value = '';
                 }
+                
             } catch (error) {
-                console.error('Error:', error);
-                ideasContainer.innerHTML = '<p>Error: Failed to regenerate content ideas.</p>';
+                console.error('Error regenerating ideas:', error);
+                alert(`Error: ${error.message}`);
             } finally {
+                // Hide loading state
                 button.disabled = false;
                 button.classList.remove('loading');
                 loadingIndicator.classList.remove('active');
+                
+                // Show the ideas list again
+                const newIdeasList = card.querySelector('.creator-card-ideas');
+                if (newIdeasList) {
+                    newIdeasList.style.display = 'block';
+                }
             }
         }
-
+        
+        // Function to show creator details
+        function showCreatorDetails(creatorIndex) {
+            console.log('Showing creator details for index:', creatorIndex);
+            
+            const creator = matchesData[creatorIndex];
+            if (!creator) {
+                console.error('Creator data not found for index:', creatorIndex);
+                return;
+            }
+            
+            console.log('Creator data:', creator);
+            
+            const detailsContainer = document.getElementById('creatorDetails');
+            const detailsOverlay = document.getElementById('creatorDetailsOverlay');
+            const contentContainer = detailsContainer.querySelector('.creator-details-content');
+            
+            // Format subscriber count
+            let subscriberCount = 'N/A';
+            if (creator.subscriberCount) {
+                subscriberCount = formatSubscriberCount(creator.subscriberCount);
+            }
+            
+            // Format average views
+            let averageViews = '';
+            if (creator.averageViews) {
+                averageViews = `<div>${formatSubscriberCount(creator.averageViews)} avg. views/video</div>`;
+            }
+            
+            // Channel URL
+            const channelUrl = creator.channelUrl || '#';
+            
+            // Parse content ideas - handle different formats
+            let ideasHtml = '';
+            if (creator.contentIdeas) {
+                // Make sure contentIdeas is a string before trying to split it
+                const contentIdeasStr = typeof creator.contentIdeas === 'string' 
+                    ? creator.contentIdeas 
+                    : Array.isArray(creator.contentIdeas) 
+                        ? creator.contentIdeas.join('. ') 
+                        : JSON.stringify(creator.contentIdeas);
+                
+                // Get the current language for translations
+                const currentLanguage = getClientLanguage() || 'english';
+                
+                // Get translated text for storyboard button
+                const storyboardBtnText = translations['match-storyboard-idea'] && 
+                                         translations['match-storyboard-idea'][currentLanguage] ? 
+                                         translations['match-storyboard-idea'][currentLanguage] : 
+                                         'STORYBOARD IDEA';
+                
+                let ideas = [];
+                
+                try {
+                    // Try to split by periods followed by commas first
+                    ideas = contentIdeasStr.split('.,').map(idea => idea.trim().replace(/\.$/, ''));
+                    
+                    // If we only got one item, try splitting by periods
+                    if (ideas.length === 1 && contentIdeasStr.includes('.')) {
+                        ideas = contentIdeasStr.split('.').filter(idea => idea.trim().length > 0).map(idea => idea.trim());
+                    }
+                    
+                    // If still only one or empty, just use the whole string
+                    if (ideas.length <= 1) {
+                        ideas = [contentIdeasStr];
+                    }
+                } catch (error) {
+                    console.error('Error parsing content ideas:', error);
+                    ideas = [contentIdeasStr];
+                }
+                
+                ideasHtml = `
+                    <ul class="creator-details-ideas">
+                        ${ideas.map(idea => `
+                            <li class="creator-details-idea-item">${idea}
+                                <button class="storyboard-idea-btn" onclick="openStoryboardWithIdea('${creator.creatorName}', this.parentElement.textContent)" data-translation-key="match-storyboard-idea">${storyboardBtnText}</button>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+            } else {
+                ideasHtml = '<p>No content ideas available.</p>';
+            }
+            
+            // Build HTML
+            contentContainer.innerHTML = `
+                <div class="creator-details-header">
+                    <img 
+                        src="${creator.channelThumbnail ? `/proxy-image?url=${encodeURIComponent(creator.channelThumbnail)}` : '/icons/person.svg'}" 
+                        alt="${creator.creatorName}" 
+                        class="creator-details-img"
+                        crossorigin="anonymous"
+                    >
+                    <div>
+                        <a href="${channelUrl}" target="_blank" class="creator-details-name" style="text-decoration: none; color: inherit;">
+                            ${creator.creatorName}
+                            <span style="margin-left: 4px; font-size: 0.9em;">↗</span>
+                        </a>
+                        <div class="creator-details-grade">Match Grade: ${creator.matchGrade || 'N/A'}</div>
+                        <div>${subscriberCount} subscribers</div>
+                        ${averageViews}
+                    </div>
+                </div>
+                
+                <div class="creator-details-section">
+                    <div class="creator-details-section-title" data-translation-key="match-why-works">Why This Match Works</div>
+                    <div class="creator-details-section-content">${creator.reasonForMatch || 'No information available.'}</div>
+                </div>
+                
+                <div class="creator-details-section">
+                    <div class="creator-details-section-title" data-translation-key="match-content-ideas">Content Ideas</div>
+                    ${ideasHtml}
+                </div>
+            `;
+            
+            // Show the details container and overlay
+            detailsContainer.classList.add('active');
+            detailsOverlay.classList.add('active');
+            
+            // Ensure the popup is visible and in front of other elements
+            detailsContainer.style.zIndex = '100';
+            
+            console.log('Creator details popup activated');
+        }
+        
+        // Function to close creator details
+        function closeCreatorDetails() {
+            const detailsContainer = document.getElementById('creatorDetails');
+            const detailsOverlay = document.getElementById('creatorDetailsOverlay');
+            detailsContainer.classList.remove('active');
+            detailsOverlay.classList.remove('active');
+        }
+        
         // Helper function to format subscriber count
         function formatSubscriberCount(count) {
             if (count >= 1000000) {
@@ -1067,6 +1288,25 @@
             }
             return count;
         }
+        
+        // Function to open storyboard with the selected idea
+        function openStoryboardWithIdea(creatorName, ideaText) {
+            // Clean up the idea text by removing the button text
+            const cleanIdea = ideaText.replace('STORYBOARD IDEA', '').trim();
+            
+            // Get the campaign brief from the input
+            const campaignBrief = document.querySelector('.brand-input').value.trim();
+            
+            // Encode parameters for URL
+            const params = new URLSearchParams();
+            params.set('concept', cleanIdea);
+            params.set('integration', 'full_integration'); // Default to full integration
+            params.set('creator', creatorName);
+            params.set('campaignBrief', campaignBrief); // Add campaign brief
+            
+            // Navigate to storyboard-v2.html with the parameters in a new tab
+            window.open(`storyboard-v2.html?${params.toString()}`, '_blank');
+        }
     </script>
 </body>
-</html>
+</html> 
