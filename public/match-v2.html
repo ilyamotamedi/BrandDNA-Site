@@ -532,6 +532,13 @@
             
             // Add event listener to the overlay to close details when clicked
             document.getElementById('creatorDetailsOverlay').addEventListener('click', closeCreatorDetails);
+            
+            // Hide other navigation items except for match-making
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                // Only show the match-making nav item
+                    item.style.display = 'none';
+            });
         });
         
         // Initialize the match type selector

@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand DNA - Storyboarding V2</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap">
+    <link rel="stylesheet" href="styles.css">
+    <script src="nav-template.js"></script>
+    <style>
+        /* Custom styles for storyboard-v2 */
+        .storyboard-results-container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 2rem auto;
+            position: relative;
+        }
+
+        .storyboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .storyboard-grid-row2 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 75%; /* To align with the 4-column grid above */
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 1200px) {
+            .storyboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .storyboard-grid-row2 {
+                grid-template-columns: repeat(2, 1fr);
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .storyboard-grid, 
+            .storyboard-grid-row2 {
+                grid-template-columns: 1fr;
+                width: 100%;
+            }
+        }
+
+        .storyboard-card {
+            background: white;
+            border-radius: 16px;
+            padding: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            height: 100%; /* Ensure all cards have the same height */
+        }
+
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0 0 0.5rem 0;
+        }
+
+        .card-footer {
+            padding: 0.5rem 1rem;
+            border-top: 1px solid #f0f0f0;
+            margin-top: auto; /* Push to bottom */
+        }
+
+        .storyboard-image {
+            width: 100%;
+            height: auto;
+            border-radius: 0;
+            display: block;
+        }
+
+        .storyboard-image-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            background-color: #f6f6f6;
+            border-radius: 8px;
+        }
+
+        .brand-card-title {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            padding: 0 1rem;
+            font-size: 1rem;
+        }
+
+        .brand-card-body {
+            padding: 0 1rem;
+            font-size: 0.85rem;
+            color: #444;
+            line-height: 1.4;
+            max-height: none;
+            overflow-y: auto;
+            flex-grow: 1; /* Allow the body to grow */
+        }
+        
+        .creator-select-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0rem;
+            margin-top: 1rem;
+            align-items: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .creator-select-box {
+            flex-grow: 1;
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            background: white;
+            overflow: visible;
+            display: flex;
+            align-items: center;
+        }
+
+        .creator-input {
+            width: 100%;
+            padding: 0.8rem 1.5rem;
+            font-family: 'Unbounded', sans-serif;
+            border: none;
+            outline: none;
+            background: transparent;
+        }
+
+        .creator-dropdown-arrow {
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            padding: 0px;
+            opacity: 0.7;
+            margin-right: 1rem;
+        }
+
+        .creator-dropdown-arrow:hover {
+            opacity: 1.0;
+        }
+
+        .creator-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            max-height: 16.5rem;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+        }
+
+        .creator-dropdown-menu.active {
+            display: block;
+        }
+
+        .creator-dropdown-item {
+            padding: 1rem 1.5rem;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 0.9rem;
+            color: #26201F;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            height: 3.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .image-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+        .download-button {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+            padding: 6px;
+            z-index: 1;
+        }
+
+        .download-button:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .download-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .scene-number {
+            padding: 0 1rem;
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+            margin-top: 0.5rem;
+        }
+
+        .prompt-section {
+            padding: 0 1rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .prompt-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 0.8rem;
+            padding: 0.5rem 0;
+        }
+
+        .prompt-button:hover {
+            color: #000;
+        }
+
+        .chevron-icon {
+            transition: transform 0.2s ease;
+        }
+
+        .prompt-button.expanded .chevron-icon {
+            transform: rotate(180deg);
+        }
+
+        .prompt-content {
+            font-size: 0.85rem;
+            color: #666;
+            background: #f8f8f8;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            white-space: pre-wrap;
+            display: none;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 1rem;
+            max-width: 600px;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .search-row + .search-row {
+            margin-top: 0rem;
+        }
+
+        .integration-select {
+            width: 180px;
+            padding: 0.8rem 1.5rem;
+            font-family: 'Unbounded', sans-serif;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            background: white;
+            outline: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            appearance: none;
+            background-image: url('/icons/drop_down.svg');
+            background-repeat: no-repeat;
+            background-position: calc(100% - 1rem) center;
+            background-size: 28px;
+        }
+
+        .integration-select option[value=""] {
+            color: #999;
+        }
+
+        .integration-select.placeholder {
+            color: #999;
+        }
+
+        .integration-select:not(.placeholder) {
+            color: #26201F;
+        }
+
+        .regenerate-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 0.8rem;
+            padding: 0;
+            margin: 0;
+            transition: all 0.2s ease;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .regenerate-btn:hover {
+            color: #000;
+        }
+
+        .regenerate-icon {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .regenerate-btn:hover .regenerate-icon {
+            transform: rotate(180deg);
+        }
+
+        .feedback-container {
+            padding: 1rem;
+            margin-top: 0;
+            display: none;
+            border-top: 1px solid #f0f0f0;
+            background-color: #f9f9f9;
+        }
+
+        .feedback-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 0.8rem;
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
+
+        .feedback-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .submit-feedback-btn, .cancel-feedback-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 16px;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+
+        .submit-feedback-btn {
+            background: linear-gradient(90deg, #F53151 0%, #F742BD 100%);
+            color: white;
+            border: none;
+        }
+
+        .submit-feedback-btn:hover {
+            opacity: 0.9;
+        }
+
+        .cancel-feedback-btn {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+        }
+
+        .cancel-feedback-btn:hover {
+            background: #e9e9e9;
+        }
+
+        .regenerating-indicator {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            flex-direction: column;
+        }
+
+        .regenerating-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #F53151;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="nav-placeholder"></div>
+        <main class="content">
+            <div class="search-row">
+                <div class="search-box" style="flex: 1;">
+                    <input type="text" placeholder="Describe your video concept..." class="brand-input" id="videoConcept" data-translation-key="storyboard-concept-placeholder">
+                </div>
+                <select class="integration-select placeholder" id="integrationType">
+                    <option value="" disabled selected data-translation-key="storyboard-integration-placeholder">Integration</option>
+                    <option value="brand_mention" data-translation-key="integration-mention">Mention</option>
+                    <option value="mid_video" data-translation-key="integration-adbreak">Ad Break</option>
+                    <option value="full_integration" data-translation-key="integration-full">Full Integration</option>
+                </select>
+            </div>
+            <div class="search-row">
+                <div class="creator-select-box" style="flex: 1;">
+                    <input type="text" placeholder="Select a creator..." class="creator-input" id="creatorInput" readonly data-translation-key="storyboard-creator-placeholder">
+                    <img src="/icons/drop_down.svg" alt="Dropdown" class="creator-dropdown-arrow" id="creatorDropdownArrow">
+                    <div class="creator-dropdown-menu" id="creatorDropdown"></div>
+                </div>
+                <button class="get-dna-btn" onclick="generateStoryboard()" style="flex-shrink: 0;" data-translation-key="storyboard-generate-button">GENERATE STORYBOARD</button>
+            </div>
+            
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">generating...</div>
+            </div>
+            
+            <div class="storyboard-results-container">
+                <div class="storyboard-grid" id="storyboardGridRow1">
+                    <!-- First 4 frames will be added here -->
+                </div>
+                <div class="storyboard-grid-row2" id="storyboardGridRow2">
+                    <!-- Last 3 frames will be added here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let selectedCreatorDNA = null;
+        let currentStoryboard = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await translateUI();
+            
+            // Hide other navigation items except for storyboarding
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                // Only show the storyboarding nav item
+                if (!item.getAttribute('href').includes('storyboard.html')) {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Dropdown handling
+            const dropdownArrow = document.getElementById('creatorDropdownArrow');
+            const dropdownMenu = document.getElementById('creatorDropdown');
+
+            dropdownArrow.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('active');
+                if (dropdownMenu.classList.contains('active')) {
+                    await loadCreatorOptions();
+                }
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!dropdownMenu.contains(e.target) && !dropdownArrow.contains(e.target)) {
+                    dropdownMenu.classList.remove('active');
+                }
+            });
+
+            // Handle placeholder state for integration select
+            const integrationSelect = document.getElementById('integrationType');
+            
+            integrationSelect.addEventListener('change', function() {
+                if (this.value) {
+                    this.classList.remove('placeholder');
+                } else {
+                    this.classList.add('placeholder');
+                }
+            });
+
+            // Check for URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const concept = urlParams.get('concept');
+            const integration = urlParams.get('integration');
+            const creator = urlParams.get('creator');
+
+            if (concept && integration && creator) {
+                // Set the concept
+                document.getElementById('videoConcept').value = decodeURIComponent(concept);
+
+                // Set the integration type
+                document.getElementById('integrationType').value = integration;
+                document.getElementById('integrationType').classList.remove('placeholder');
+
+                // First, set creator input value
+                document.getElementById('creatorInput').value = decodeURIComponent(creator);
+
+                // Then load creator options and set selected creator
+                loadCreatorOptions().then(async () => {
+                    // Get creator data
+                    const response = await fetch(`${window.API_BASE_URL}/getCreatorDNAs`);
+                    const creators = await response.json();
+
+                    // Set the selected creator DNA
+                    selectedCreatorDNA = creators[decodeURIComponent(creator)];
+
+                    // Generate the storyboard after a short delay
+                    setTimeout(() => {
+                        generateStoryboard();
+                    }, 500);
+                });
+            }
+        });
+
+        async function loadCreatorOptions() {
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/getCreatorDNAs`);
+                const creators = await response.json();
+                const dropdownMenu = document.getElementById('creatorDropdown');
+                dropdownMenu.innerHTML = '';
+
+                const sortedCreatorNames = Object.keys(creators).sort((a, b) =>
+                    a.toLowerCase().localeCompare(b.toLowerCase())
+                );
+
+                sortedCreatorNames.forEach(creatorName => {
+                    const item = document.createElement('div');
+                    item.className = 'creator-dropdown-item';
+                    item.textContent = creatorName;
+                    item.addEventListener('click', () => {
+                        selectedCreatorDNA = creators[creatorName];
+                        document.getElementById('creatorInput').value = creatorName;
+                        dropdownMenu.classList.remove('active');
+                    });
+                    dropdownMenu.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error loading creators:', error);
+            }
+        }
+
+        async function generateStoryboard() {
+            const videoConcept = document.getElementById('videoConcept').value.trim();
+            const integrationType = document.getElementById('integrationType').value;
+            const loadingContainer = document.querySelector('.loading-container');
+            const gridRow1 = document.getElementById('storyboardGridRow1');
+            const gridRow2 = document.getElementById('storyboardGridRow2');
+            
+            if (!videoConcept) {
+                alert('Please enter a video concept');
+                return;
+            }
+
+            if (!integrationType) {
+                alert('Please select an integration type');
+                return;
+            }
+
+            if (!selectedCreatorDNA) {
+                alert('Please select a creator');
+                return;
+            }
+
+            const currentBrandDNA = getClientDNA();
+            if (!currentBrandDNA) {
+                alert('Please select a brand DNA');
+                return;
+            }
+
+            // Create an integration type description map
+            const integrationDescriptions = {
+                brand_mention: "A short (15-30 second) acknowledgement of the brand within the video, usually involving a brief description and call to action.",
+                mid_video: "A distinct 30-60 second (or longer) promotional segment in the middle of the video, where the creator directly promotes the brand and its products.",
+                full_integration: "The brand's product or service is seamlessly woven into the video's core content, acting as a central element of the story, tutorial, or challenge."
+            };
+
+            try {
+                loadingContainer.style.display = 'flex';
+                gridRow1.innerHTML = '';
+                gridRow2.innerHTML = '';
+
+                const clientLanguage = getClientLanguage();
+                console.log('Client language detected:', clientLanguage);
+                
+                const requestBody = {
+                    videoConcept: videoConcept,
+                    brandDNA: currentBrandDNA,
+                    creatorDNA: selectedCreatorDNA,
+                    integrationType: {
+                        type: integrationType,
+                        description: integrationDescriptions[integrationType]
+                    },
+                    language: clientLanguage,
+                    version: 'v2' // Specify that we want the v2 version with 7 scenes
+                };
+                
+                console.log('Sending storyboard request with language:', clientLanguage);
+
+                const response = await fetch(`${window.API_BASE_URL}/generateStoryboard`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const cleanJSON = data.replace(/```json\n|\n```/g, '').trim();
+                const storyboard = JSON.parse(cleanJSON).storyboard;
+                
+                // Store the current storyboard data
+                currentStoryboard = storyboard;
+
+                // Extract image prompts
+                const imagePrompts = storyboard.map(act => act.image_prompt);
+                
+                console.log('Sending image generation request with language:', clientLanguage);
+
+                // Generate images for all prompts
+                const imageResponse = await fetch(`${window.API_BASE_URL}/generateStoryboardImages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        imagePrompts,
+                        language: getClientLanguage()
+                    })
+                });
+
+                if (!imageResponse.ok) {
+                    throw new Error(`HTTP error! status: ${imageResponse.status}`);
+                }
+
+                const imageData = await imageResponse.json();
+
+                loadingContainer.style.display = 'none';
+
+                // Create cards with both content and images
+                storyboard.forEach((act, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'storyboard-card';
+                    card.style.borderColor = currentBrandDNA.brandColors[0];
+                    card.dataset.index = index;
+
+                    // Create content section
+                    const cardContent = document.createElement('div');
+                    cardContent.className = 'card-content';
+
+                    // Add the generated image
+                    if (imageData.images[index]) {
+                        const imageWrapper = document.createElement('div');
+                        imageWrapper.className = 'image-wrapper';
+
+                        const img = document.createElement('img');
+                        img.src = `data:image/png;base64,${imageData.images[index]}`;
+                        img.className = 'storyboard-image';
+
+                        // Create download button
+                        const downloadButton = document.createElement('button');
+                        downloadButton.className = 'download-button';
+                        downloadButton.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white">
+                                <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+                            </svg>
+                        `;
+
+                        downloadButton.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const link = document.createElement('a');
+                            link.href = img.src;
+                            link.download = `storyboard-scene-${index + 1}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        });
+
+                        imageWrapper.appendChild(img);
+                        imageWrapper.appendChild(downloadButton);
+                        cardContent.appendChild(imageWrapper);
+                    }
+
+                    // Create scene number
+                    const sceneNumber = document.createElement('div');
+                    sceneNumber.className = 'scene-number';
+                    const sceneKey = `scene-${index + 1}`;
+                    sceneNumber.setAttribute('data-translation-key', sceneKey);
+                    sceneNumber.textContent = `Scene ${index + 1}`;
+
+                    const title = document.createElement('h2');
+                    title.className = 'brand-card-title';
+                    title.textContent = act.act_title;
+
+                    const body = document.createElement('div');
+                    body.className = 'brand-card-body';
+                    body.textContent = act.act_description;
+
+                    // Create prompt reveal section
+                    const promptSection = document.createElement('div');
+                    promptSection.className = 'prompt-section';
+
+                    const promptButton = document.createElement('button');
+                    promptButton.className = 'prompt-button';
+                    promptButton.innerHTML = `
+                        <span data-translation-key="storyboard-show-prompt">Show Prompt</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    `;
+
+                    const promptContent = document.createElement('div');
+                    promptContent.className = 'prompt-content';
+                    promptContent.textContent = act.image_prompt;
+
+                    promptButton.addEventListener('click', () => {
+                        const isExpanded = promptContent.style.display !== 'none';
+                        promptContent.style.display = isExpanded ? 'none' : 'block';
+                        promptButton.classList.toggle('expanded');
+                    });
+
+                    promptSection.appendChild(promptButton);
+                    promptSection.appendChild(promptContent);
+
+                    // Add elements to the card content
+                    cardContent.appendChild(sceneNumber);
+                    cardContent.appendChild(title);
+                    cardContent.appendChild(body);
+                    cardContent.appendChild(promptSection);
+                    
+                    // Add the card content to the card
+                    card.appendChild(cardContent);
+                    
+                    // Create card footer
+                    const cardFooter = document.createElement('div');
+                    cardFooter.className = 'card-footer';
+                    
+                    // Add regenerate button to the footer
+                    const regenerateBtn = document.createElement('button');
+                    regenerateBtn.className = 'regenerate-btn';
+                    regenerateBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#666" class="regenerate-icon">
+                            <path d="M482-160q-134 0-228-93t-94-227v-7l-64 64-56-56 160-160 160 160-56 56-64-64v7q0 100 70.5 170T482-240q26 0 51-6t49-18l60 60q-38 22-78 33t-82 11Zm278-161L600-481l56-56 64 64v-7q0-100-70.5-170T478-720q-26 0-51 6t-49 18l-60-60q38-22 78-33t82-11q134 0 228 93t94 227v7l64-64 56 56-160 160Z"/>
+                        </svg>
+                        <span>Regenerate Frame</span>
+                    `;
+                    regenerateBtn.addEventListener('click', () => toggleFeedbackArea(index));
+                    cardFooter.appendChild(regenerateBtn);
+                    
+                    // Add the footer to the card
+                    card.appendChild(cardFooter);
+                    
+                    // Add feedback container
+                    const feedbackContainer = document.createElement('div');
+                    feedbackContainer.className = 'feedback-container';
+                    feedbackContainer.id = `feedback-container-${index}`;
+                    
+                    const feedbackTextarea = document.createElement('textarea');
+                    feedbackTextarea.className = 'feedback-textarea';
+                    feedbackTextarea.placeholder = 'Describe how you want to change this frame...';
+                    feedbackTextarea.id = `feedback-textarea-${index}`;
+                    
+                    const feedbackActions = document.createElement('div');
+                    feedbackActions.className = 'feedback-actions';
+                    
+                    const submitBtn = document.createElement('button');
+                    submitBtn.className = 'submit-feedback-btn';
+                    submitBtn.textContent = 'Submit';
+                    submitBtn.addEventListener('click', () => regenerateFrame(index));
+                    
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.className = 'cancel-feedback-btn';
+                    cancelBtn.textContent = 'Cancel';
+                    cancelBtn.addEventListener('click', () => toggleFeedbackArea(index));
+                    
+                    feedbackActions.appendChild(submitBtn);
+                    feedbackActions.appendChild(cancelBtn);
+                    
+                    feedbackContainer.appendChild(feedbackTextarea);
+                    feedbackContainer.appendChild(feedbackActions);
+                    
+                    card.appendChild(feedbackContainer);
+                    
+                    // Add regenerating indicator
+                    const regeneratingIndicator = document.createElement('div');
+                    regeneratingIndicator.className = 'regenerating-indicator';
+                    regeneratingIndicator.id = `regenerating-indicator-${index}`;
+                    
+                    const spinner = document.createElement('div');
+                    spinner.className = 'regenerating-spinner';
+                    
+                    const text = document.createElement('div');
+                    text.textContent = 'Regenerating frame...';
+                    
+                    regeneratingIndicator.appendChild(spinner);
+                    regeneratingIndicator.appendChild(text);
+                    
+                    card.appendChild(regeneratingIndicator);
+                    
+                    // Add to the appropriate row
+                    if (index < 4) {
+                        gridRow1.appendChild(card);
+                    } else {
+                        gridRow2.appendChild(card);
+                    }
+                });
+                
+                await translateUI();
+
+            } catch (error) {
+                console.error('Error:', error);
+                loadingContainer.style.display = 'none';
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        // Function to toggle the feedback area
+        function toggleFeedbackArea(index) {
+            const feedbackContainer = document.getElementById(`feedback-container-${index}`);
+            if (feedbackContainer.style.display === 'block') {
+                feedbackContainer.style.display = 'none';
+            } else {
+                feedbackContainer.style.display = 'block';
+            }
+        }
+        
+        // Function to regenerate a single frame
+        async function regenerateFrame(index) {
+            const feedbackText = document.getElementById(`feedback-textarea-${index}`).value.trim();
+            if (!feedbackText) {
+                alert('Please provide feedback on how to change the frame.');
+                return;
+            }
+            
+            const regeneratingIndicator = document.getElementById(`regenerating-indicator-${index}`);
+            regeneratingIndicator.style.display = 'flex';
+            
+            try {
+                const videoConcept = document.getElementById('videoConcept').value.trim();
+                const integrationType = document.getElementById('integrationType').value;
+                const currentBrandDNA = getClientDNA();
+                
+                // Create an integration type description map
+                const integrationDescriptions = {
+                    brand_mention: "A short (15-30 second) acknowledgement of the brand within the video, usually involving a brief description and call to action.",
+                    mid_video: "A distinct 30-60 second (or longer) promotional segment in the middle of the video, where the creator directly promotes the brand and its products.",
+                    full_integration: "The brand's product or service is seamlessly woven into the video's core content, acting as a central element of the story, tutorial, or challenge."
+                };
+                
+                const requestBody = {
+                    videoConcept: videoConcept,
+                    brandDNA: currentBrandDNA,
+                    creatorDNA: selectedCreatorDNA,
+                    integrationType: {
+                        type: integrationType,
+                        description: integrationDescriptions[integrationType]
+                    },
+                    language: getClientLanguage(),
+                    storyboard: currentStoryboard,
+                    frameIndex: index,
+                    feedback: feedbackText
+                };
+                
+                const response = await fetch(`${window.API_BASE_URL}/regenerateStoryboardFrame`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Update the storyboard data
+                currentStoryboard[index] = data.frame;
+                
+                // Generate the new image
+                const imageResponse = await fetch(`${window.API_BASE_URL}/generateStoryboardImages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        imagePrompts: [data.frame.image_prompt],
+                        language: getClientLanguage()
+                    })
+                });
+                
+                if (!imageResponse.ok) {
+                    throw new Error(`HTTP error! status: ${imageResponse.status}`);
+                }
+                
+                const imageData = await imageResponse.json();
+                
+                // Update the card with new content
+                const card = document.querySelector(`.storyboard-card[data-index="${index}"]`);
+                
+                // Update image
+                const img = card.querySelector('.storyboard-image');
+                if (img && imageData.images[0]) {
+                    img.src = `data:image/png;base64,${imageData.images[0]}`;
+                }
+                
+                // Update title and description
+                const title = card.querySelector('.brand-card-title');
+                const body = card.querySelector('.brand-card-body');
+                
+                if (title) title.textContent = data.frame.act_title;
+                if (body) body.textContent = data.frame.act_description;
+                
+                // Hide the feedback area
+                document.getElementById(`feedback-container-${index}`).style.display = 'none';
+                
+            } catch (error) {
+                console.error('Error regenerating frame:', error);
+                alert(`Error: ${error.message}`);
+            } finally {
+                regeneratingIndicator.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 

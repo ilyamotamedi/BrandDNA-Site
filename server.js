@@ -1031,6 +1031,199 @@ Remember:
 ONLY RETURN VALID JSON WITH NO ADDITIONAL COMMENTARY OR EXPLANATION
 `;
 
+// New system instructions for the v2 storyboard with 7 frames
+const STORYBOARD_V2_GENERATION_SYSTEM_INSTRUCTIONS = `
+You are a master storyboard artist and narrative designer, skilled at crafting compelling visual stories that blend brand messaging with creator authenticity. Your task is to generate a 7-scene storyboard with accompanying storyboard panel illustrations that capture key moments.
+
+# Input Analysis Process
+
+1. Analyze the provided Brand DNA:
+    - Brand Personality & Values
+    - Visual Aesthetic & Style
+    - Target Audience & Emotional Impact
+    - Brand Story & Heritage
+
+2. Analyze the provided Creator DNA:
+    - Creator's Unique Style & Personality
+    - Content Format & Approach
+    - Audience Relationship & Expectations
+    - Channel Theme & Evolution
+
+3. Analyze the Video Concept:
+    - Core Message & Theme
+    - Intended Emotional Impact
+    - Required Story Elements
+    - Visual Style Requirements
+
+# Storyboard Artistic Guidelines
+
+Visual Style Parameters:
+- Black and white sketchy illustration style
+- Strong emphasis on composition and clarity
+- Characters rendered as minimal human outlines with single defining element
+- Simplified backgrounds that support the action
+- Dynamic camera angles that enhance storytelling
+- Consistent visual style across all panels
+- Consistent character design across all panels
+- Clear visual hierarchy and focal points
+- Efficient use of shadows and contrast
+
+For Visual Consistency:
+1. Character Design
+    - Represent characters as clean, minimal outlines (single continuous line)
+    - Maintain consistent character proportions
+    - Define key identifying features
+    - Keep clothing and accessories consistent
+    - Establish clear character silhouettes
+    - Use outline's posture and gesture to convey emotion
+    - No internal details or facial features within the outline
+
+2. Environmental Elements
+    - Establish consistent perspective rules
+    - Define key location characteristics
+    - Maintain spatial relationships
+    - Use recurring background elements
+
+# Output Format
+Generate a 7-act storyboard in this JSON structure:
+
+{
+    "storyboard": [
+        {
+            "act_title": "Scene Title that captures the essence of this story beat. The scene titles align with the creator's brand dna and never use colons.",
+            "act_description": "Detailed description of what happens in this act, including character actions, dialogue, brand integration, and how it advances the story",
+            "image_prompt": "Black and white storyboard panel, sketchy style. [Camera angle/framing], [character positions and actions], [environment details]. Strong shadows, expressive linework. Focus on [key emotional moment]."
+        },
+        {
+            "act_title": "Scene 2 Title",
+            "act_description": "Act 2 narrative content...",
+            "image_prompt": "Act 2 storyboard panel prompt..."
+        },
+        {
+            "act_title": "Scene 3 Title",
+            "act_description": "Act 3 narrative content...",
+            "image_prompt": "Act 3 storyboard panel prompt..."
+        },
+        {
+            "act_title": "Scene 4 Title",
+            "act_description": "Act 4 narrative content...",
+            "image_prompt": "Act 4 storyboard panel prompt..."
+        },
+        {
+            "act_title": "Scene 5 Title",
+            "act_description": "Act 5 narrative content...",
+            "image_prompt": "Act 5 storyboard panel prompt..."
+        },
+        {
+            "act_title": "Scene 6 Title",
+            "act_description": "Act 6 narrative content...",
+            "image_prompt": "Act 6 storyboard panel prompt..."
+        },
+        {
+            "act_title": "Scene 7 Title",
+            "act_description": "Act 7 narrative content...",
+            "image_prompt": "Act 7 storyboard panel prompt..."
+        }
+    ]
+}
+
+Remember:
+- Each act should drive the story forward while naturally integrating brand elements
+- Image prompts must maintain consistent aesthetic style, character, and environment details across all panels
+- Storyboard style should remain sketchy black and white with strong emphasis on clarity
+- Each panel should capture the most impactful moment from its act
+- The image generator is not able to reference previous images so you need to keep your descriptions consistent from scene to scene when creating continuity of character or location
+- Ensure the narrative aligns fits within the Creator's content style while respecting the Brand's DNA
+
+ONLY RETURN VALID JSON WITH NO ADDITIONAL COMMENTARY OR EXPLANATION
+`;
+
+// New system instructions for regenerating a single storyboard frame
+const STORYBOARD_FRAME_REGENERATION_SYSTEM_INSTRUCTIONS = `
+You are a master storyboard artist and narrative designer, skilled at crafting compelling visual stories that blend brand messaging with creator authenticity. Your task is to regenerate a SINGLE FRAME of a storyboard based on user feedback.
+
+# Input Analysis Process
+
+1. Analyze the provided Brand DNA:
+    - Brand Personality & Values
+    - Visual Aesthetic & Style
+    - Target Audience & Emotional Impact
+    - Brand Story & Heritage
+
+2. Analyze the provided Creator DNA:
+    - Creator's Unique Style & Personality
+    - Content Format & Approach
+    - Audience Relationship & Expectations
+    - Channel Theme & Evolution
+
+3. Analyze the Video Concept:
+    - Core Message & Theme
+    - Intended Emotional Impact
+    - Required Story Elements
+    - Visual Style Requirements
+
+4. Analyze the existing storyboard:
+    - Understand the narrative flow
+    - Identify the role of the specific frame in the overall story
+    - Note visual and thematic consistency elements
+
+5. Analyze the user feedback:
+    - Identify specific changes requested
+    - Understand the intent behind the feedback
+    - Determine how to implement changes while maintaining story coherence
+
+# Storyboard Artistic Guidelines
+
+Visual Style Parameters:
+- Black and white sketchy illustration style
+- Strong emphasis on composition and clarity
+- Characters rendered as minimal human outlines with single defining element
+- Simplified backgrounds that support the action
+- Dynamic camera angles that enhance storytelling
+- Consistent visual style across all panels
+- Consistent character design across all panels
+- Clear visual hierarchy and focal points
+- Efficient use of shadows and contrast
+
+For Visual Consistency:
+1. Character Design
+    - Represent characters as clean, minimal outlines (single continuous line)
+    - Maintain consistent character proportions
+    - Define key identifying features
+    - Keep clothing and accessories consistent
+    - Establish clear character silhouettes
+    - Use outline's posture and gesture to convey emotion
+    - No internal details or facial features within the outline
+
+2. Environmental Elements
+    - Establish consistent perspective rules
+    - Define key location characteristics
+    - Maintain spatial relationships
+    - Use recurring background elements
+
+# Output Format
+Generate a single updated frame in this JSON structure:
+
+{
+    "frame": {
+        "act_title": "Updated Scene Title that captures the essence of this story beat. The scene titles align with the creator's brand dna and never use colons.",
+        "act_description": "Updated detailed description of what happens in this act, including character actions, dialogue, brand integration, and how it advances the story",
+        "image_prompt": "Black and white storyboard panel, sketchy style. [Camera angle/framing], [character positions and actions], [environment details]. Strong shadows, expressive linework. Focus on [key emotional moment]."
+    }
+}
+
+Remember:
+- The updated frame should still drive the story forward while naturally integrating brand elements
+- The image prompt must maintain consistent aesthetic style, character, and environment details with the rest of the storyboard
+- Storyboard style should remain sketchy black and white with strong emphasis on clarity
+- The panel should capture the most impactful moment from its act
+- The image generator is not able to reference previous images so you need to keep your descriptions consistent with other scenes when creating continuity of character or location
+- Ensure the narrative still aligns with the Creator's content style while respecting the Brand's DNA
+- MOST IMPORTANTLY: Implement the specific changes requested in the user feedback while maintaining the overall story coherence
+
+ONLY RETURN VALID JSON WITH NO ADDITIONAL COMMENTARY OR EXPLANATION
+`;
+
 async function callGeminiAPI(brandName, files = null, language = 'english') {
     const fetch = await import('node-fetch').then(module => module.default);
     
@@ -1448,7 +1641,7 @@ app.post('/generateVideoConcepts', express.json(), async (req, res) => {
 });
 
 // Helper function
-async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integrationType, language) {
+async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integrationType, language, version = 'v1') {
     const fetch = await import('node-fetch').then(module => module.default);
 
     // Prepare the prompt with brand DNA, creator DNA, video concept, and integration type
@@ -1477,6 +1670,11 @@ async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integratio
         text: fullPrompt
     }];
 
+    // Select the appropriate system instructions based on version
+    const systemInstructions = version === 'v2' 
+        ? STORYBOARD_V2_GENERATION_SYSTEM_INSTRUCTIONS 
+        : STORYBOARD_GENERATION_SYSTEM_INSTRUCTIONS;
+
     const requestBody = {
         contents: [{
             role: "user",
@@ -1484,7 +1682,7 @@ async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integratio
         }],
         systemInstruction: {
             parts: [{
-                text: STORYBOARD_GENERATION_SYSTEM_INSTRUCTIONS
+                text: systemInstructions
             }]
         },
         generationConfig: {
@@ -1531,10 +1729,11 @@ async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integratio
 
 // Endpoint handler
 app.post('/generateStoryboard', express.json(), async (req, res) => {
-    const { videoConcept, brandDNA, creatorDNA, integrationType } = req.body;
+    const { videoConcept, brandDNA, creatorDNA, integrationType, version } = req.body;
     const language = getLanguageFromRequest(req);
     
     console.log('Storyboard Request - Extracted Language:', language);
+    console.log('Storyboard Request - Version:', version || 'v1');
 
     if (!videoConcept) {
         return res.status(400).json({ error: 'Video concept is required' });
@@ -1553,7 +1752,7 @@ app.post('/generateStoryboard', express.json(), async (req, res) => {
     }
 
     try {
-        const result = await generateStoryboard(videoConcept, brandDNA, creatorDNA, integrationType, language);
+        const result = await generateStoryboard(videoConcept, brandDNA, creatorDNA, integrationType, language, version);
         res.json(result);
     } catch (error) {
         console.error('Error processing request:', error);
@@ -2587,5 +2786,155 @@ Based on this information, please generate 3-5 new content ideas that address th
             success: false, 
             error: error.message 
         });
+    }
+});
+
+// Helper function to regenerate a single storyboard frame
+async function regenerateStoryboardFrame(videoConcept, brandDNA, creatorDNA, integrationType, storyboard, frameIndex, feedback, language) {
+    const fetch = await import('node-fetch').then(module => module.default);
+
+    // Prepare the prompt with all necessary context
+    let fullPrompt = `
+        Brand DNA:
+        ${JSON.stringify(brandDNA)}
+
+        Creator DNA:
+        ${JSON.stringify(creatorDNA)}
+
+        Video Concept:
+        ${videoConcept}
+
+        Integration Type:
+        ${integrationType.type} - ${integrationType.description}
+        
+        Complete Storyboard:
+        ${JSON.stringify(storyboard)}
+        
+        Frame to Regenerate (Index ${frameIndex}):
+        ${JSON.stringify(storyboard[frameIndex])}
+        
+        User Feedback for this Frame:
+        ${feedback}
+        
+        Please regenerate ONLY this specific frame based on the user feedback while maintaining consistency with the rest of the storyboard.
+    `;
+
+    if (language === 'spanish') {
+        fullPrompt += "\nPLEASE RESPOND IN SPANISH";
+    }
+
+    // Prepare the parts array
+    const parts = [{
+        text: fullPrompt
+    }];
+
+    const requestBody = {
+        contents: [{
+            role: "user",
+            parts: parts
+        }],
+        systemInstruction: {
+            parts: [{
+                text: STORYBOARD_FRAME_REGENERATION_SYSTEM_INSTRUCTIONS
+            }]
+        },
+        generationConfig: {
+            temperature: 1,
+            maxOutputTokens: 8192,
+            topP: 0.95
+        }
+    };
+
+    try {
+        const client = await auth.getClient();
+        const accessToken = await client.getAccessToken();
+
+        const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken.token}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Error Response:', errorText);
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+
+        if (!responseText) {
+            throw new Error('No text content in API response');
+        }
+
+        return responseText;
+    } catch (error) {
+        console.error('Error:', error);
+        throw error;
+    }
+}
+
+// Endpoint handler for regenerating a single storyboard frame
+app.post('/regenerateStoryboardFrame', express.json(), async (req, res) => {
+    const { videoConcept, brandDNA, creatorDNA, integrationType, storyboard, frameIndex, feedback } = req.body;
+    const language = getLanguageFromRequest(req);
+    
+    console.log('Storyboard Frame Regeneration Request - Extracted Language:', language);
+    console.log('Regenerating frame index:', frameIndex);
+
+    if (!videoConcept) {
+        return res.status(400).json({ error: 'Video concept is required' });
+    }
+
+    if (!brandDNA) {
+        return res.status(400).json({ error: 'Brand DNA is required' });
+    }
+
+    if (!creatorDNA) {
+        return res.status(400).json({ error: 'Creator DNA is required' });
+    }
+
+    if (!integrationType) {
+        return res.status(400).json({ error: 'Integration type is required' });
+    }
+
+    if (!storyboard || !Array.isArray(storyboard)) {
+        return res.status(400).json({ error: 'Valid storyboard array is required' });
+    }
+
+    if (frameIndex === undefined || frameIndex < 0 || frameIndex >= storyboard.length) {
+        return res.status(400).json({ error: 'Valid frame index is required' });
+    }
+
+    if (!feedback) {
+        return res.status(400).json({ error: 'Feedback is required' });
+    }
+
+    try {
+        const result = await regenerateStoryboardFrame(
+            videoConcept, 
+            brandDNA, 
+            creatorDNA, 
+            integrationType, 
+            storyboard, 
+            frameIndex, 
+            feedback, 
+            language
+        );
+        
+        // Parse the result to extract the frame data
+        const cleanJSON = result.replace(/```json\n|\n```/g, '').trim();
+        const frameData = JSON.parse(cleanJSON);
+        
+        res.json(frameData);
+    } catch (error) {
+        console.error('Error processing request:', error);
+        res.status(500).json({ error: error.message });
     }
 });
