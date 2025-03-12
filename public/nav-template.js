@@ -165,23 +165,43 @@ const translations = {
     },
     'match-get-match-button': {
         english: 'GET MATCH',
-        spanish: 'OBTENER MATCH' //  or "ENCONTRAR MATCH"
+        spanish: 'OBTENER MATCH'
     },
-    'Why This Match Works': { //  Key is the *exact* English text
+    'match-type-expected': {
+        english: 'Expected',
+        spanish: 'Esperado'
+    },
+    'match-type-balanced': {
+        english: 'Balanced',
+        spanish: 'Equilibrado'
+    },
+    'match-type-unexpected': {
+        english: 'Unexpected',
+        spanish: 'Inesperado'
+    },
+    'match-view-details': {
+        english: 'View Details',
+        spanish: 'Ver Detalles'
+    },
+    'match-hide-details': {
+        english: 'Hide Details',
+        spanish: 'Ocultar Detalles'
+    },
+    'match-why-works': {
         english: 'Why This Match Works',
-        spanish: 'Por Qué Funciona Esta Combinación' // Or "Por Qué Esta Combinación Es Buena"
+        spanish: 'Por Qué Funciona Esta Combinación'
     },
-    'Content Ideas': {
+    'match-content-ideas': {
         english: 'Content Ideas',
         spanish: 'Ideas de Contenido'
     },
-    'Value Alignment': {
-        english: 'Value Alignment',
-        spanish: 'Alineación de Valores'
+    'match-change-ideas': {
+        english: 'Change these ideas...',
+        spanish: 'Cambiar estas ideas...'
     },
-    'Potential Impact': {
-        english: 'Potential Impact',
-        spanish: 'Impacto Potencial'
+    'match-regenerate-ideas': {
+        english: 'REGENERATE IDEAS',
+        spanish: 'REGENERAR IDEAS'
     },
     // --- STORYBOARD PAGE TRANSLATIONS ---
     'storyboard-concept-placeholder': {
@@ -312,6 +332,12 @@ function insertNav() {
                     </a>
                     <a href="https://multimodal-live-dot-branddna.googleplex.com/" target="_blank" class="nav-item" data-translation-key="nav-conversational-generation">
                         <span class="dot">•</span> TALK TO GENERATE
+                    </a>
+                    <a href="match-v2.html" class="nav-item" data-translation-key="nav-match-v2">
+                        <span class="dot">•</span> MATCH V2
+                    </a>
+                    <a href="storyboard-v2.html" class="nav-item" data-translation-key="nav-storyboarding-v2">
+                        <span class="dot">•</span> STORYBOARDING V2
                     </a>
                 </div>
             </div>

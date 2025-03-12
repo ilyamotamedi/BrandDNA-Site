@@ -584,13 +584,6 @@
         document.addEventListener('DOMContentLoaded', async () => {
             await translateUI();
             
-            // Hide other navigation items except for storyboarding
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                // Only show the storyboarding nav item
-
-                    item.style.display = 'none';
-            });
 
             // Dropdown handling
             const dropdownArrow = document.getElementById('creatorDropdownArrow');
