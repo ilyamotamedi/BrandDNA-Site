@@ -67,13 +67,13 @@
             font-family: 'Unbounded', sans-serif;
             font-size: 0.8rem;
             font-weight: 500;
-            color: #26201F;
+            color: #26201f37;
             z-index: 2;
             transition: color 0.3s ease;
         }
         
         .match-type-option.active {
-            background: linear-gradient(to right, #F53151, #F742BD);
+            background: #26201F;
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -84,7 +84,7 @@
             position: absolute;
             height: calc(100% - 6px);
             width: 32%;
-            background-color: #26201F;
+            background-color: #d8d8d8;
             border-radius: 18px;
             top: 3px;
             left: 3px;
@@ -238,6 +238,14 @@
             padding-left: 1.5rem;
             position: relative;
             font-size: 0.85rem;
+            transition: all 0.2s ease;
+            padding-right: 1rem;
+            border-radius: 4px;
+        }
+        
+        .creator-card-idea-item:hover {
+            background: linear-gradient(to right, rgba(245, 49, 81, 0.1), rgba(247, 66, 189, 0.1));
+            padding: 0.5rem 1.5rem 0.5rem 1.5rem;
         }
         
         .creator-card-idea-item::before {
@@ -257,7 +265,7 @@
             text-align: center;
             font-size: 0.8rem;
             color: #666;
-            background-color: #f9f9f9;
+            background-color: #ffffff;
             border: none;
             cursor: pointer;
         }
@@ -449,6 +457,14 @@
             margin-bottom: 0.75rem;
             padding-left: 1.5rem;
             position: relative;
+            transition: all 0.2s ease;
+            padding-right: 1rem;
+            border-radius: 4px;
+        }
+        
+        .creator-details-idea-item:hover {
+            background: linear-gradient(to right, rgba(245, 49, 81, 0.1), rgba(247, 66, 189, 0.1));
+            padding: 0.5rem 1.5rem 0.5rem 1.5rem;
         }
         
         .creator-details-idea-item::before {
@@ -460,6 +476,35 @@
             height: 6px;
             background: linear-gradient(to right, #F53151, #F742BD);
             border-radius: 50%;
+        }
+        
+        .creator-details-idea-item:hover .storyboard-idea-btn {
+            opacity: 1;
+            right: -10px;
+        }
+        
+        .storyboard-idea-btn {
+            position: absolute;
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: linear-gradient(to right, #F53151, #F742BD);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .creator-card-idea-item:hover .storyboard-idea-btn {
+            opacity: 1;
+            right: -20px;
         }
     </style>
 </head>
@@ -753,8 +798,8 @@
             const container = document.getElementById('creatorsContainer');
             container.innerHTML = '';
             
-            // Limit to 6 creators for now
-            const displayCreators = creators.slice(0, 6);
+            // Limit to 8 creators for now
+            const displayCreators = creators.slice(0, 8);
             
             displayCreators.forEach((creator, index) => {
                 // Format subscriber count
@@ -796,7 +841,9 @@
                     ideasHtml = `
                         <ul class="creator-card-ideas">
                             ${ideas.map(idea => `
-                                <li class="creator-card-idea-item">${idea}</li>
+                                <li class="creator-card-idea-item">${idea}
+                                    <button class="storyboard-idea-btn" onclick="openStoryboardWithIdea('${creator.creatorName}', this.parentElement.textContent)">STORYBOARD IDEA</button>
+                                </li>
                             `).join('')}
                         </ul>
                     `;
@@ -839,7 +886,7 @@
                                 <div class="ideas-feedback-container">
                                     <textarea 
                                         class="ideas-feedback-input" 
-                                        placeholder="Enter feedback to improve these ideas..."
+                                        placeholder="Change these ideas..."
                                     ></textarea>
                                     <button class="regenerate-ideas-btn" data-creator-index="${index}">REGENERATE IDEAS</button>
                                 </div>
@@ -979,7 +1026,9 @@
                         newIdeasHtml = `
                             <ul class="creator-card-ideas">
                                 ${data.contentIdeas.map(idea => `
-                                    <li class="creator-card-idea-item">${idea}</li>
+                                    <li class="creator-card-idea-item">${idea}
+                                        <button class="storyboard-idea-btn" onclick="openStoryboardWithIdea('${creator.creatorName}', this.parentElement.textContent)">STORYBOARD IDEA</button>
+                                    </li>
                                 `).join('')}
                             </ul>
                         `;
@@ -989,7 +1038,9 @@
                         newIdeasHtml = `
                             <ul class="creator-card-ideas">
                                 ${ideas.map(idea => `
-                                    <li class="creator-card-idea-item">${idea}</li>
+                                    <li class="creator-card-idea-item">${idea}
+                                        <button class="storyboard-idea-btn" onclick="openStoryboardWithIdea('${creator.creatorName}', this.parentElement.textContent)">STORYBOARD IDEA</button>
+                                    </li>
                                 `).join('')}
                             </ul>
                         `;
@@ -1086,7 +1137,9 @@
                 ideasHtml = `
                     <ul class="creator-details-ideas">
                         ${ideas.map(idea => `
-                            <li class="creator-details-idea-item">${idea}</li>
+                            <li class="creator-details-idea-item">${idea}
+                                <button class="storyboard-idea-btn" onclick="openStoryboardWithIdea('${creator.creatorName}', this.parentElement.textContent)">STORYBOARD IDEA</button>
+                            </li>
                         `).join('')}
                     </ul>
                 `;
@@ -1151,6 +1204,25 @@
                 return (count / 1000).toFixed(1) + 'K';
             }
             return count;
+        }
+        
+        // Function to open storyboard with the selected idea
+        function openStoryboardWithIdea(creatorName, ideaText) {
+            // Clean up the idea text by removing the button text
+            const cleanIdea = ideaText.replace('STORYBOARD IDEA', '').trim();
+            
+            // Get the campaign brief from the input
+            const campaignBrief = document.querySelector('.brand-input').value.trim();
+            
+            // Encode parameters for URL
+            const params = new URLSearchParams();
+            params.set('concept', cleanIdea);
+            params.set('integration', 'full_integration'); // Default to full integration
+            params.set('creator', creatorName);
+            params.set('campaignBrief', campaignBrief); // Add campaign brief
+            
+            // Navigate to storyboard-v2.html with the parameters in a new tab
+            window.open(`storyboard-v2.html?${params.toString()}`, '_blank');
         }
     </script>
 </body>

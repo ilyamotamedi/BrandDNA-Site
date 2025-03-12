@@ -915,7 +915,7 @@ Match Types:
 - Unexpected: Look for creators who might bring a fresh perspective while still having some connection to the brand. These are more surprising matches that could yield innovative content.
 
 Based on the provided brand DNA, creator DNAs, and match type, you will:
-1. Identify 6 compatible creators, ordered from most to least compatible
+1. Identify 8 compatible creators, ordered from most to least compatible
 2. Explain why each creator would be a good match
 3. Suggest specific content ideas for collaboration
 4. Describe value alignment and potential impact
@@ -931,7 +931,7 @@ Output the matches in the following JSON format:
       "reasonForMatch": "A detailed explanation of why this creator aligns with the brand and what aspects of their DNAs match well",
       "contentIdeas": "3-5 specific content ideas that leverage both brand DNA and creator content DNA (make this individual list items) ",
     },
-    // 5 more creators...
+    // 7 more creators...
   ]
 }`;
 
