@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="config.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand DNA - Match V2</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap">
+    <link rel="stylesheet" href="styles.css">
+    <script src="nav-template.js"></script>
+    <style>
+        /* Custom styles for match-v2 */
+        .match-results {
+            position: relative;
+            overflow: visible;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Hide navigation items but keep logo and settings */
+        .nav-items {
+            display: none !important;
+        }
+        
+        /* Hide the DNA button in the navigation */
+        .bottom-section .dna-btn {
+            display: none !important;
+        }
+        
+        /* Full page layout with absolute positioning for DNA selector */
+        .content {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Center DNA selector styles */
+        .center-dna-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 10;
+            width: 100%;
+        }
+        
+        .center-dna-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .center-dna-icon-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        
+        .center-dna-color-square-outer {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+        
+        .center-dna-color-square-inner {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .center-dna-text-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .center-dna-text {
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 500;
+            margin-top: 0.5rem;
+            color: #26201F;
+        }
+        
+        .center-dna-brand-name {
+            font-family: 'Unbounded', sans-serif;
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-top: 0.5rem;
+            display: none;
+            color: #26201F;
+        }
+        
+        .center-dna-btn.active .center-dna-brand-name {
+            display: block;
+        }
+        
+        .center-dna-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 240px;
+            max-height: 320px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: none;
+            padding: 0.5rem;
+        }
+        
+        .center-dna-menu.active {
+            display: block;
+        }
+        
+        .center-dna-option {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.2s ease;
+            font-family: 'Unbounded', sans-serif;
+        }
+        
+        .center-dna-option:hover {
+            background-color: #F6F6F6;
+        }
+        
+        .center-dna-option-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            margin-right: 0.75rem;
+        }
+        
+        .center-dna-option-name {
+            font-weight: 500;
+            font-family: 'Unbounded', sans-serif;
+            color: #26201F;
+        }
+        
+        /* Add a down arrow to the DNA button */
+        .center-dna-caret {
+            content: "▼";
+            font-size: 0.7rem;
+            opacity: 0.5;
+            display: inline-block;
+        }
+        
+        /* No DNA state */
+        .no-dna-icon {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            border: 2px dashed #E0E0E0;
+        }
+        
+        .center-dna-btn.active .no-dna-icon {
+            display: none;
+        }
+        
+        .center-dna-btn:not(.active) .center-dna-color-squares {
+            display: none;
+        }
+        
+        .center-dna-color-squares {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Position the search container at the top */
+        .search-container {
+            margin-top: 0;
+            position: relative;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        /* Match type selector styles */
+        .match-type-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 1rem;
+        }
+        
+        .match-type-selector {
+            display: flex;
+            background-color: white;
+            border-radius: 24px;
+            padding: 0.25rem;
+            position: relative;
+            flex: 1;
+            height: 40px;
+            border: 1px solid #E0E0E0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .match-type-option {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            cursor: pointer;
+            border-radius: 20px;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #26201F;
+            z-index: 2;
+            transition: color 0.3s ease;
+        }
+        
+        .match-type-option.active {
+            background: linear-gradient(to right, #F53151, #F742BD);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+        }
+        
+        .match-type-slider {
+            position: absolute;
+            height: calc(100% - 6px);
+            width: 32%;
+            background-color: #26201F;
+            border-radius: 18px;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s ease;
+            z-index: 1;
+        }
+        
+        .match-type-slider.position-1 {
+            transform: translateX(0);
+        }
+        
+        .match-type-slider.position-2 {
+            transform: translateX(100%);
+        }
+        
+        .match-type-slider.position-3 {
+            transform: translateX(200%);
+        }
+        
+        .search-input-container {
+            display: flex;
+            width: 100%;
+            gap: 1rem;
+        }
+        
+        /* Additional styles specific to match-v2 can be added here */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="nav-placeholder"></div>
+        <main class="content">
+            <div class="search-container">
+                <div class="search-input-container">
+                    <div class="search-box">
+                        <input type="text" placeholder="Enter your concept or brief" class="brand-input" data-translation-key="match-placeholder">
+                        <div class="search-icons">
+                            <img src="/icons/add.svg" alt="Add Files" class="plus-icon-svg" onclick="document.getElementById('fileInput').click()">
+                        </div>
+                        <input type="file" id="fileInput" class="file-input" multiple onchange="handleFileSelect(event)">
+                    </div>
+                </div>
+                
+                <div class="match-type-container">
+                    <div class="match-type-selector">
+                        <div class="match-type-slider position-1"></div>
+                        <div class="match-type-option active" data-position="1">Expected</div>
+                        <div class="match-type-option" data-position="2">Balanced</div>
+                        <div class="match-type-option" data-position="3">Unexpected</div>
+                    </div>
+                    <button class="get-dna-btn" onclick="getMatch()" data-translation-key="match-get-match-button">GET MATCH</button>
+                </div>
+            </div>
+            <div class="file-list" id="fileList"></div>
+            
+            <!-- Center DNA Selector -->
+            <div class="center-dna-container">
+                <button class="center-dna-btn" id="centerDnaButton">
+                    <div class="center-dna-icon-wrapper">
+                        <div class="no-dna-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="40" height="40" fill="#CCCCCC">
+                                <path d="M200-40v-40q0-139 58-225.5T418-480q-102-88-160-174.5T200-880v-40h80v40q0 11 .5 20.5T282-840h396q1-10 1.5-19.5t.5-20.5v-40h80v40q0 139-58 225.5T542-480q102 88 160 174.5T760-80v40h-80v-40q0-11-.5-20.5T678-120H282q-1 10-1.5 19.5T280-80v40h-80Zm138-640h284q13-19 22.5-38t17.5-42H298q8 22 17.5 41.5T338-680Zm142 148q20-17 39-34t36-34H405q17 17 36 34t39 34Zm-75 172h150q-17-17-36-34t-39-34q-20 17-39 34t-36 34ZM298-200h364q-8-22-17.5-41.5T622-280H338q-13 19-22.5 38T298-200Z"/>
+                            </svg>
+                        </div>
+                        <div class="center-dna-color-squares">
+                            <div class="center-dna-color-square-outer">
+                                <div class="center-dna-color-square-inner"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="center-dna-text-container">
+                        <span class="center-dna-text" data-translation-key="nav-no-dna-set">No DNA set</span>
+                        <span class="center-dna-brand-name"></span>
+                        <span class="center-dna-caret">▼</span>
+                    </div>
+                    <div class="center-dna-menu">
+                        <!-- DNA options will be populated dynamically -->
+                    </div>
+                </button>
+            </div>
+            
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">generating...</div>
+            </div>
+            <div class="match-results" style="max-width: 600px; width: 100%; margin: 3rem auto;">
+                <!-- Results will be inserted here -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let selectedFiles = new Set();
+        // Store brand options for reference
+        let brandOptions = new Map();
+        // Store the current match type
+        let currentMatchType = "expected";
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await translateUI(); // Initial translation
+            await initializeCenterDNASelector(); // Initialize the center DNA selector
+            initializeMatchTypeSelector(); // Initialize the match type selector
+        });
+        
+        // Initialize the match type selector
+        function initializeMatchTypeSelector() {
+            const matchTypeOptions = document.querySelectorAll('.match-type-option');
+            const matchTypeSlider = document.querySelector('.match-type-slider');
+            
+            matchTypeOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    // Remove active class from all options
+                    matchTypeOptions.forEach(opt => opt.classList.remove('active'));
+                    
+                    // Add active class to clicked option
+                    option.classList.add('active');
+                    
+                    // Move the slider
+                    const position = option.dataset.position;
+                    matchTypeSlider.className = `match-type-slider position-${position}`;
+                    
+                    // Set the current match type
+                    const matchTypes = ["expected", "balanced", "unexpected"];
+                    currentMatchType = matchTypes[position - 1];
+                    console.log(`Match type set to: ${currentMatchType}`);
+                });
+            });
+            
+            // Calculate and set exact slider positions
+            function adjustSliderPositions() {
+                const selector = document.querySelector('.match-type-selector');
+                if (!selector) return;
+                
+                const optionWidth = selector.offsetWidth / 3;
+                const sliderWidth = optionWidth - 6; // Account for padding
+                
+                const slider = document.querySelector('.match-type-slider');
+                if (slider) {
+                    slider.style.width = `${sliderWidth}px`;
+                    
+                    // Update the CSS for position classes
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        .match-type-slider.position-1 { transform: translateX(0); }
+                        .match-type-slider.position-2 { transform: translateX(${optionWidth}px); }
+                        .match-type-slider.position-3 { transform: translateX(${optionWidth * 2}px); }
+                    `;
+                    document.head.appendChild(style);
+                }
+            }
+            
+            // Run on load and on window resize
+            adjustSliderPositions();
+            window.addEventListener('resize', adjustSliderPositions);
+        }
+        
+        // Initialize the center DNA selector
+        async function initializeCenterDNASelector() {
+            console.log('Initializing center DNA selector...');
+            const centerDnaButton = document.getElementById('centerDnaButton');
+            const centerDnaMenu = document.querySelector('.center-dna-menu');
+            
+            // First load the current DNA
+            await loadCurrentCenterDNA();
+
+            // Then set up event listeners
+            centerDnaButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                centerDnaMenu.classList.toggle('active');
+                if (centerDnaMenu.classList.contains('active')) {
+                    loadCenterDNAOptions();
+                }
+            });
+
+            centerDnaMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                // Handle DNA option clicks
+                const option = e.target.closest('.center-dna-option');
+                if (option) {
+                    const optionId = option.dataset.id;
+                    if (brandOptions.has(optionId)) {
+                        setCenterDNA(brandOptions.get(optionId));
+                    }
+                }
+            });
+
+            document.addEventListener('click', () => {
+                centerDnaMenu.classList.remove('active');
+            });
+        }
+        
+        // Load DNA options for the center selector
+        async function loadCenterDNAOptions() {
+            try {
+                const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
+                const dnas = await response.json();
+                
+                // Clear previous brand options
+                brandOptions.clear();
+                
+                const centerDnaMenu = document.querySelector('.center-dna-menu');
+                
+                // Generate HTML for DNA options
+                centerDnaMenu.innerHTML = Object.entries(dnas)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([brandName, data], index) => {
+                    const optionId = `center-dna-option-${index}`;
+                    brandOptions.set(optionId, brandName);
+                    
+                    return `
+                    <div class="center-dna-option" data-id="${optionId}">
+                        <div class="center-dna-option-color" style="background-color: ${data.brandColors[0]}"></div>
+                        <div class="center-dna-option-name">${brandName}</div>
+                    </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading DNAs:', error);
+            }
+        }
+        
+        // Set DNA for the center selector
+        async function setCenterDNA(brandName) {
+            console.log('Setting center DNA for brand:', brandName);
+            try {
+                if (!brandName) {
+                    await setClientDNA(null);
+                    updateCenterDNAButton(null);
+                    return;
+                }
+
+                const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
+                const dnas = await response.json();
+
+                if (!dnas[brandName]) {
+                    console.log('DNA not found for brand:', brandName);
+                    return;
+                }
+
+                await setClientDNA(dnas[brandName]);
+                updateCenterDNAButton(dnas[brandName]);
+
+                // Close the menu
+                document.querySelector('.center-dna-menu').classList.remove('active');
+            } catch (error) {
+                console.error('Error setting center DNA:', error);
+            }
+        }
+        
+        // Update the center DNA button appearance
+        function updateCenterDNAButton(dna) {
+            const centerDnaButton = document.getElementById('centerDnaButton');
+            const centerDnaText = centerDnaButton.querySelector('.center-dna-text');
+            const centerDnaBrandName = centerDnaButton.querySelector('.center-dna-brand-name');
+            const outerSquare = centerDnaButton.querySelector('.center-dna-color-square-outer');
+            const innerSquare = centerDnaButton.querySelector('.center-dna-color-square-inner');
+
+            if (dna) {
+                centerDnaButton.classList.add('active');
+                
+                // Set the colors for the squares
+                outerSquare.style.backgroundColor = dna.brandColors[0];
+                innerSquare.style.backgroundColor = dna.brandColors[1];
+                
+                // Set the brand name and color it with the primary brand color
+                centerDnaBrandName.textContent = dna.brandName;
+                centerDnaBrandName.style.color = dna.brandColors[0];
+                
+                // Set a fixed translation key
+                centerDnaText.setAttribute('data-translation-key', 'using-dna');
+                centerDnaText.style.display = 'none'; // Hide the "Using" text since we're showing the brand name directly
+            } else {
+                centerDnaButton.classList.remove('active');
+                
+                // Reset the colors
+                outerSquare.style.backgroundColor = 'transparent';
+                innerSquare.style.backgroundColor = 'transparent';
+                
+                // Reset the brand name
+                centerDnaBrandName.textContent = '';
+                centerDnaBrandName.style.color = '#26201F'; // Reset to default color
+                
+                // Reset the text
+                centerDnaText.setAttribute('data-translation-key', 'nav-no-dna-set');
+                centerDnaText.style.display = 'block';
+            }
+            
+            translateUI();
+        }
+        
+        // Load current DNA for the center selector
+        async function loadCurrentCenterDNA() {
+            console.log('Loading current center DNA...');
+            try {
+                const currentDNA = getClientDNA();
+                if (currentDNA) {
+                    // Verify the DNA still exists in storage
+                    const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
+                    const dnas = await response.json();
+
+                    if (dnas[currentDNA.brandName]) {
+                        updateCenterDNAButton(currentDNA);
+                    } else {
+                        // If the DNA no longer exists in storage, clear it
+                        setClientDNA(null);
+                        updateCenterDNAButton(null);
+                    }
+                } else {
+                    updateCenterDNAButton(null);
+                }
+            } catch (error) {
+                console.error('Error loading current center DNA:', error);
+                updateCenterDNAButton(null);
+            }
+        }
+        
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            const fileList = document.getElementById('fileList');
+            
+            for (const file of files) {
+                if (!selectedFiles.has(file.name)) {
+                    selectedFiles.add(file.name);
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <span>${file.name}</span>
+                        <span class="remove-file" onclick="removeFile('${file.name}')">×</span>
+                    `;
+                    fileList.appendChild(fileItem);
+                }
+            }
+        }
+
+        function removeFile(fileName) {
+            selectedFiles.delete(fileName);
+            const fileList = document.getElementById('fileList');
+            const fileItems = fileList.getElementsByClassName('file-item');
+            for (const item of Array.from(fileItems)) {
+                if (item.firstElementChild.textContent === fileName) {
+                    fileList.removeChild(item);
+                    break;
+                }
+            }
+        }
+        
+        // Placeholder for the getMatch function - will be implemented later
+        function getMatch() {
+            const loadingContainer = document.querySelector('.loading-container');
+            const resultsContainer = document.querySelector('.match-results');
+            
+            let brief = document.querySelector('.brand-input').value.trim();
+            const currentDNA = getClientDNA();
+            
+            if (!currentDNA) {
+                alert('Please select a brand DNA first.');
+                return;
+            }
+            
+            if (!brief && selectedFiles.size === 0) {
+                alert('Please enter a brief or upload a document.');
+                return;
+            }
+            
+            // Show loading indicator
+            loadingContainer.style.display = 'flex';
+            resultsContainer.innerHTML = '';
+            
+            console.log(`Generating matches with type: ${currentMatchType}`);
+            
+            // This is just a placeholder - actual implementation will come later
+            setTimeout(() => {
+                loadingContainer.style.display = 'none';
+                resultsContainer.innerHTML = `<p>Match functionality will be implemented in the future. Selected match type: ${currentMatchType}</p>`;
+            }, 2000);
+        }
+    </script>
+</body>
+</html> 
