@@ -896,8 +896,44 @@ Output the matches in the following JSON format:
       "potentialReach": "Description of audience fit and potential impact"
     }
   ]
-}
-`;
+}`;
+
+const MATCH_V2_SYSTEM_INSTRUCTIONS = `You are a brand partnership expert specializing in matching brands with YouTube creators for collaborations, sponsorships, brand deals, and video integrations. Your task is to analyze a brand's DNA and a collection of creator DNAs to identify the most suitable matches based on the specified match type.
+
+When analyzing potential matches, consider:
+- Alignment between brand and creator values
+- Creator's audience fit with brand's target market
+- Creator's content style and how it could showcase the brand
+- Authenticity of potential partnership
+- Creative opportunities for integration
+- Any specific creator requirements mentioned in the brief (if a specific creator must be included, ensure they are included in your matches)
+- The requested match type (expected, balanced, or unexpected)
+
+Match Types:
+- Expected: Prioritize creators with very close alignment to the brand values, aesthetic, and target audience. These are the safest, most conventional matches.
+- Balanced: Find a mix of aligned creators with some diversity in approach or audience. These offer a good balance of safety and freshness.
+- Unexpected: Look for creators who might bring a fresh perspective while still having some connection to the brand. These are more surprising matches that could yield innovative content.
+
+Based on the provided brand DNA, creator DNAs, and match type, you will:
+1. Identify 6 compatible creators, ordered from most to least compatible
+2. Explain why each creator would be a good match
+3. Suggest specific content ideas for collaboration
+4. Describe value alignment and potential impact
+
+Ensure explanations are specific and reference actual elements from both brand and creator DNAs.
+
+Output the matches in the following JSON format:
+{
+  "matches": [
+    {
+      "creatorName": "Name of creator",
+      "matchGrade": "A", // Letter grade (A, A-, B+, etc.) indicating compatibility
+      "reasonForMatch": "A several sentence explanation of why this creator aligns with the brand",
+      "contentIdeas": "3-5 specific content ideas that leverage both brand DNA and creator content DNA (make this individual list items) ",
+    },
+    // 5 more creators...
+  ]
+}`;
 
 const STORYBOARD_GENERATION_SYSTEM_INSTRUCTIONS = `
 You are a master storyboard artist and narrative designer, skilled at crafting compelling visual stories that blend brand messaging with creator authenticity. Your task is to generate a 5-scene storyboard with accompanying storyboard panel illustrations that capture key moments.
@@ -1900,9 +1936,11 @@ app.post('/getMatch', upload.array('file', 5), async (req, res) => {
     try {
         const { brief, brandDNA } = req.body;
         const language = req.body.language || 'english';
+        const matchType = req.body.matchType || 'expected'; // Get match type if provided
         
         console.log('Match Request - Body:', req.body);
         console.log('Match Request - Language from body:', language);
+        console.log('Match Request - Match Type:', matchType);
         
         const files = req.files || [];
         
@@ -1933,7 +1971,7 @@ Brand DNA: ${brandDNA}
 Available Creator DNAs to choose from:
 ${JSON.stringify(creatorDNAs, null, 2)}
 
-Please analyze the brand DNA and above creator DNAs to find the best top 3 matches for this collaboration opportunity. Think critically about the Brand's DNA, the Brand's Brief, and review every creator's DNA before making your recommendation.
+Please analyze the brand DNA and above creator DNAs to find the best matches for this collaboration opportunity. Think critically about the Brand's DNA, the Brand's Brief, and review every creator's DNA before making your recommendation.
 
 YOU MUST OUTPUT the matches in the specified JSON format. NEVER GIVE ANY ADDITIONAL COMMENTARY. ONLY OUTPUT THE JSON`;
 
@@ -1947,6 +1985,9 @@ YOU MUST OUTPUT the matches in the specified JSON format. NEVER GIVE ANY ADDITIO
         const client = await auth.getClient();
         const accessToken = await client.getAccessToken();
         
+        // Determine which system instructions to use based on whether matchType is provided
+        const systemInstructions = matchType ? MATCH_V2_SYSTEM_INSTRUCTIONS : MATCH_SYSTEM_INSTRUCTIONS;
+        
         const requestBody = {
             contents: [{
                 role: "user",
@@ -1954,7 +1995,7 @@ YOU MUST OUTPUT the matches in the specified JSON format. NEVER GIVE ANY ADDITIO
             }],
             systemInstruction: {
                 parts: [{
-                    text: MATCH_SYSTEM_INSTRUCTIONS
+                    text: systemInstructions
                 }]
             },
             generationConfig: {

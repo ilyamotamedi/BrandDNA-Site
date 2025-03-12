@@ -17,183 +17,12 @@
             flex-direction: column;
         }
         
-        /* Hide navigation items but keep logo and settings */
-        .nav-items {
-            display: none !important;
-        }
-        
-        /* Hide the DNA button in the navigation */
-        .bottom-section .dna-btn {
-            display: none !important;
-        }
-        
         /* Full page layout with absolute positioning for DNA selector */
         .content {
             position: relative;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-        }
-        
-        /* Center DNA selector styles */
-        .center-dna-container {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            z-index: 10;
-            width: 100%;
-        }
-        
-        .center-dna-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 1.5rem;
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
-            font-family: 'Unbounded', sans-serif;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-        
-        .center-dna-icon-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-            position: relative;
-        }
-        
-        .center-dna-color-square-outer {
-            width: 80px;
-            height: 80px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.3s ease;
-        }
-        
-        .center-dna-color-square-inner {
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
-        }
-        
-        .center-dna-text-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        
-        .center-dna-text {
-            font-family: 'Unbounded', sans-serif;
-            font-weight: 500;
-            margin-top: 0.5rem;
-            color: #26201F;
-        }
-        
-        .center-dna-brand-name {
-            font-family: 'Unbounded', sans-serif;
-            font-weight: 700;
-            font-size: 1.2rem;
-            margin-top: 0.5rem;
-            display: none;
-            color: #26201F;
-        }
-        
-        .center-dna-btn.active .center-dna-brand-name {
-            display: block;
-        }
-        
-        .center-dna-menu {
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 50%;
-            transform: translateX(-50%);
-            width: 240px;
-            max-height: 320px;
-            overflow-y: auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            z-index: 1000;
-            display: none;
-            padding: 0.5rem;
-        }
-        
-        .center-dna-menu.active {
-            display: block;
-        }
-        
-        .center-dna-option {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background-color 0.2s ease;
-            font-family: 'Unbounded', sans-serif;
-        }
-        
-        .center-dna-option:hover {
-            background-color: #F6F6F6;
-        }
-        
-        .center-dna-option-color {
-            width: 24px;
-            height: 24px;
-            border-radius: 4px;
-            margin-right: 0.75rem;
-        }
-        
-        .center-dna-option-name {
-            font-weight: 500;
-            font-family: 'Unbounded', sans-serif;
-            color: #26201F;
-        }
-        
-        /* Add a down arrow to the DNA button */
-        .center-dna-caret {
-            content: "▼";
-            font-size: 0.7rem;
-            opacity: 0.5;
-            display: inline-block;
-        }
-        
-        /* No DNA state */
-        .no-dna-icon {
-            width: 80px;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            border: 2px dashed #E0E0E0;
-        }
-        
-        .center-dna-btn.active .no-dna-icon {
-            display: none;
-        }
-        
-        .center-dna-btn:not(.active) .center-dna-color-squares {
-            display: none;
-        }
-        
-        .center-dna-color-squares {
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         
         /* Position the search container at the top */
@@ -281,7 +110,279 @@
             gap: 1rem;
         }
         
-        /* Additional styles specific to match-v2 can be added here */
+        /* Creator cards display styles */
+        .creators-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-top: 2rem;
+            padding: 0 1rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .creators-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .creator-card {
+            width: 100%;
+            max-width: 100%;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+            align-self: flex-start; /* Prevent cards from stretching to match heights */
+        }
+        
+        .creator-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        
+        .creator-card-header {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s ease;
+        }
+        
+        .creator-card-header:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .creator-card-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .creator-card-info {
+            flex: 1;
+        }
+        
+        .creator-card-name {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            color: #26201F;
+        }
+        
+        .creator-card-subscribers {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .creator-card-grade {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #F53151, #F742BD);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        .creator-card-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+        }
+        
+        .creator-card.expanded .creator-card-content {
+            max-height: 2000px; /* Increased from 500px to accommodate more content */
+        }
+        
+        .creator-card-section {
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .creator-card-section:last-child {
+            border-bottom: none;
+        }
+        
+        .creator-card-section-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #26201F;
+            margin-bottom: 0.5rem;
+        }
+        
+        .creator-card-section-content {
+            font-size: 0.85rem;
+            color: #444;
+            line-height: 1.4;
+        }
+        
+        .creator-card-ideas {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .creator-card-idea-item {
+            margin-bottom: 0.75rem;
+            padding-left: 1.5rem;
+            position: relative;
+            font-size: 0.85rem;
+        }
+        
+        .creator-card-idea-item::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0.5rem;
+            width: 6px;
+            height: 6px;
+            background: linear-gradient(to right, #F53151, #F742BD);
+            border-radius: 50%;
+        }
+        
+        .creator-card-toggle {
+            width: 100%;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            background-color: #f9f9f9;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .creator-card-toggle::after {
+            content: "▼";
+            margin-left: 5px;
+            font-size: 0.7rem;
+        }
+        
+        .creator-card.expanded .creator-card-toggle::after {
+            content: "▲";
+        }
+        
+        .creator-details {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 500px;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            padding: 1.5rem;
+            z-index: 100;
+            display: none;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .creator-details-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            display: none;
+        }
+        
+        .creator-details-overlay.active {
+            display: block;
+        }
+        
+        .creator-details.active {
+            display: block;
+        }
+        
+        .creator-details-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #26201F;
+        }
+        
+        .creator-details-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .creator-details-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .creator-details-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #26201F;
+        }
+        
+        .creator-details-grade {
+            font-size: 0.9rem;
+            color: #26201F;
+            margin-top: 0.25rem;
+        }
+        
+        .creator-details-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .creator-details-section-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #26201F;
+            margin-bottom: 0.5rem;
+        }
+        
+        .creator-details-section-content {
+            font-size: 0.9rem;
+            color: #26201F;
+        }
+        
+        .creator-details-ideas {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .creator-details-idea-item {
+            margin-bottom: 0.75rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .creator-details-idea-item::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0.5rem;
+            width: 6px;
+            height: 6px;
+            background: linear-gradient(to right, #F53151, #F742BD);
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
@@ -311,36 +412,27 @@
             </div>
             <div class="file-list" id="fileList"></div>
             
-            <!-- Center DNA Selector -->
-            <div class="center-dna-container">
-                <button class="center-dna-btn" id="centerDnaButton">
-                    <div class="center-dna-icon-wrapper">
-                        <div class="no-dna-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="40" height="40" fill="#CCCCCC">
-                                <path d="M200-40v-40q0-139 58-225.5T418-480q-102-88-160-174.5T200-880v-40h80v40q0 11 .5 20.5T282-840h396q1-10 1.5-19.5t.5-20.5v-40h80v40q0 139-58 225.5T542-480q102 88 160 174.5T760-80v40h-80v-40q0-11-.5-20.5T678-120H282q-1 10-1.5 19.5T280-80v40h-80Zm138-640h284q13-19 22.5-38t17.5-42H298q8 22 17.5 41.5T338-680Zm142 148q20-17 39-34t36-34H405q17 17 36 34t39 34Zm-75 172h150q-17-17-36-34t-39-34q-20 17-39 34t-36 34ZM298-200h364q-8-22-17.5-41.5T622-280H338q-13 19-22.5 38T298-200Z"/>
-                            </svg>
-                        </div>
-                        <div class="center-dna-color-squares">
-                            <div class="center-dna-color-square-outer">
-                                <div class="center-dna-color-square-inner"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="center-dna-text-container">
-                        <span class="center-dna-text" data-translation-key="nav-no-dna-set">No DNA set</span>
-                        <span class="center-dna-brand-name"></span>
-                        <span class="center-dna-caret">▼</span>
-                    </div>
-                    <div class="center-dna-menu">
-                        <!-- DNA options will be populated dynamically -->
-                    </div>
-                </button>
-            </div>
-            
             <div class="loading-container">
                 <div class="loading-spinner"></div>
                 <div class="loading-text">generating...</div>
             </div>
+            
+            <!-- Creator cards display -->
+            <div class="creators-container" id="creatorsContainer">
+                <!-- Creator cards will be added here dynamically -->
+            </div>
+            
+            <!-- Creator details overlay -->
+            <div class="creator-details-overlay" id="creatorDetailsOverlay"></div>
+            
+            <!-- Creator details popup -->
+            <div class="creator-details" id="creatorDetails">
+                <button class="creator-details-close" onclick="closeCreatorDetails()">×</button>
+                <div class="creator-details-content">
+                    <!-- Creator details will be populated here -->
+                </div>
+            </div>
+            
             <div class="match-results" style="max-width: 600px; width: 100%; margin: 3rem auto;">
                 <!-- Results will be inserted here -->
             </div>
@@ -353,11 +445,15 @@
         let brandOptions = new Map();
         // Store the current match type
         let currentMatchType = "expected";
+        // Store the matches data
+        let matchesData = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
             await translateUI(); // Initial translation
-            await initializeCenterDNASelector(); // Initialize the center DNA selector
             initializeMatchTypeSelector(); // Initialize the match type selector
+            
+            // Add event listener to the overlay to close details when clicked
+            document.getElementById('creatorDetailsOverlay').addEventListener('click', closeCreatorDetails);
         });
         
         // Initialize the match type selector
@@ -412,167 +508,6 @@
             window.addEventListener('resize', adjustSliderPositions);
         }
         
-        // Initialize the center DNA selector
-        async function initializeCenterDNASelector() {
-            console.log('Initializing center DNA selector...');
-            const centerDnaButton = document.getElementById('centerDnaButton');
-            const centerDnaMenu = document.querySelector('.center-dna-menu');
-            
-            // First load the current DNA
-            await loadCurrentCenterDNA();
-
-            // Then set up event listeners
-            centerDnaButton.addEventListener('click', (e) => {
-                e.stopPropagation();
-                centerDnaMenu.classList.toggle('active');
-                if (centerDnaMenu.classList.contains('active')) {
-                    loadCenterDNAOptions();
-                }
-            });
-
-            centerDnaMenu.addEventListener('click', (e) => {
-                e.stopPropagation();
-                
-                // Handle DNA option clicks
-                const option = e.target.closest('.center-dna-option');
-                if (option) {
-                    const optionId = option.dataset.id;
-                    if (brandOptions.has(optionId)) {
-                        setCenterDNA(brandOptions.get(optionId));
-                    }
-                }
-            });
-
-            document.addEventListener('click', () => {
-                centerDnaMenu.classList.remove('active');
-            });
-        }
-        
-        // Load DNA options for the center selector
-        async function loadCenterDNAOptions() {
-            try {
-                const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
-                const dnas = await response.json();
-                
-                // Clear previous brand options
-                brandOptions.clear();
-                
-                const centerDnaMenu = document.querySelector('.center-dna-menu');
-                
-                // Generate HTML for DNA options
-                centerDnaMenu.innerHTML = Object.entries(dnas)
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([brandName, data], index) => {
-                    const optionId = `center-dna-option-${index}`;
-                    brandOptions.set(optionId, brandName);
-                    
-                    return `
-                    <div class="center-dna-option" data-id="${optionId}">
-                        <div class="center-dna-option-color" style="background-color: ${data.brandColors[0]}"></div>
-                        <div class="center-dna-option-name">${brandName}</div>
-                    </div>
-                    `;
-                }).join('');
-            } catch (error) {
-                console.error('Error loading DNAs:', error);
-            }
-        }
-        
-        // Set DNA for the center selector
-        async function setCenterDNA(brandName) {
-            console.log('Setting center DNA for brand:', brandName);
-            try {
-                if (!brandName) {
-                    await setClientDNA(null);
-                    updateCenterDNAButton(null);
-                    return;
-                }
-
-                const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
-                const dnas = await response.json();
-
-                if (!dnas[brandName]) {
-                    console.log('DNA not found for brand:', brandName);
-                    return;
-                }
-
-                await setClientDNA(dnas[brandName]);
-                updateCenterDNAButton(dnas[brandName]);
-
-                // Close the menu
-                document.querySelector('.center-dna-menu').classList.remove('active');
-            } catch (error) {
-                console.error('Error setting center DNA:', error);
-            }
-        }
-        
-        // Update the center DNA button appearance
-        function updateCenterDNAButton(dna) {
-            const centerDnaButton = document.getElementById('centerDnaButton');
-            const centerDnaText = centerDnaButton.querySelector('.center-dna-text');
-            const centerDnaBrandName = centerDnaButton.querySelector('.center-dna-brand-name');
-            const outerSquare = centerDnaButton.querySelector('.center-dna-color-square-outer');
-            const innerSquare = centerDnaButton.querySelector('.center-dna-color-square-inner');
-
-            if (dna) {
-                centerDnaButton.classList.add('active');
-                
-                // Set the colors for the squares
-                outerSquare.style.backgroundColor = dna.brandColors[0];
-                innerSquare.style.backgroundColor = dna.brandColors[1];
-                
-                // Set the brand name and color it with the primary brand color
-                centerDnaBrandName.textContent = dna.brandName;
-                centerDnaBrandName.style.color = dna.brandColors[0];
-                
-                // Set a fixed translation key
-                centerDnaText.setAttribute('data-translation-key', 'using-dna');
-                centerDnaText.style.display = 'none'; // Hide the "Using" text since we're showing the brand name directly
-            } else {
-                centerDnaButton.classList.remove('active');
-                
-                // Reset the colors
-                outerSquare.style.backgroundColor = 'transparent';
-                innerSquare.style.backgroundColor = 'transparent';
-                
-                // Reset the brand name
-                centerDnaBrandName.textContent = '';
-                centerDnaBrandName.style.color = '#26201F'; // Reset to default color
-                
-                // Reset the text
-                centerDnaText.setAttribute('data-translation-key', 'nav-no-dna-set');
-                centerDnaText.style.display = 'block';
-            }
-            
-            translateUI();
-        }
-        
-        // Load current DNA for the center selector
-        async function loadCurrentCenterDNA() {
-            console.log('Loading current center DNA...');
-            try {
-                const currentDNA = getClientDNA();
-                if (currentDNA) {
-                    // Verify the DNA still exists in storage
-                    const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
-                    const dnas = await response.json();
-
-                    if (dnas[currentDNA.brandName]) {
-                        updateCenterDNAButton(currentDNA);
-                    } else {
-                        // If the DNA no longer exists in storage, clear it
-                        setClientDNA(null);
-                        updateCenterDNAButton(null);
-                    }
-                } else {
-                    updateCenterDNAButton(null);
-                }
-            } catch (error) {
-                console.error('Error loading current center DNA:', error);
-                updateCenterDNAButton(null);
-            }
-        }
-        
         function handleFileSelect(event) {
             const files = event.target.files;
             const fileList = document.getElementById('fileList');
@@ -604,15 +539,17 @@
         }
         
         // Placeholder for the getMatch function - will be implemented later
-        function getMatch() {
+        async function getMatch() {
             const loadingContainer = document.querySelector('.loading-container');
             const resultsContainer = document.querySelector('.match-results');
+            const fileInput = document.getElementById('fileInput');
+            const creatorsContainer = document.getElementById('creatorsContainer');
             
             let brief = document.querySelector('.brand-input').value.trim();
             const currentDNA = getClientDNA();
             
             if (!currentDNA) {
-                alert('Please select a brand DNA first.');
+                alert('Please select a brand DNA from the left navigation menu.');
                 return;
             }
             
@@ -621,17 +558,368 @@
                 return;
             }
             
-            // Show loading indicator
-            loadingContainer.style.display = 'flex';
-            resultsContainer.innerHTML = '';
-            
-            console.log(`Generating matches with type: ${currentMatchType}`);
-            
-            // This is just a placeholder - actual implementation will come later
-            setTimeout(() => {
+            try {
+                // Show loading indicator
+                loadingContainer.style.display = 'flex';
+                resultsContainer.innerHTML = '';
+                creatorsContainer.innerHTML = '';
+                
+                // If there's an uploaded PDF, add a note about it to the brief
+                if (selectedFiles.size > 0) {
+                    brief = `The brand has attached a brief for their concept:\n\n${brief}`;
+                }
+                
+                // Check if a creator is selected in the Match setting
+                const selectedCreator = sessionStorage.getItem('currentMatch');
+                if (selectedCreator && selectedCreator.trim() !== '') {
+                    console.log('Match - Selected creator:', selectedCreator);
+                    brief += `\n\nIMPORTANT: One of the matches MUST BE ${selectedCreator}.`;
+                }
+                
+                // Add match type to the brief with specific instructions for each type
+                brief += `\n\nMatch type: ${currentMatchType}.`;
+                
+                // Add specific prompt modifications based on match type
+                if (currentMatchType === "balanced") {
+                    brief += `\n\nIMPORTANT INSTRUCTION: For this "balanced" match, I want you to be more creative than you would typically be. While staying true to the core of the brand DNA, look for creators who bring a fresh perspective or slightly different audience. Find creators who maintain the essence of the brand values but add some diversity in style, audience, or approach. These matches should feel like a natural extension of the brand that opens new creative possibilities.`;
+                } else if (currentMatchType === "unexpected") {
+                    brief += `\n\nIMPORTANT INSTRUCTION: For this "unexpected" match, I want you to make bold, surprising connections. Look for creators who might seem unconventional for this brand at first glance but could create truly innovative collaborations. These creators should still align with the core brand values at a fundamental level, but they might express those values in completely different ways or reach entirely different audiences. These matches should feel unexpected yet somehow make perfect sense when explained. Push the boundaries of conventional brand partnerships while ensuring there's still a meaningful connection.`;
+                }
+                // For "expected" type, no additional instructions needed
+                
+                const clientLanguage = getClientLanguage();
+                
+                // Create FormData and append files
+                const formData = new FormData();
+                formData.append('brief', brief);
+                formData.append('brandDNA', JSON.stringify(currentDNA));
+                formData.append('language', clientLanguage);
+                formData.append('matchType', currentMatchType);
+                
+                // Add selected files
+                const fileList = document.getElementById('fileList');
+                const fileItems = fileList.getElementsByClassName('file-item');
+                for (const item of Array.from(fileItems)) {
+                    const fileName = item.firstElementChild.textContent;
+                    const fileObj = Array.from(fileInput.files).find(f => f.name === fileName);
+                    if (fileObj) {
+                        formData.append('file', fileObj);
+                    }
+                }
+                
+                const response = await fetch(`${window.API_BASE_URL}/getMatch`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to get matches');
+                }
+                
+                // Store the matches data in the global variable
+                if (!data.matches || !Array.isArray(data.matches) || data.matches.length === 0) {
+                    throw new Error('No matches found or invalid match data received');
+                }
+                
+                matchesData = data.matches;
+                console.log('Received match data:', matchesData);
+                
+                // Pre-fetch creator DNAs to ensure we have them for display
+                try {
+                    const creatorResponse = await fetch(`${window.API_BASE_URL}/getCreatorDNAs`);
+                    const creatorDNAs = await creatorResponse.json();
+                    console.log('Fetched creator DNAs for display');
+                    
+                    // Enhance matchesData with additional creator info if available
+                    matchesData.forEach(match => {
+                        const creatorData = creatorDNAs[match.creatorName];
+                        if (creatorData) {
+                            // Add any useful creator data that isn't already in the match
+                            match.channelThumbnail = creatorData.channelThumbnail;
+                            match.channelUrl = creatorData.channelUrl;
+                            match.subscriberCount = creatorData.subscriberCount;
+                            match.averageViews = creatorData.averageViews;
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error pre-fetching creator DNAs:', error);
+                    // Continue anyway, we'll handle missing data in the display functions
+                }
+                
+                // Display creators in cards
+                displayCreatorsInCards(matchesData);
+                
+                // Clear file list after successful submission
+                fileList.innerHTML = '';
+                selectedFiles.clear();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+            } finally {
                 loadingContainer.style.display = 'none';
-                resultsContainer.innerHTML = `<p>Match functionality will be implemented in the future. Selected match type: ${currentMatchType}</p>`;
-            }, 2000);
+            }
+        }
+        
+        // Function to display creators in cards
+        async function displayCreatorsInCards(creators) {
+            const container = document.getElementById('creatorsContainer');
+            container.innerHTML = '';
+            
+            // Limit to 6 creators for now
+            const displayCreators = creators.slice(0, 6);
+            
+            displayCreators.forEach((creator, index) => {
+                // Format subscriber count
+                let subscriberCount = 'N/A';
+                if (creator.subscriberCount) {
+                    subscriberCount = formatSubscriberCount(creator.subscriberCount);
+                }
+                
+                // Parse content ideas for the expanded view
+                let ideasHtml = '';
+                if (creator.contentIdeas) {
+                    // Make sure contentIdeas is a string before trying to split it
+                    const contentIdeasStr = typeof creator.contentIdeas === 'string' 
+                        ? creator.contentIdeas 
+                        : Array.isArray(creator.contentIdeas) 
+                            ? creator.contentIdeas.join('. ') 
+                            : JSON.stringify(creator.contentIdeas);
+                    
+                    let ideas = [];
+                    
+                    try {
+                        // Try to split by periods followed by commas first
+                        ideas = contentIdeasStr.split('.,').map(idea => idea.trim().replace(/\.$/, ''));
+                        
+                        // If we only got one item, try splitting by periods
+                        if (ideas.length === 1 && contentIdeasStr.includes('.')) {
+                            ideas = contentIdeasStr.split('.').filter(idea => idea.trim().length > 0).map(idea => idea.trim());
+                        }
+                        
+                        // If still only one or empty, just use the whole string
+                        if (ideas.length <= 1) {
+                            ideas = [contentIdeasStr];
+                        }
+                    } catch (error) {
+                        console.error('Error parsing content ideas:', error);
+                        ideas = [contentIdeasStr];
+                    }
+                    
+                    ideasHtml = `
+                        <ul class="creator-card-ideas">
+                            ${ideas.map(idea => `
+                                <li class="creator-card-idea-item">${idea}</li>
+                            `).join('')}
+                        </ul>
+                    `;
+                } else {
+                    ideasHtml = '<p>No content ideas available.</p>';
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'creator-card';
+                card.dataset.creatorIndex = index;
+                
+                card.innerHTML = `
+                    <div class="creator-card-grade">${creator.matchGrade || 'N/A'}</div>
+                    <div class="creator-card-header">
+                        <img 
+                            src="${creator.channelThumbnail ? `/proxy-image?url=${encodeURIComponent(creator.channelThumbnail)}` : '/icons/person.svg'}" 
+                            alt="${creator.creatorName}" 
+                            class="creator-card-img"
+                            crossorigin="anonymous"
+                        >
+                        <div class="creator-card-info">
+                            <div class="creator-card-name">${creator.creatorName}</div>
+                            <div class="creator-card-subscribers">${subscriberCount} subscribers</div>
+                        </div>
+                    </div>
+                    <button class="creator-card-toggle">View Details</button>
+                    <div class="creator-card-content">
+                        <div class="creator-card-section">
+                            <div class="creator-card-section-title">Why This Match Works</div>
+                            <div class="creator-card-section-content">${creator.reasonForMatch || 'No information available.'}</div>
+                        </div>
+                        <div class="creator-card-section">
+                            <div class="creator-card-section-title">Content Ideas</div>
+                            ${ideasHtml}
+                        </div>
+                        <div class="creator-card-section">
+                            <div class="creator-card-section-title">Value Alignment</div>
+                            <div class="creator-card-section-content">${creator.valueAlignment || 'No information available.'}</div>
+                        </div>
+                        <div class="creator-card-section">
+                            <div class="creator-card-section-title">Potential Impact</div>
+                            <div class="creator-card-section-content">${creator.potentialReach || 'No information available.'}</div>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+                
+                // Add click event to toggle button
+                const toggleButton = card.querySelector('.creator-card-toggle');
+                toggleButton.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent card click event
+                    
+                    // Toggle the current card
+                    card.classList.toggle('expanded');
+                    toggleButton.textContent = card.classList.contains('expanded') ? 'Hide Details' : 'View Details';
+                });
+                
+                // Also add click event to the card header for easier toggling
+                const cardHeader = card.querySelector('.creator-card-header');
+                cardHeader.addEventListener('click', () => {
+                    // Toggle the current card
+                    card.classList.toggle('expanded');
+                    toggleButton.textContent = card.classList.contains('expanded') ? 'Hide Details' : 'View Details';
+                });
+                cardHeader.style.cursor = 'pointer';
+            });
+        }
+        
+        // Function to show creator details
+        function showCreatorDetails(creatorIndex) {
+            console.log('Showing creator details for index:', creatorIndex);
+            
+            const creator = matchesData[creatorIndex];
+            if (!creator) {
+                console.error('Creator data not found for index:', creatorIndex);
+                return;
+            }
+            
+            console.log('Creator data:', creator);
+            
+            const detailsContainer = document.getElementById('creatorDetails');
+            const detailsOverlay = document.getElementById('creatorDetailsOverlay');
+            const contentContainer = detailsContainer.querySelector('.creator-details-content');
+            
+            // Format subscriber count
+            let subscriberCount = 'N/A';
+            if (creator.subscriberCount) {
+                subscriberCount = formatSubscriberCount(creator.subscriberCount);
+            }
+            
+            // Format average views
+            let averageViews = '';
+            if (creator.averageViews) {
+                averageViews = `<div>${formatSubscriberCount(creator.averageViews)} avg. views/video</div>`;
+            }
+            
+            // Channel URL
+            const channelUrl = creator.channelUrl || '#';
+            
+            // Parse content ideas - handle different formats
+            let ideasHtml = '';
+            if (creator.contentIdeas) {
+                // Make sure contentIdeas is a string before trying to split it
+                const contentIdeasStr = typeof creator.contentIdeas === 'string' 
+                    ? creator.contentIdeas 
+                    : Array.isArray(creator.contentIdeas) 
+                        ? creator.contentIdeas.join('. ') 
+                        : JSON.stringify(creator.contentIdeas);
+                
+                let ideas = [];
+                
+                try {
+                    // Try to split by periods followed by commas first
+                    ideas = contentIdeasStr.split('.,').map(idea => idea.trim().replace(/\.$/, ''));
+                    
+                    // If we only got one item, try splitting by periods
+                    if (ideas.length === 1 && contentIdeasStr.includes('.')) {
+                        ideas = contentIdeasStr.split('.').filter(idea => idea.trim().length > 0).map(idea => idea.trim());
+                    }
+                    
+                    // If still only one or empty, just use the whole string
+                    if (ideas.length <= 1) {
+                        ideas = [contentIdeasStr];
+                    }
+                } catch (error) {
+                    console.error('Error parsing content ideas:', error);
+                    ideas = [contentIdeasStr];
+                }
+                
+                ideasHtml = `
+                    <ul class="creator-details-ideas">
+                        ${ideas.map(idea => `
+                            <li class="creator-details-idea-item">${idea}</li>
+                        `).join('')}
+                    </ul>
+                `;
+            } else {
+                ideasHtml = '<p>No content ideas available.</p>';
+            }
+            
+            // Build HTML
+            contentContainer.innerHTML = `
+                <div class="creator-details-header">
+                    <img 
+                        src="${creator.channelThumbnail ? `/proxy-image?url=${encodeURIComponent(creator.channelThumbnail)}` : '/icons/person.svg'}" 
+                        alt="${creator.creatorName}" 
+                        class="creator-details-img"
+                        crossorigin="anonymous"
+                    >
+                    <div>
+                        <a href="${channelUrl}" target="_blank" class="creator-details-name" style="text-decoration: none; color: inherit;">
+                            ${creator.creatorName}
+                            <span style="margin-left: 4px; font-size: 0.9em;">↗</span>
+                        </a>
+                        <div class="creator-details-grade">Match Grade: ${creator.matchGrade || 'N/A'}</div>
+                        <div>${subscriberCount} subscribers</div>
+                        ${averageViews}
+                    </div>
+                </div>
+                
+                <div class="creator-details-section">
+                    <div class="creator-details-section-title">Why This Match Works</div>
+                    <div class="creator-details-section-content">${creator.reasonForMatch || 'No information available.'}</div>
+                </div>
+                
+                <div class="creator-details-section">
+                    <div class="creator-details-section-title">Content Ideas</div>
+                    ${ideasHtml}
+                </div>
+                
+                <div class="creator-details-section">
+                    <div class="creator-details-section-title">Value Alignment</div>
+                    <div class="creator-details-section-content">${creator.valueAlignment || 'No information available.'}</div>
+                </div>
+                
+                <div class="creator-details-section">
+                    <div class="creator-details-section-title">Potential Impact</div>
+                    <div class="creator-details-section-content">${creator.potentialReach || 'No information available.'}</div>
+                </div>
+            `;
+            
+            // Show the details container and overlay
+            detailsContainer.classList.add('active');
+            detailsOverlay.classList.add('active');
+            
+            // Ensure the popup is visible and in front of other elements
+            detailsContainer.style.zIndex = '100';
+            
+            console.log('Creator details popup activated');
+        }
+        
+        // Function to close creator details
+        function closeCreatorDetails() {
+            const detailsContainer = document.getElementById('creatorDetails');
+            const detailsOverlay = document.getElementById('creatorDetailsOverlay');
+            detailsContainer.classList.remove('active');
+            detailsOverlay.classList.remove('active');
+        }
+        
+        // Helper function to format subscriber count
+        function formatSubscriberCount(count) {
+            if (count >= 1000000) {
+                return (count / 1000000).toFixed(1) + 'M';
+            } else if (count >= 1000) {
+                return (count / 1000).toFixed(1) + 'K';
+            }
+            return count;
         }
     </script>
 </body>
