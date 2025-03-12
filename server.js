@@ -1134,6 +1134,7 @@ Remember:
 - Each panel should capture the most impactful moment from its act
 - The image generator is not able to reference previous images so you need to keep your descriptions consistent from scene to scene when creating continuity of character or location
 - Ensure the narrative aligns fits within the Creator's content style while respecting the Brand's DNA
+- Remember that not every frame for the storyboard needs to have a brand integration, it can be a pure creator content. You need to balance the brand integration with the creator content so it doesn't feel forced, too promotional, and instead still lets the creator do what they do best - make interesting content.
 
 ONLY RETURN VALID JSON WITH NO ADDITIONAL COMMENTARY OR EXPLANATION
 `;

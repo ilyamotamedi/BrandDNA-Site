@@ -115,7 +115,7 @@
             margin-bottom: 0rem;
             margin-top: 1rem;
             align-items: center;
-            max-width: 600px;
+            max-width: 800px;
             width: 100%;
         }
 
@@ -272,7 +272,7 @@
         .search-row {
             display: flex;
             gap: 1rem;
-            max-width: 600px;
+            max-width: 800px;
             width: 100%;
             margin-bottom: 1rem;
         }
@@ -519,7 +519,7 @@
             color: white;
             border: none;
             padding: 0.5rem 1rem;
-            border-radius: 4px;
+            border-radius: 24px;
             cursor: pointer;
             font-weight: 500;
         }
@@ -529,7 +529,7 @@
             color: #333;
             border: none;
             padding: 0.5rem 1rem;
-            border-radius: 4px;
+            border-radius: 24px;
             cursor: pointer;
         }
     </style>
@@ -539,18 +539,21 @@
         <div id="nav-placeholder"></div>
         <main class="content">
             <div class="search-row">
-                <div class="search-box" style="flex: 1;">
+                <div class="search-box" style="flex: 0.4;">
+                    <input type="text" placeholder="Campaign brief/goal..." class="brand-input" id="campaignBrief">
+                </div>
+                <div class="search-box" style="flex: 0.6;">
                     <input type="text" placeholder="Describe your video concept..." class="brand-input" id="videoConcept" data-translation-key="storyboard-concept-placeholder">
                 </div>
-                <select class="integration-select placeholder" id="integrationType">
+            </div>
+            <div class="search-row">
+                <select class="integration-select placeholder" id="integrationType" style="width: 200px; flex: 0.3;">
                     <option value="" disabled selected data-translation-key="storyboard-integration-placeholder">Integration</option>
                     <option value="brand_mention" data-translation-key="integration-mention">Mention</option>
                     <option value="mid_video" data-translation-key="integration-adbreak">Ad Break</option>
                     <option value="full_integration" data-translation-key="integration-full">Full Integration</option>
                 </select>
-            </div>
-            <div class="search-row">
-                <div class="creator-select-box" style="flex: 1;">
+                <div class="creator-select-box" style="flex: 0.7;">
                     <input type="text" placeholder="Select a creator..." class="creator-input" id="creatorInput" readonly data-translation-key="storyboard-creator-placeholder">
                     <img src="/icons/drop_down.svg" alt="Dropdown" class="creator-dropdown-arrow" id="creatorDropdownArrow">
                     <div class="creator-dropdown-menu" id="creatorDropdown"></div>
@@ -680,6 +683,7 @@
         }
 
         async function generateStoryboard() {
+            const campaignBrief = document.getElementById('campaignBrief').value.trim();
             const videoConcept = document.getElementById('videoConcept').value.trim();
             const integrationType = document.getElementById('integrationType').value;
             const loadingContainer = document.querySelector('.loading-container');
@@ -734,7 +738,8 @@
                 console.log('Client language detected:', clientLanguage);
                 
                 const requestBody = {
-                    videoConcept: videoConcept,
+                    campaignBrief: campaignBrief + " (This describes the brand's marketing objectives and goals for this campaign)",
+                    videoConcept: videoConcept + " (This describes the actual content and storyline of the video)",
                     brandDNA: currentBrandDNA,
                     creatorDNA: selectedCreatorDNA,
                     integrationType: {
@@ -1006,6 +1011,7 @@
             regeneratingIndicator.style.display = 'flex';
             
             try {
+                const campaignBrief = document.getElementById('campaignBrief').value.trim();
                 const videoConcept = document.getElementById('videoConcept').value.trim();
                 const integrationType = document.getElementById('integrationType').value;
                 const currentBrandDNA = getClientDNA();
@@ -1018,7 +1024,8 @@
                 };
                 
                 const requestBody = {
-                    videoConcept: videoConcept,
+                    campaignBrief: campaignBrief + " (This describes the brand's marketing objectives and goals for this campaign)",
+                    videoConcept: videoConcept + " (This describes the actual content and storyline of the video)",
                     brandDNA: currentBrandDNA,
                     creatorDNA: selectedCreatorDNA,
                     integrationType: {
@@ -1555,8 +1562,6 @@
             placeholderImage.className = 'storyboard-image-loading';
             placeholderImage.innerHTML = `
                 <div style="text-align: center;">
-                    <div class="regenerating-spinner"></div>
-                    <div style="margin-top: 1rem;">Generating scene...</div>
                 </div>
             `;
             
@@ -1660,6 +1665,7 @@
             }
             
             try {
+                const campaignBrief = document.getElementById('campaignBrief').value.trim();
                 const videoConcept = document.getElementById('videoConcept').value.trim();
                 const integrationType = document.getElementById('integrationType').value;
                 const currentBrandDNA = getClientDNA();
@@ -1689,7 +1695,8 @@
                 }
                 
                 const requestBody = {
-                    videoConcept: videoConcept,
+                    campaignBrief: campaignBrief + " (This describes the brand's marketing objectives and goals for this campaign)",
+                    videoConcept: videoConcept + " (This describes the actual content and storyline of the video)",
                     brandDNA: currentBrandDNA,
                     creatorDNA: selectedCreatorDNA,
                     integrationType: {
