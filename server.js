@@ -1220,6 +1220,7 @@ Remember:
 - The panel should capture the most impactful moment from its act
 - The image generator is not able to reference previous images so you need to keep your descriptions consistent with other scenes when creating continuity of character or location
 - Ensure the narrative still aligns with the Creator's content style while respecting the Brand's DNA
+- You must make sure the frame aligns with the overall narrative that is being told by the overall storyboard and the frames before and after it
 - MOST IMPORTANTLY: Implement the specific changes requested in the user feedback while maintaining the overall story coherence
 
 ONLY RETURN VALID JSON WITH NO ADDITIONAL COMMENTARY OR EXPLANATION
