@@ -1451,12 +1451,16 @@
             };
             
             // Update the storyboard data
+            let newIndex = 0;
             if (position === 'before') {
                 currentStoryboard.unshift(newFrame);
+                newIndex = 0;
             } else if (position === 'between') {
                 currentStoryboard.splice(index, 0, newFrame);
+                newIndex = index;
             } else if (position === 'after') {
                 currentStoryboard.push(newFrame);
+                newIndex = currentStoryboard.length - 1;
             }
             
             // Update scene numbers
@@ -1467,6 +1471,9 @@
             
             // Recreate add scene buttons
             createAddSceneButtons();
+            
+            // Generate the new scene content
+            generateNewSceneContent(newIndex, description, position);
         }
 
         // Function to set up event listeners for all cards
@@ -1549,7 +1556,7 @@
             placeholderImage.innerHTML = `
                 <div style="text-align: center;">
                     <div class="regenerating-spinner"></div>
-                    <div style="margin-top: 1rem;">Generating image...</div>
+                    <div style="margin-top: 1rem;">Generating scene...</div>
                 </div>
             `;
             
@@ -1624,12 +1631,13 @@
             // Add regenerating indicator
             const regeneratingIndicator = document.createElement('div');
             regeneratingIndicator.className = 'regenerating-indicator';
+            regeneratingIndicator.style.display = 'flex'; // Show the indicator immediately
             
             const spinner = document.createElement('div');
             spinner.className = 'regenerating-spinner';
             
             const text = document.createElement('div');
-            text.textContent = 'Regenerating frame...';
+            text.textContent = 'Generating scene...';
             
             regeneratingIndicator.appendChild(spinner);
             regeneratingIndicator.appendChild(text);
@@ -1639,14 +1647,17 @@
             return card;
         }
 
-        // Function to generate a new scene from a placeholder
-        async function generateNewScene(card) {
-            const index = parseInt(card.dataset.index);
-            const description = card.querySelector('.brand-card-body').textContent;
+        // Function to generate content for a new scene
+        async function generateNewSceneContent(index, description, position) {
+            // Get the card element
+            const card = document.querySelector(`.storyboard-card[data-index="${index}"]`);
+            if (!card) return;
             
             // Show the regenerating indicator
             const regeneratingIndicator = card.querySelector('.regenerating-indicator');
-            regeneratingIndicator.style.display = 'flex';
+            if (regeneratingIndicator) {
+                regeneratingIndicator.style.display = 'flex';
+            }
             
             try {
                 const videoConcept = document.getElementById('videoConcept').value.trim();
@@ -1660,6 +1671,23 @@
                     full_integration: "The brand's product or service is seamlessly woven into the video's core content, acting as a central element of the story, tutorial, or challenge."
                 };
                 
+                // Create context for the new scene based on position
+                let contextPrompt = "";
+                if (position === 'before' && currentStoryboard.length > 1) {
+                    contextPrompt = `This scene should come before the current first scene: "${currentStoryboard[1].act_title}: ${currentStoryboard[1].act_description}"`;
+                } else if (position === 'between') {
+                    const prevIndex = Math.max(0, index - 1);
+                    const nextIndex = Math.min(currentStoryboard.length - 1, index + 1);
+                    
+                    if (prevIndex !== index && nextIndex !== index) {
+                        contextPrompt = `This scene should fit between these two scenes: 
+                        Before: "${currentStoryboard[prevIndex].act_title}: ${currentStoryboard[prevIndex].act_description}"
+                        After: "${currentStoryboard[nextIndex].act_title}: ${currentStoryboard[nextIndex].act_description}"`;
+                    }
+                } else if (position === 'after' && index > 0) {
+                    contextPrompt = `This scene should come after the current last scene: "${currentStoryboard[index-1].act_title}: ${currentStoryboard[index-1].act_description}"`;
+                }
+                
                 const requestBody = {
                     videoConcept: videoConcept,
                     brandDNA: currentBrandDNA,
@@ -1671,7 +1699,7 @@
                     language: getClientLanguage(),
                     storyboard: currentStoryboard,
                     frameIndex: index,
-                    feedback: `Generate a new scene with this description: ${description}`
+                    feedback: `Generate a new scene with this description: ${description}. ${contextPrompt}`
                 };
                 
                 const response = await fetch(`${window.API_BASE_URL}/regenerateStoryboardFrame`, {
@@ -1713,33 +1741,35 @@
                 
                 // Replace the placeholder image with the real image
                 const imageWrapper = card.querySelector('.image-wrapper');
-                imageWrapper.innerHTML = ''; // Clear the placeholder
-                
-                const img = document.createElement('img');
-                img.src = `data:image/png;base64,${imageData.images[0]}`;
-                img.className = 'storyboard-image';
-                
-                // Create download button
-                const downloadButton = document.createElement('button');
-                downloadButton.className = 'download-button';
-                downloadButton.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white">
-                        <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
-                    </svg>
-                `;
-                
-                downloadButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const link = document.createElement('a');
-                    link.href = img.src;
-                    link.download = `storyboard-scene-${index + 1}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                });
-                
-                imageWrapper.appendChild(img);
-                imageWrapper.appendChild(downloadButton);
+                if (imageWrapper) {
+                    imageWrapper.innerHTML = ''; // Clear the placeholder
+                    
+                    const img = document.createElement('img');
+                    img.src = `data:image/png;base64,${imageData.images[0]}`;
+                    img.className = 'storyboard-image';
+                    
+                    // Create download button
+                    const downloadButton = document.createElement('button');
+                    downloadButton.className = 'download-button';
+                    downloadButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white">
+                            <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+                        </svg>
+                    `;
+                    
+                    downloadButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const link = document.createElement('a');
+                        link.href = img.src;
+                        link.download = `storyboard-scene-${index + 1}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    });
+                    
+                    imageWrapper.appendChild(img);
+                    imageWrapper.appendChild(downloadButton);
+                }
                 
                 // Update title and description
                 const title = card.querySelector('.brand-card-title');
@@ -1748,86 +1778,47 @@
                 if (title) title.textContent = data.frame.act_title;
                 if (body) body.textContent = data.frame.act_description;
                 
-                // Update the regenerate button text
-                const regenerateBtn = card.querySelector('.regenerate-btn span');
-                regenerateBtn.textContent = 'Regenerate Frame';
-                
-                // Remove the placeholder attribute
-                card.removeAttribute('data-placeholder');
-                
                 // Add prompt reveal section if it doesn't exist
                 if (!card.querySelector('.prompt-section')) {
-                    const promptSection = document.createElement('div');
-                    promptSection.className = 'prompt-section';
-                    
-                    const promptButton = document.createElement('button');
-                    promptButton.className = 'prompt-button';
-                    promptButton.innerHTML = `
-                        <span data-translation-key="storyboard-show-prompt">Show Prompt</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    `;
-                    
-                    const promptContent = document.createElement('div');
-                    promptContent.className = 'prompt-content';
-                    promptContent.textContent = data.frame.image_prompt;
-                    
-                    promptButton.addEventListener('click', () => {
-                        const isExpanded = promptContent.style.display !== 'none';
-                        promptContent.style.display = isExpanded ? 'none' : 'block';
-                        promptButton.classList.toggle('expanded');
-                    });
-                    
-                    promptSection.appendChild(promptButton);
-                    promptSection.appendChild(promptContent);
-                    
-                    card.querySelector('.card-content').appendChild(promptSection);
-                }
-                
-                // Update the regenerate button event listener
-                const newRegenerateBtn = card.querySelector('.regenerate-btn');
-                newRegenerateBtn.replaceWith(newRegenerateBtn.cloneNode(true)); // Remove old event listeners
-                card.querySelector('.regenerate-btn').addEventListener('click', () => toggleFeedbackArea(index));
-                
-                // Add feedback container if it doesn't exist
-                if (!card.querySelector('.feedback-container')) {
-                    const feedbackContainer = document.createElement('div');
-                    feedbackContainer.className = 'feedback-container';
-                    feedbackContainer.id = `feedback-container-${index}`;
-                    
-                    const feedbackTextarea = document.createElement('textarea');
-                    feedbackTextarea.className = 'feedback-textarea';
-                    feedbackTextarea.placeholder = 'Describe how you want to change this frame...';
-                    feedbackTextarea.id = `feedback-textarea-${index}`;
-                    
-                    const feedbackActions = document.createElement('div');
-                    feedbackActions.className = 'feedback-actions';
-                    
-                    const submitBtn = document.createElement('button');
-                    submitBtn.className = 'submit-feedback-btn';
-                    submitBtn.textContent = 'Submit';
-                    submitBtn.addEventListener('click', () => regenerateFrame(index));
-                    
-                    const cancelBtn = document.createElement('button');
-                    cancelBtn.className = 'cancel-feedback-btn';
-                    cancelBtn.textContent = 'Cancel';
-                    cancelBtn.addEventListener('click', () => toggleFeedbackArea(index));
-                    
-                    feedbackActions.appendChild(submitBtn);
-                    feedbackActions.appendChild(cancelBtn);
-                    
-                    feedbackContainer.appendChild(feedbackTextarea);
-                    feedbackContainer.appendChild(feedbackActions);
-                    
-                    card.appendChild(feedbackContainer);
+                    const cardContent = card.querySelector('.card-content');
+                    if (cardContent) {
+                        const promptSection = document.createElement('div');
+                        promptSection.className = 'prompt-section';
+                        
+                        const promptButton = document.createElement('button');
+                        promptButton.className = 'prompt-button';
+                        promptButton.innerHTML = `
+                            <span data-translation-key="storyboard-show-prompt">Show Prompt</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        `;
+                        
+                        const promptContent = document.createElement('div');
+                        promptContent.className = 'prompt-content';
+                        promptContent.textContent = data.frame.image_prompt;
+                        
+                        promptButton.addEventListener('click', () => {
+                            const isExpanded = promptContent.style.display !== 'none';
+                            promptContent.style.display = isExpanded ? 'none' : 'block';
+                            promptButton.classList.toggle('expanded');
+                        });
+                        
+                        promptSection.appendChild(promptButton);
+                        promptSection.appendChild(promptContent);
+                        
+                        cardContent.appendChild(promptSection);
+                    }
                 }
                 
             } catch (error) {
-                console.error('Error generating new scene:', error);
+                console.error('Error generating new scene content:', error);
                 alert(`Error: ${error.message}`);
             } finally {
-                regeneratingIndicator.style.display = 'none';
+                // Hide the regenerating indicator
+                if (regeneratingIndicator) {
+                    regeneratingIndicator.style.display = 'none';
+                }
             }
         }
 
