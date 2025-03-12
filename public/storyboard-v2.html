@@ -631,6 +631,12 @@
                 // Set the concept
                 document.getElementById('videoConcept').value = decodeURIComponent(concept);
 
+                // Set the campaign brief if it exists
+                const campaignBrief = urlParams.get('campaignBrief');
+                if (campaignBrief) {
+                    document.getElementById('campaignBrief').value = decodeURIComponent(campaignBrief);
+                }
+
                 // Set the integration type
                 document.getElementById('integrationType').value = integration;
                 document.getElementById('integrationType').classList.remove('placeholder');
