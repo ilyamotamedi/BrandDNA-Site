@@ -928,7 +928,7 @@ Output the matches in the following JSON format:
     {
       "creatorName": "Name of creator",
       "matchGrade": "A", // Letter grade (A, A-, B+, etc.) indicating compatibility
-      "reasonForMatch": "A several sentence explanation of why this creator aligns with the brand",
+      "reasonForMatch": "A detailed explanation of why this creator aligns with the brand and what aspects of their DNAs match well",
       "contentIdeas": "3-5 specific content ideas that leverage both brand DNA and creator content DNA (make this individual list items) ",
     },
     // 5 more creators...
@@ -2421,5 +2421,171 @@ app.get('/test-average-views', async (req, res) => {
     } catch (error) {
         console.error('Error in test endpoint:', error);
         res.status(500).send(`Error: ${error.message}`);
+    }
+});
+
+// Endpoint to regenerate content ideas for a specific creator
+app.post('/regenerateContentIdeas', async (req, res) => {
+    try {
+        const { brandDNA, creatorDNA, currentIdeas, feedback, brief } = req.body;
+        
+        if (!brandDNA || !creatorDNA || !feedback) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Missing required data: brandDNA, creatorDNA, or feedback' 
+            });
+        }
+        
+        console.log('Regenerate Ideas Request - Creator:', creatorDNA.creatorName);
+        console.log('Regenerate Ideas Request - Feedback:', feedback);
+        
+        // Create the system instructions for the brainstorming task
+        const BRAINSTORM_SYSTEM_INSTRUCTIONS = `You are an expert content brainstormer specializing in YouTube creator collaborations with brands. Your task is to generate fresh, creative content ideas for a specific creator to collaborate with a brand.
+
+You will be given:
+1. The brand's DNA (values, style, target audience, etc.)
+2. The creator's DNA (content style, audience, values, etc.)
+3. The original brief/concept
+4. The current content ideas
+5. User feedback on how to improve the ideas
+
+Your job is to generate 3-5 new content ideas that:
+- Address the user's feedback
+- Align with both the brand and creator DNAs
+- Are specific and actionable
+- Would be engaging for the creator's audience
+- Showcase the brand authentically
+
+IMPORTANT FORMATTING INSTRUCTIONS:
+- Keep each idea concise (1-2 sentences)
+- DO NOT include titles for the ideas
+- DO NOT use numbering or bullet points
+- DO NOT use "Idea 1:", "Idea 2:" format
+- Write each idea as a simple, direct statement of what the video would be about
+- Focus on the concept itself, not the explanation of why it works
+- Avoid overly formal or academic language
+
+Be creative, specific, and practical. Each idea should be a clear concept that could be developed into a full video.
+
+Output ONLY a JSON object with this format:
+{
+  "contentIdeas": [
+    "First content idea described in a single concise sentence.",
+    "Second content idea described in a simple, direct way.",
+    "Third content idea that's specific and actionable.",
+    "Fourth content idea if needed.",
+    "Fifth content idea if needed."
+  ]
+}`;
+
+        // Create the prompt for Gemini
+        const prompt = `Please generate new content ideas for a brand-creator collaboration based on the following information:
+
+BRAND DNA:
+${JSON.stringify(brandDNA, null, 2)}
+
+CREATOR DNA:
+${JSON.stringify(creatorDNA, null, 2)}
+
+ORIGINAL BRIEF:
+${brief || "No brief provided"}
+
+CURRENT CONTENT IDEAS:
+${Array.isArray(currentIdeas) ? currentIdeas.join('\n') : currentIdeas}
+
+USER FEEDBACK:
+${feedback}
+
+Based on this information, please generate 3-5 new content ideas that address the user's feedback while maintaining alignment between the brand and creator. Remember to keep each idea concise, direct, and without titles or numbering.`;
+
+        // Make request to Gemini
+        const client = await auth.getClient();
+        const accessToken = await client.getAccessToken();
+        
+        const requestBody = {
+            contents: [{
+                role: "user",
+                parts: [{ text: prompt }]
+            }],
+            systemInstruction: {
+                parts: [{
+                    text: BRAINSTORM_SYSTEM_INSTRUCTIONS
+                }]
+            },
+            generationConfig: {
+                temperature: 1.0,
+                maxOutputTokens: 2048,
+                topP: 0.95
+            }
+        };
+
+        const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken.token}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const rawText = data.candidates[0].content.parts[0].text;
+
+        // Clean up the JSON response
+        let cleanJson = rawText;
+        
+        // Remove markdown code block markers if they exist
+        if (cleanJson.includes('```')) {
+            // Remove opening ```json or ``` and any whitespace
+            cleanJson = cleanJson.replace(/^```(?:json)?\s*/, '');
+            // Remove closing ``` and any whitespace
+            cleanJson = cleanJson.replace(/\s*```\s*$/, '');
+        }
+        
+        cleanJson = cleanJson.trim();
+
+        try {
+            const parsedResponse = JSON.parse(cleanJson);
+            res.json({ 
+                success: true, 
+                contentIdeas: parsedResponse.contentIdeas
+            });
+        } catch (parseError) {
+            console.error('JSON Parse Error:', parseError);
+            console.error('Failed to parse text:', cleanJson);
+            
+            // If first parse fails, try one more time by finding the JSON object directly
+            try {
+                const jsonStart = cleanJson.indexOf('{');
+                const jsonEnd = cleanJson.lastIndexOf('}') + 1;
+                if (jsonStart >= 0 && jsonEnd > jsonStart) {
+                    const extractedJson = cleanJson.slice(jsonStart, jsonEnd);
+                    const parsedResponse = JSON.parse(extractedJson);
+                    res.json({ 
+                        success: true, 
+                        contentIdeas: parsedResponse.contentIdeas
+                    });
+                } else {
+                    throw new Error('Could not locate valid JSON in response');
+                }
+            } catch (finalError) {
+                res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to parse model response'
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error regenerating content ideas:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
 });

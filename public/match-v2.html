@@ -272,6 +272,84 @@
             content: "▲";
         }
         
+        /* Feedback input and regenerate button styles */
+        .ideas-feedback-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .ideas-feedback-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+        }
+        
+        .ideas-feedback-input:focus {
+            outline: none;
+            border-color: #F53151;
+        }
+        
+        .regenerate-ideas-btn {
+            padding: 0.5rem 1rem;
+            background: linear-gradient(to right, #F53151, #F742BD);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            align-self: flex-end;
+        }
+        
+        .regenerate-ideas-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .regenerate-ideas-btn:active {
+            transform: translateY(0);
+        }
+        
+        .regenerate-ideas-btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        .ideas-loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .ideas-loading.active {
+            display: flex;
+        }
+        
+        .ideas-loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(245, 49, 81, 0.3);
+            border-radius: 50%;
+            border-top-color: #F53151;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
         .creator-details {
             position: fixed;
             top: 50%;
@@ -745,15 +823,20 @@
                         </div>
                         <div class="creator-card-section">
                             <div class="creator-card-section-title">Content Ideas</div>
-                            ${ideasHtml}
-                        </div>
-                        <div class="creator-card-section">
-                            <div class="creator-card-section-title">Value Alignment</div>
-                            <div class="creator-card-section-content">${creator.valueAlignment || 'No information available.'}</div>
-                        </div>
-                        <div class="creator-card-section">
-                            <div class="creator-card-section-title">Potential Impact</div>
-                            <div class="creator-card-section-content">${creator.potentialReach || 'No information available.'}</div>
+                            <div class="creator-card-ideas-container">
+                                ${ideasHtml}
+                                <div class="ideas-loading">
+                                    <div class="ideas-loading-spinner"></div>
+                                    <span>Regenerating ideas...</span>
+                                </div>
+                                <div class="ideas-feedback-container">
+                                    <textarea 
+                                        class="ideas-feedback-input" 
+                                        placeholder="Enter feedback to improve these ideas..."
+                                    ></textarea>
+                                    <button class="regenerate-ideas-btn" data-creator-index="${index}">REGENERATE IDEAS</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -778,7 +861,158 @@
                     toggleButton.textContent = card.classList.contains('expanded') ? 'Hide Details' : 'View Details';
                 });
                 cardHeader.style.cursor = 'pointer';
+                
+                // Add event listener for regenerate ideas button
+                const regenerateBtn = card.querySelector('.regenerate-ideas-btn');
+                regenerateBtn.addEventListener('click', (e) => {
+                    regenerateContentIdeas(e.target);
+                });
             });
+        }
+        
+        // Function to regenerate content ideas
+        async function regenerateContentIdeas(button) {
+            const creatorIndex = button.dataset.creatorIndex;
+            const creator = matchesData[creatorIndex];
+            
+            if (!creator) {
+                console.error('Creator data not found for index:', creatorIndex);
+                return;
+            }
+            
+            const card = button.closest('.creator-card');
+            const feedbackInput = card.querySelector('.ideas-feedback-input');
+            const feedback = feedbackInput.value.trim();
+            
+            if (!feedback) {
+                alert('Please enter feedback to improve the ideas.');
+                return;
+            }
+            
+            // Get the current ideas
+            let currentIdeas = [];
+            if (creator.contentIdeas) {
+                const contentIdeasStr = typeof creator.contentIdeas === 'string' 
+                    ? creator.contentIdeas 
+                    : Array.isArray(creator.contentIdeas) 
+                        ? creator.contentIdeas.join('. ') 
+                        : JSON.stringify(creator.contentIdeas);
+                
+                try {
+                    // Try to split by periods followed by commas first
+                    currentIdeas = contentIdeasStr.split('.,').map(idea => idea.trim().replace(/\.$/, ''));
+                    
+                    // If we only got one item, try splitting by periods
+                    if (currentIdeas.length === 1 && contentIdeasStr.includes('.')) {
+                        currentIdeas = contentIdeasStr.split('.').filter(idea => idea.trim().length > 0).map(idea => idea.trim());
+                    }
+                    
+                    // If still only one or empty, just use the whole string
+                    if (currentIdeas.length <= 1) {
+                        currentIdeas = [contentIdeasStr];
+                    }
+                } catch (error) {
+                    console.error('Error parsing content ideas:', error);
+                    currentIdeas = [contentIdeasStr];
+                }
+            }
+            
+            // Show loading state
+            button.disabled = true;
+            button.classList.add('loading');
+            const ideasContainer = card.querySelector('.creator-card-ideas-container');
+            const ideasList = card.querySelector('.creator-card-ideas');
+            const loadingIndicator = card.querySelector('.ideas-loading');
+            
+            if (ideasList) {
+                ideasList.style.display = 'none';
+            }
+            loadingIndicator.classList.add('active');
+            
+            try {
+                const currentDNA = getClientDNA();
+                if (!currentDNA) {
+                    throw new Error('No brand DNA selected');
+                }
+                
+                // Get the brief from the input
+                const brief = document.querySelector('.brand-input').value.trim();
+                
+                // Prepare the data for the API call
+                const requestData = {
+                    brandDNA: currentDNA,
+                    creatorDNA: creator,
+                    currentIdeas: currentIdeas,
+                    feedback: feedback,
+                    brief: brief
+                };
+                
+                // Make the API call
+                const response = await fetch(`${window.API_BASE_URL}/regenerateContentIdeas`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to regenerate ideas');
+                }
+                
+                // Update the ideas in the matchesData
+                if (data.contentIdeas) {
+                    matchesData[creatorIndex].contentIdeas = data.contentIdeas;
+                    
+                    // Update the display
+                    let newIdeasHtml = '';
+                    if (Array.isArray(data.contentIdeas)) {
+                        newIdeasHtml = `
+                            <ul class="creator-card-ideas">
+                                ${data.contentIdeas.map(idea => `
+                                    <li class="creator-card-idea-item">${idea}</li>
+                                `).join('')}
+                            </ul>
+                        `;
+                    } else {
+                        // Handle string format
+                        const ideas = data.contentIdeas.split('.').filter(idea => idea.trim().length > 0).map(idea => idea.trim());
+                        newIdeasHtml = `
+                            <ul class="creator-card-ideas">
+                                ${ideas.map(idea => `
+                                    <li class="creator-card-idea-item">${idea}</li>
+                                `).join('')}
+                            </ul>
+                        `;
+                    }
+                    
+                    // Replace the old ideas list with the new one
+                    if (ideasList) {
+                        ideasList.remove();
+                    }
+                    ideasContainer.insertAdjacentHTML('afterbegin', newIdeasHtml);
+                    
+                    // Clear the feedback input
+                    feedbackInput.value = '';
+                }
+                
+            } catch (error) {
+                console.error('Error regenerating ideas:', error);
+                alert(`Error: ${error.message}`);
+            } finally {
+                // Hide loading state
+                button.disabled = false;
+                button.classList.remove('loading');
+                loadingIndicator.classList.remove('active');
+                
+                // Show the ideas list again
+                const newIdeasList = card.querySelector('.creator-card-ideas');
+                if (newIdeasList) {
+                    newIdeasList.style.display = 'block';
+                }
+            }
         }
         
         // Function to show creator details
@@ -881,16 +1115,6 @@
                 <div class="creator-details-section">
                     <div class="creator-details-section-title">Content Ideas</div>
                     ${ideasHtml}
-                </div>
-                
-                <div class="creator-details-section">
-                    <div class="creator-details-section-title">Value Alignment</div>
-                    <div class="creator-details-section-content">${creator.valueAlignment || 'No information available.'}</div>
-                </div>
-                
-                <div class="creator-details-section">
-                    <div class="creator-details-section-title">Potential Impact</div>
-                    <div class="creator-details-section-content">${creator.potentialReach || 'No information available.'}</div>
                 </div>
             `;
             
