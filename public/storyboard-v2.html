@@ -17,19 +17,16 @@
             position: relative;
         }
 
-        .storyboard-grid {
+        .storyboard-grid, .storyboard-grid-row2 {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             margin-bottom: 20px;
+            position: relative; /* Added for positioning the add buttons */
         }
         
         .storyboard-grid-row2 {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            width: 75%; /* To align with the 4-column grid above */
-            margin: 0 auto;
+            margin-top: 20px;
         }
         
         @media (max-width: 1200px) {
@@ -85,12 +82,14 @@
         }
 
         .storyboard-image-loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            width: 100%;
             height: 200px;
-            background-color: #f6f6f6;
-            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f1f1f1;
+            color: #666;
+            border-radius: 4px;
         }
 
         .brand-card-title {
@@ -399,31 +398,139 @@
         }
 
         .regenerating-indicator {
-            display: none;
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 20;
+            border-radius: 8px;
         }
 
         .regenerating-spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid rgba(0, 0, 0, 0.1);
+            border: 4px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            border-top-color: #F53151;
+            border-top-color: white;
             animation: spin 1s ease-in-out infinite;
             margin-bottom: 1rem;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+
+        /* Add scene button styles */
+        .add-scene-button {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            transform: translate(-50%, -50%);
+            transition: background 0.3s ease;
+            opacity: 0; /* Hide by default */
+        }
+
+        .add-scene-button:hover {
+            background: linear-gradient(90deg, #F53151 0%, #F742BD 100%);
+        }
+
+        /* Show buttons when hovering over the container */
+        .storyboard-results-container:hover .add-scene-button {
+            opacity: 1;
+        }
+
+        /* Keep button visible when hovering directly over it */
+        .add-scene-button:hover {
+            opacity: 1;
+        }
+
+        .add-scene-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 1000;
+        }
+
+        .popup-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        .popup-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .popup-content h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .popup-content textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .popup-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        .add-scene-confirm-btn {
+            background: linear-gradient(90deg, #F53151 0%, #F742BD 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .add-scene-cancel-btn {
+            background: #f1f1f1;
+            color: #333;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -478,9 +585,8 @@
             const navItems = document.querySelectorAll('.nav-item');
             navItems.forEach(item => {
                 // Only show the storyboarding nav item
-                if (!item.getAttribute('href').includes('storyboard.html')) {
+
                     item.style.display = 'none';
-                }
             });
 
             // Dropdown handling
@@ -577,8 +683,7 @@
             const videoConcept = document.getElementById('videoConcept').value.trim();
             const integrationType = document.getElementById('integrationType').value;
             const loadingContainer = document.querySelector('.loading-container');
-            const gridRow1 = document.getElementById('storyboardGridRow1');
-            const gridRow2 = document.getElementById('storyboardGridRow2');
+            const storyboardContainer = document.querySelector('.storyboard-results-container');
             
             if (!videoConcept) {
                 alert('Please enter a video concept');
@@ -610,6 +715,18 @@
 
             try {
                 loadingContainer.style.display = 'flex';
+                storyboardContainer.innerHTML = `
+                    <div class="storyboard-grid" id="storyboardGridRow1">
+                        <!-- First 4 frames will be added here -->
+                    </div>
+                    <div class="storyboard-grid-row2" id="storyboardGridRow2">
+                        <!-- Last 3 frames will be added here -->
+                    </div>
+                `;
+                
+                const gridRow1 = document.getElementById('storyboardGridRow1');
+                const gridRow2 = document.getElementById('storyboardGridRow2');
+                
                 gridRow1.innerHTML = '';
                 gridRow2.innerHTML = '';
 
@@ -837,12 +954,28 @@
                     // Add to the appropriate row
                     if (index < 4) {
                         gridRow1.appendChild(card);
-                    } else {
+                    } else if (index < 8) {
                         gridRow2.appendChild(card);
+                    } else {
+                        // If we have more than 8 cards, create a third row if needed
+                        let gridRow3 = document.getElementById('storyboardGridRow3');
+                        if (!gridRow3) {
+                            gridRow3 = document.createElement('div');
+                            gridRow3.className = 'storyboard-grid';
+                            gridRow3.id = 'storyboardGridRow3';
+                            storyboardContainer.appendChild(gridRow3);
+                        }
+                        gridRow3.appendChild(card);
                     }
                 });
                 
                 await translateUI();
+
+                // Set up event listeners for all cards
+                setupCardEventListeners();
+
+                // Create add scene buttons after cards are created
+                setTimeout(createAddSceneButtons, 500);
 
             } catch (error) {
                 console.error('Error:', error);
@@ -958,6 +1091,760 @@
             } finally {
                 regeneratingIndicator.style.display = 'none';
             }
+        }
+
+        // Function to create add scene buttons
+        function createAddSceneButtons() {
+            // Remove any existing add buttons
+            document.querySelectorAll('.add-scene-button').forEach(btn => btn.remove());
+            
+            const storyboardCards = document.querySelectorAll('.storyboard-card');
+            if (storyboardCards.length === 0) return;
+            
+            const gridContainer = document.querySelector('.storyboard-results-container');
+            const gridRect = gridContainer.getBoundingClientRect();
+            
+            // Remove any existing popup before creating a new one
+            const existingPopup = document.querySelector('.add-scene-popup');
+            if (existingPopup) {
+                existingPopup.remove();
+            }
+            
+            // Create popup for adding new scenes
+            const popup = document.createElement('div');
+            popup.className = 'add-scene-popup';
+            popup.id = 'addScenePopup';
+            popup.innerHTML = `
+                <div class="popup-overlay"></div>
+                <div class="popup-content">
+                    <h3>Add New Scene</h3>
+                    <textarea placeholder="Describe the new scene you'd like to add..." id="new-scene-description"></textarea>
+                    <div class="popup-actions">
+                        <button class="add-scene-confirm-btn">Add Scene</button>
+                        <button class="add-scene-cancel-btn">Cancel</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+            
+            // Hide popup initially
+            popup.style.display = 'none';
+            
+            // Add event listeners to popup buttons
+            const confirmBtn = popup.querySelector('.add-scene-confirm-btn');
+            const cancelBtn = popup.querySelector('.add-scene-cancel-btn');
+            const overlay = popup.querySelector('.popup-overlay');
+            
+            cancelBtn.addEventListener('click', () => {
+                popup.style.display = 'none';
+            });
+            
+            overlay.addEventListener('click', () => {
+                popup.style.display = 'none';
+            });
+            
+            // Add event listener to confirm button with direct access to the textarea
+            confirmBtn.addEventListener('click', () => {
+                const description = document.getElementById('new-scene-description').value.trim();
+                
+                if (!description) {
+                    alert('Please enter a description for the new scene.');
+                    return;
+                }
+                
+                const position = popup.dataset.position;
+                const index = parseInt(popup.dataset.index);
+                
+                // Add the placeholder card
+                addPlaceholderCard(position, index, description);
+                
+                // Hide popup
+                popup.style.display = 'none';
+            });
+            
+            // Create a button before the first card
+            const firstCard = storyboardCards[0];
+            const firstCardRect = firstCard.getBoundingClientRect();
+            
+            const beforeButton = document.createElement('button');
+            beforeButton.className = 'add-scene-button';
+            beforeButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
+                    <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" fill="white"/>
+                </svg>
+            `;
+            
+            // Position the button to the left of the first card
+            const leftPosition = firstCardRect.left - gridRect.left - 30; // 30px to the left
+            const midpointY = (firstCardRect.top + firstCardRect.bottom) / 2 - gridRect.top;
+            
+            beforeButton.style.left = `${leftPosition}px`;
+            beforeButton.style.top = `${midpointY}px`;
+            
+            // Add data attribute to track position
+            beforeButton.dataset.position = 'before';
+            beforeButton.dataset.index = '0';
+            
+            gridContainer.appendChild(beforeButton);
+            
+            // Create buttons between cards in the first row
+            for (let i = 0; i < storyboardCards.length - 1; i++) {
+                const card1 = storyboardCards[i];
+                const card2 = storyboardCards[i + 1];
+                
+                // Skip if cards are not in the same row
+                if (i === 3) continue; // Skip between rows
+                
+                const rect1 = card1.getBoundingClientRect();
+                const rect2 = card2.getBoundingClientRect();
+                
+                const betweenButton = document.createElement('button');
+                betweenButton.className = 'add-scene-button';
+                betweenButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
+                        <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" fill="white"/>
+                    </svg>
+                `;
+                
+                // Position the button between the cards
+                const midpointX = (rect1.right + rect2.left) / 2 - gridRect.left;
+                const midpointY = (rect1.top + rect1.bottom) / 2 - gridRect.top;
+                
+                betweenButton.style.left = `${midpointX}px`;
+                betweenButton.style.top = `${midpointY}px`;
+                
+                // Add data attribute to track position
+                betweenButton.dataset.position = 'between';
+                betweenButton.dataset.index = `${i + 1}`;
+                
+                gridContainer.appendChild(betweenButton);
+            }
+            
+            // Create buttons between cards in the second row
+            const gridContainer2 = document.querySelector('.storyboard-results-container');
+            const gridRect2 = gridContainer2.getBoundingClientRect();
+            
+            for (let i = 4; i < storyboardCards.length - 1; i++) {
+                const card1 = storyboardCards[i];
+                const card2 = storyboardCards[i + 1];
+                
+                const rect1 = card1.getBoundingClientRect();
+                const rect2 = card2.getBoundingClientRect();
+                
+                const betweenButton = document.createElement('button');
+                betweenButton.className = 'add-scene-button';
+                betweenButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
+                        <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" fill="white"/>
+                    </svg>
+                `;
+                
+                // Position the button between the cards
+                const midpointX = (rect1.right + rect2.left) / 2 - gridRect2.left;
+                const midpointY = (rect1.top + rect1.bottom) / 2 - gridRect2.top;
+                
+                betweenButton.style.left = `${midpointX}px`;
+                betweenButton.style.top = `${midpointY}px`;
+                
+                // Add data attribute to track position
+                betweenButton.dataset.position = 'between';
+                betweenButton.dataset.index = `${i + 1}`;
+                
+                gridContainer2.appendChild(betweenButton);
+            }
+            
+            // Create a button after the last card
+            const lastCard = storyboardCards[storyboardCards.length - 1];
+            const lastCardRect = lastCard.getBoundingClientRect();
+            
+            const afterButton = document.createElement('button');
+            afterButton.className = 'add-scene-button';
+            afterButton.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
+                    <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z" fill="white"/>
+                </svg>
+            `;
+            
+            // Position the button to the right of the last card
+            const rightPosition = lastCardRect.right - gridRect.left + 30; // 30px to the right
+            const lastMidpointY = (lastCardRect.top + lastCardRect.bottom) / 2 - gridRect.top;
+            
+            afterButton.style.left = `${rightPosition}px`;
+            afterButton.style.top = `${lastMidpointY}px`;
+            
+            // Add data attribute to track position
+            afterButton.dataset.position = 'after';
+            afterButton.dataset.index = `${storyboardCards.length}`;
+            
+            gridContainer.appendChild(afterButton);
+            
+            // Add event listeners to all add buttons
+            document.querySelectorAll('.add-scene-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    // Show popup
+                    popup.style.display = 'block';
+                    
+                    // Store the button's position and index in the popup
+                    popup.dataset.position = button.dataset.position;
+                    popup.dataset.index = button.dataset.index;
+                    
+                    // Clear any previous input
+                    document.getElementById('new-scene-description').value = '';
+                });
+            });
+        }
+
+        // Function to add a placeholder card at the specified position
+        function addPlaceholderCard(position, index, description) {
+            const currentBrandDNA = getClientDNA();
+            const placeholderCard = createPlaceholderCard(description, currentBrandDNA);
+            
+            const gridRow1 = document.getElementById('storyboardGridRow1');
+            const gridRow2 = document.getElementById('storyboardGridRow2');
+            let gridRow3 = document.getElementById('storyboardGridRow3');
+            
+            // Create third row if needed
+            if (!gridRow3 && (gridRow1.children.length + gridRow2.children.length) >= 8) {
+                gridRow3 = document.createElement('div');
+                gridRow3.className = 'storyboard-grid';
+                gridRow3.id = 'storyboardGridRow3';
+                document.querySelector('.storyboard-results-container').appendChild(gridRow3);
+            }
+            
+            // Insert the card at the appropriate position
+            if (position === 'before') {
+                // Insert before the first card
+                if (gridRow1.children.length > 0) {
+                    gridRow1.insertBefore(placeholderCard, gridRow1.children[0]);
+                } else {
+                    gridRow1.appendChild(placeholderCard);
+                }
+                
+                // If first row now has more than 4 cards, move the last one to the second row
+                if (gridRow1.children.length > 4) {
+                    const lastCard = gridRow1.children[4];
+                    gridRow1.removeChild(lastCard);
+                    if (gridRow2.children.length > 0) {
+                        gridRow2.insertBefore(lastCard, gridRow2.children[0]);
+                    } else {
+                        gridRow2.appendChild(lastCard);
+                    }
+                    
+                    // If second row now has more than 4 cards, move the last one to the third row
+                    if (gridRow2.children.length > 4) {
+                        const lastCard2 = gridRow2.children[4];
+                        gridRow2.removeChild(lastCard2);
+                        
+                        if (!gridRow3) {
+                            gridRow3 = document.createElement('div');
+                            gridRow3.className = 'storyboard-grid';
+                            gridRow3.id = 'storyboardGridRow3';
+                            document.querySelector('.storyboard-results-container').appendChild(gridRow3);
+                        }
+                        
+                        gridRow3.appendChild(lastCard2);
+                    }
+                }
+            } else if (position === 'between') {
+                // Determine which row to insert into
+                if (index < 4) {
+                    // First row
+                    if (index < gridRow1.children.length) {
+                        gridRow1.insertBefore(placeholderCard, gridRow1.children[index]);
+                    } else {
+                        gridRow1.appendChild(placeholderCard);
+                    }
+                    
+                    // If first row now has more than 4 cards, move the last one to the second row
+                    if (gridRow1.children.length > 4) {
+                        const lastCard = gridRow1.children[4];
+                        gridRow1.removeChild(lastCard);
+                        if (gridRow2.children.length > 0) {
+                            gridRow2.insertBefore(lastCard, gridRow2.children[0]);
+                        } else {
+                            gridRow2.appendChild(lastCard);
+                        }
+                        
+                        // If second row now has more than 4 cards, move the last one to the third row
+                        if (gridRow2.children.length > 4) {
+                            const lastCard2 = gridRow2.children[4];
+                            gridRow2.removeChild(lastCard2);
+                            
+                            if (!gridRow3) {
+                                gridRow3 = document.createElement('div');
+                                gridRow3.className = 'storyboard-grid';
+                                gridRow3.id = 'storyboardGridRow3';
+                                document.querySelector('.storyboard-results-container').appendChild(gridRow3);
+                            }
+                            
+                            gridRow3.appendChild(lastCard2);
+                        }
+                    }
+                } else if (index < 8) {
+                    // Second row
+                    const secondRowIndex = index - 4;
+                    if (secondRowIndex < gridRow2.children.length) {
+                        gridRow2.insertBefore(placeholderCard, gridRow2.children[secondRowIndex]);
+                    } else {
+                        gridRow2.appendChild(placeholderCard);
+                    }
+                    
+                    // If second row now has more than 4 cards, move the last one to the third row
+                    if (gridRow2.children.length > 4) {
+                        const lastCard = gridRow2.children[4];
+                        gridRow2.removeChild(lastCard);
+                        
+                        if (!gridRow3) {
+                            gridRow3 = document.createElement('div');
+                            gridRow3.className = 'storyboard-grid';
+                            gridRow3.id = 'storyboardGridRow3';
+                            document.querySelector('.storyboard-results-container').appendChild(gridRow3);
+                        }
+                        
+                        if (gridRow3.children.length > 0) {
+                            gridRow3.insertBefore(lastCard, gridRow3.children[0]);
+                        } else {
+                            gridRow3.appendChild(lastCard);
+                        }
+                    }
+                } else {
+                    // Third row
+                    if (!gridRow3) {
+                        gridRow3 = document.createElement('div');
+                        gridRow3.className = 'storyboard-grid';
+                        gridRow3.id = 'storyboardGridRow3';
+                        document.querySelector('.storyboard-results-container').appendChild(gridRow3);
+                    }
+                    
+                    const thirdRowIndex = index - 8;
+                    if (thirdRowIndex < gridRow3.children.length) {
+                        gridRow3.insertBefore(placeholderCard, gridRow3.children[thirdRowIndex]);
+                    } else {
+                        gridRow3.appendChild(placeholderCard);
+                    }
+                }
+            } else if (position === 'after') {
+                // Insert after the last card
+                const totalCards = gridRow1.children.length + gridRow2.children.length + (gridRow3 ? gridRow3.children.length : 0);
+                
+                if (gridRow1.children.length < 4) {
+                    gridRow1.appendChild(placeholderCard);
+                } else if (gridRow2.children.length < 4) {
+                    gridRow2.appendChild(placeholderCard);
+                } else {
+                    if (!gridRow3) {
+                        gridRow3 = document.createElement('div');
+                        gridRow3.className = 'storyboard-grid';
+                        gridRow3.id = 'storyboardGridRow3';
+                        document.querySelector('.storyboard-results-container').appendChild(gridRow3);
+                    }
+                    gridRow3.appendChild(placeholderCard);
+                }
+            }
+            
+            // Create a new frame object for the storyboard data
+            const newFrame = {
+                act_title: "New Scene",
+                act_description: description,
+                image_prompt: "Generating...",
+                image_url: ""
+            };
+            
+            // Update the storyboard data
+            if (position === 'before') {
+                currentStoryboard.unshift(newFrame);
+            } else if (position === 'between') {
+                currentStoryboard.splice(index, 0, newFrame);
+            } else if (position === 'after') {
+                currentStoryboard.push(newFrame);
+            }
+            
+            // Update scene numbers
+            updateSceneNumbers();
+            
+            // Add event listeners to the new card
+            setupCardEventListeners();
+            
+            // Recreate add scene buttons
+            createAddSceneButtons();
+        }
+
+        // Function to set up event listeners for all cards
+        function setupCardEventListeners() {
+            const cards = document.querySelectorAll('.storyboard-card');
+            
+            cards.forEach((card, index) => {
+                // Set the card's index
+                card.dataset.index = index;
+                
+                // Set up regenerate button
+                const regenerateBtn = card.querySelector('.regenerate-btn');
+                if (regenerateBtn) {
+                    // Remove any existing event listeners
+                    const newBtn = regenerateBtn.cloneNode(true);
+                    regenerateBtn.parentNode.replaceChild(newBtn, regenerateBtn);
+                    
+                    // Add new event listener
+                    newBtn.addEventListener('click', () => toggleFeedbackArea(index));
+                }
+                
+                // Set up feedback container
+                const feedbackContainer = card.querySelector('.feedback-container');
+                if (feedbackContainer) {
+                    feedbackContainer.id = `feedback-container-${index}`;
+                    
+                    // Set up textarea
+                    const textarea = feedbackContainer.querySelector('.feedback-textarea');
+                    if (textarea) {
+                        textarea.id = `feedback-textarea-${index}`;
+                    }
+                    
+                    // Set up submit button
+                    const submitBtn = feedbackContainer.querySelector('.submit-feedback-btn');
+                    if (submitBtn) {
+                        // Remove any existing event listeners
+                        const newSubmitBtn = submitBtn.cloneNode(true);
+                        submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+                        
+                        // Add new event listener
+                        newSubmitBtn.addEventListener('click', () => regenerateFrame(index));
+                    }
+                    
+                    // Set up cancel button
+                    const cancelBtn = feedbackContainer.querySelector('.cancel-feedback-btn');
+                    if (cancelBtn) {
+                        // Remove any existing event listeners
+                        const newCancelBtn = cancelBtn.cloneNode(true);
+                        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+                        
+                        // Add new event listener
+                        newCancelBtn.addEventListener('click', () => toggleFeedbackArea(index));
+                    }
+                }
+                
+                // Set up regenerating indicator
+                const indicator = card.querySelector('.regenerating-indicator');
+                if (indicator) {
+                    indicator.id = `regenerating-indicator-${index}`;
+                }
+            });
+        }
+
+        // Function to create a placeholder card
+        function createPlaceholderCard(description, brandDNA) {
+            const card = document.createElement('div');
+            card.className = 'storyboard-card';
+            card.style.borderColor = brandDNA ? brandDNA.brandColors[0] : '#ccc';
+            
+            // Create content section
+            const cardContent = document.createElement('div');
+            cardContent.className = 'card-content';
+            
+            // Add placeholder image
+            const imageWrapper = document.createElement('div');
+            imageWrapper.className = 'image-wrapper';
+            
+            const placeholderImage = document.createElement('div');
+            placeholderImage.className = 'storyboard-image-loading';
+            placeholderImage.innerHTML = `
+                <div style="text-align: center;">
+                    <div class="regenerating-spinner"></div>
+                    <div style="margin-top: 1rem;">Generating image...</div>
+                </div>
+            `;
+            
+            imageWrapper.appendChild(placeholderImage);
+            cardContent.appendChild(imageWrapper);
+            
+            // Create scene number (will be updated later)
+            const sceneNumber = document.createElement('div');
+            sceneNumber.className = 'scene-number';
+            sceneNumber.textContent = 'New Scene';
+            
+            const title = document.createElement('h2');
+            title.className = 'brand-card-title';
+            title.textContent = 'New Scene';
+            
+            const body = document.createElement('div');
+            body.className = 'brand-card-body';
+            body.textContent = description;
+            
+            // Add elements to the card content
+            cardContent.appendChild(sceneNumber);
+            cardContent.appendChild(title);
+            cardContent.appendChild(body);
+            
+            // Add the card content to the card
+            card.appendChild(cardContent);
+            
+            // Create card footer
+            const cardFooter = document.createElement('div');
+            cardFooter.className = 'card-footer';
+            
+            // Add regenerate button to the footer
+            const regenerateBtn = document.createElement('button');
+            regenerateBtn.className = 'regenerate-btn';
+            regenerateBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="#666" class="regenerate-icon">
+                    <path d="M482-160q-134 0-228-93t-94-227v-7l-64 64-56-56 160-160 160 160-56 56-64-64v7q0 100 70.5 170T482-240q26 0 51-6t49-18l60 60q-38 22-78 33t-82 11Zm278-161L600-481l56-56 64 64v-7q0-100-70.5-170T478-720q-26 0-51 6t-49 18l-60-60q38-22 78-33t82-11q134 0 228 93t94 227v7l64-64 56 56-160 160Z"/>
+                </svg>
+                <span>Regenerate Frame</span>
+            `;
+            
+            cardFooter.appendChild(regenerateBtn);
+            card.appendChild(cardFooter);
+            
+            // Add feedback container
+            const feedbackContainer = document.createElement('div');
+            feedbackContainer.className = 'feedback-container';
+            
+            const feedbackTextarea = document.createElement('textarea');
+            feedbackTextarea.className = 'feedback-textarea';
+            feedbackTextarea.placeholder = 'Describe how you want to change this frame...';
+            
+            const feedbackActions = document.createElement('div');
+            feedbackActions.className = 'feedback-actions';
+            
+            const submitBtn = document.createElement('button');
+            submitBtn.className = 'submit-feedback-btn';
+            submitBtn.textContent = 'Submit';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'cancel-feedback-btn';
+            cancelBtn.textContent = 'Cancel';
+            
+            feedbackActions.appendChild(submitBtn);
+            feedbackActions.appendChild(cancelBtn);
+            
+            feedbackContainer.appendChild(feedbackTextarea);
+            feedbackContainer.appendChild(feedbackActions);
+            
+            card.appendChild(feedbackContainer);
+            
+            // Add regenerating indicator
+            const regeneratingIndicator = document.createElement('div');
+            regeneratingIndicator.className = 'regenerating-indicator';
+            
+            const spinner = document.createElement('div');
+            spinner.className = 'regenerating-spinner';
+            
+            const text = document.createElement('div');
+            text.textContent = 'Regenerating frame...';
+            
+            regeneratingIndicator.appendChild(spinner);
+            regeneratingIndicator.appendChild(text);
+            
+            card.appendChild(regeneratingIndicator);
+            
+            return card;
+        }
+
+        // Function to generate a new scene from a placeholder
+        async function generateNewScene(card) {
+            const index = parseInt(card.dataset.index);
+            const description = card.querySelector('.brand-card-body').textContent;
+            
+            // Show the regenerating indicator
+            const regeneratingIndicator = card.querySelector('.regenerating-indicator');
+            regeneratingIndicator.style.display = 'flex';
+            
+            try {
+                const videoConcept = document.getElementById('videoConcept').value.trim();
+                const integrationType = document.getElementById('integrationType').value;
+                const currentBrandDNA = getClientDNA();
+                
+                // Create an integration type description map
+                const integrationDescriptions = {
+                    brand_mention: "A short (15-30 second) acknowledgement of the brand within the video, usually involving a brief description and call to action.",
+                    mid_video: "A distinct 30-60 second (or longer) promotional segment in the middle of the video, where the creator directly promotes the brand and its products.",
+                    full_integration: "The brand's product or service is seamlessly woven into the video's core content, acting as a central element of the story, tutorial, or challenge."
+                };
+                
+                const requestBody = {
+                    videoConcept: videoConcept,
+                    brandDNA: currentBrandDNA,
+                    creatorDNA: selectedCreatorDNA,
+                    integrationType: {
+                        type: integrationType,
+                        description: integrationDescriptions[integrationType]
+                    },
+                    language: getClientLanguage(),
+                    storyboard: currentStoryboard,
+                    frameIndex: index,
+                    feedback: `Generate a new scene with this description: ${description}`
+                };
+                
+                const response = await fetch(`${window.API_BASE_URL}/regenerateStoryboardFrame`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Update the storyboard data
+                currentStoryboard[index] = data.frame;
+                
+                // Generate the new image
+                const imageResponse = await fetch(`${window.API_BASE_URL}/generateStoryboardImages`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        imagePrompts: [data.frame.image_prompt],
+                        language: getClientLanguage()
+                    })
+                });
+                
+                if (!imageResponse.ok) {
+                    throw new Error(`HTTP error! status: ${imageResponse.status}`);
+                }
+                
+                const imageData = await imageResponse.json();
+                
+                // Update the card with new content
+                
+                // Replace the placeholder image with the real image
+                const imageWrapper = card.querySelector('.image-wrapper');
+                imageWrapper.innerHTML = ''; // Clear the placeholder
+                
+                const img = document.createElement('img');
+                img.src = `data:image/png;base64,${imageData.images[0]}`;
+                img.className = 'storyboard-image';
+                
+                // Create download button
+                const downloadButton = document.createElement('button');
+                downloadButton.className = 'download-button';
+                downloadButton.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white">
+                        <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+                    </svg>
+                `;
+                
+                downloadButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const link = document.createElement('a');
+                    link.href = img.src;
+                    link.download = `storyboard-scene-${index + 1}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
+                
+                imageWrapper.appendChild(img);
+                imageWrapper.appendChild(downloadButton);
+                
+                // Update title and description
+                const title = card.querySelector('.brand-card-title');
+                const body = card.querySelector('.brand-card-body');
+                
+                if (title) title.textContent = data.frame.act_title;
+                if (body) body.textContent = data.frame.act_description;
+                
+                // Update the regenerate button text
+                const regenerateBtn = card.querySelector('.regenerate-btn span');
+                regenerateBtn.textContent = 'Regenerate Frame';
+                
+                // Remove the placeholder attribute
+                card.removeAttribute('data-placeholder');
+                
+                // Add prompt reveal section if it doesn't exist
+                if (!card.querySelector('.prompt-section')) {
+                    const promptSection = document.createElement('div');
+                    promptSection.className = 'prompt-section';
+                    
+                    const promptButton = document.createElement('button');
+                    promptButton.className = 'prompt-button';
+                    promptButton.innerHTML = `
+                        <span data-translation-key="storyboard-show-prompt">Show Prompt</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    `;
+                    
+                    const promptContent = document.createElement('div');
+                    promptContent.className = 'prompt-content';
+                    promptContent.textContent = data.frame.image_prompt;
+                    
+                    promptButton.addEventListener('click', () => {
+                        const isExpanded = promptContent.style.display !== 'none';
+                        promptContent.style.display = isExpanded ? 'none' : 'block';
+                        promptButton.classList.toggle('expanded');
+                    });
+                    
+                    promptSection.appendChild(promptButton);
+                    promptSection.appendChild(promptContent);
+                    
+                    card.querySelector('.card-content').appendChild(promptSection);
+                }
+                
+                // Update the regenerate button event listener
+                const newRegenerateBtn = card.querySelector('.regenerate-btn');
+                newRegenerateBtn.replaceWith(newRegenerateBtn.cloneNode(true)); // Remove old event listeners
+                card.querySelector('.regenerate-btn').addEventListener('click', () => toggleFeedbackArea(index));
+                
+                // Add feedback container if it doesn't exist
+                if (!card.querySelector('.feedback-container')) {
+                    const feedbackContainer = document.createElement('div');
+                    feedbackContainer.className = 'feedback-container';
+                    feedbackContainer.id = `feedback-container-${index}`;
+                    
+                    const feedbackTextarea = document.createElement('textarea');
+                    feedbackTextarea.className = 'feedback-textarea';
+                    feedbackTextarea.placeholder = 'Describe how you want to change this frame...';
+                    feedbackTextarea.id = `feedback-textarea-${index}`;
+                    
+                    const feedbackActions = document.createElement('div');
+                    feedbackActions.className = 'feedback-actions';
+                    
+                    const submitBtn = document.createElement('button');
+                    submitBtn.className = 'submit-feedback-btn';
+                    submitBtn.textContent = 'Submit';
+                    submitBtn.addEventListener('click', () => regenerateFrame(index));
+                    
+                    const cancelBtn = document.createElement('button');
+                    cancelBtn.className = 'cancel-feedback-btn';
+                    cancelBtn.textContent = 'Cancel';
+                    cancelBtn.addEventListener('click', () => toggleFeedbackArea(index));
+                    
+                    feedbackActions.appendChild(submitBtn);
+                    feedbackActions.appendChild(cancelBtn);
+                    
+                    feedbackContainer.appendChild(feedbackTextarea);
+                    feedbackContainer.appendChild(feedbackActions);
+                    
+                    card.appendChild(feedbackContainer);
+                }
+                
+            } catch (error) {
+                console.error('Error generating new scene:', error);
+                alert(`Error: ${error.message}`);
+            } finally {
+                regeneratingIndicator.style.display = 'none';
+            }
+        }
+
+        // Function to update all scene numbers
+        function updateSceneNumbers() {
+            const cards = document.querySelectorAll('.storyboard-card');
+            
+            cards.forEach((card, index) => {
+                // Update the scene number text
+                const sceneNumber = card.querySelector('.scene-number');
+                if (sceneNumber) {
+                    sceneNumber.textContent = `Scene ${index + 1}`;
+                }
+            });
+            
+            // Set up all event listeners with the new indices
+            setupCardEventListeners();
         }
     </script>
 </body>
