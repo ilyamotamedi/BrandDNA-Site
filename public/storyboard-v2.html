@@ -686,7 +686,7 @@
     <script>
         let selectedCreatorDNA = null;
         let currentStoryboard = [];
-        const STORYBOARD_IMAGE_BATCH_SIZE = 2; // Adjust this number to control how many images are generated at once
+        const STORYBOARD_IMAGE_BATCH_SIZE = 4; // Adjust this number to control how many images are generated at once
 
         document.addEventListener('DOMContentLoaded', async () => {
             await translateUI();
@@ -1041,61 +1041,83 @@
                     for (let i = 0; i < totalImages; i += STORYBOARD_IMAGE_BATCH_SIZE) {
                         try {
                             const batchPrompts = allPrompts.slice(i, i + STORYBOARD_IMAGE_BATCH_SIZE);
-                            const response = await fetch(`${window.API_BASE_URL}/generateStoryboardImages`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({ 
-                                    imagePrompts: batchPrompts,
-                                    language: getClientLanguage()
-                                })
-                            });
                             
-                            if (!response.ok) {
-                                throw new Error(`HTTP error! status: ${response.status}`);
+                            // Add retry logic for the API call
+                            let retryCount = 0;
+                            const maxRetries = 3;
+                            let lastError;
+                            
+                            while (retryCount < maxRetries) {
+                                try {
+                                    const response = await fetch(`${window.API_BASE_URL}/generateStoryboardImages`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({ 
+                                            imagePrompts: batchPrompts,
+                                            language: getClientLanguage()
+                                        })
+                                    });
+                                    
+                                    if (!response.ok) {
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                    }
+                                    
+                                    const data = await response.json();
+                                    results.push(...data.images);
+                                    
+                                    // Success - update UI and break retry loop
+                                    data.images.forEach((imageBase64, batchIndex) => {
+                                        const cardIndex = i + batchIndex;
+                                        const card = document.querySelector(`.storyboard-card[data-index="${cardIndex}"]`);
+                                        if (!card) return;
+                                        
+                                        const imageWrapper = card.querySelector('.image-wrapper');
+                                        if (!imageWrapper) return;
+                                        
+                                        imageWrapper.innerHTML = ''; // Clear loading spinner
+                                        
+                                        const img = document.createElement('img');
+                                        img.src = `data:image/png;base64,${imageBase64}`;
+                                        img.className = 'storyboard-image';
+                                        
+                                        // Create download button
+                                        const downloadButton = document.createElement('button');
+                                        downloadButton.className = 'download-button';
+                                        downloadButton.innerHTML = `
+                                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white">
+                                                <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+                                            </svg>
+                                        `;
+                                        
+                                        downloadButton.addEventListener('click', (e) => {
+                                            e.stopPropagation();
+                                            const link = document.createElement('a');
+                                            link.href = img.src;
+                                            link.download = `storyboard-scene-${cardIndex + 1}.png`;
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                        });
+                                        
+                                        imageWrapper.appendChild(img);
+                                        imageWrapper.appendChild(downloadButton);
+                                    });
+                                    
+                                    break; // Exit retry loop on success
+                                } catch (error) {
+                                    lastError = error;
+                                    retryCount++;
+                                    
+                                    if (retryCount < maxRetries) {
+                                        // Wait with exponential backoff before retrying
+                                        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+                                        continue;
+                                    }
+                                    throw error; // Throw the last error if all retries failed
+                                }
                             }
-                            
-                            const data = await response.json();
-                            results.push(...data.images);
-                            
-                            // Update the UI with this batch
-                            data.images.forEach((imageBase64, batchIndex) => {
-                                const cardIndex = i + batchIndex;
-                                const card = document.querySelector(`.storyboard-card[data-index="${cardIndex}"]`);
-                                if (!card) return;
-                                
-                                const imageWrapper = card.querySelector('.image-wrapper');
-                                if (!imageWrapper) return;
-                                
-                                imageWrapper.innerHTML = ''; // Clear loading spinner
-                                
-                                const img = document.createElement('img');
-                                img.src = `data:image/png;base64,${imageBase64}`;
-                                img.className = 'storyboard-image';
-                                
-                                // Create download button
-                                const downloadButton = document.createElement('button');
-                                downloadButton.className = 'download-button';
-                                downloadButton.innerHTML = `
-                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white">
-                                        <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
-                                    </svg>
-                                `;
-                                
-                                downloadButton.addEventListener('click', (e) => {
-                                    e.stopPropagation();
-                                    const link = document.createElement('a');
-                                    link.href = img.src;
-                                    link.download = `storyboard-scene-${cardIndex + 1}.png`;
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
-                                });
-                                
-                                imageWrapper.appendChild(img);
-                                imageWrapper.appendChild(downloadButton);
-                            });
                         } catch (error) {
                             console.error(`Error generating batch starting at index ${i}:`, error);
                         }
@@ -1454,6 +1476,13 @@
                 gridRow3.className = 'storyboard-grid';
                 gridRow3.id = 'storyboardGridRow3';
                 document.querySelector('.storyboard-results-container').appendChild(gridRow3);
+                
+                // Move the review button to the end
+                const reviewButton = document.querySelector('.review-storyboard-btn');
+                if (reviewButton) {
+                    reviewButton.remove();
+                    document.querySelector('.storyboard-results-container').appendChild(reviewButton);
+                }
             }
             
             // Insert the card at the appropriate position
