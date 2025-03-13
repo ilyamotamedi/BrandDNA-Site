@@ -532,6 +532,109 @@
             border-radius: 24px;
             cursor: pointer;
         }
+
+        .regenerate-ideas-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Review Storyboard Button Styles */
+        .review-storyboard-btn {
+            display: none; /* Initially hidden */
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: transparent;
+            color: #F53151;
+            border: none;
+            position: relative;
+            padding: 0.8rem 1.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 2rem auto;
+            width: fit-content;
+            border-radius: 9999px;
+            z-index: 1;
+        }
+
+        .review-storyboard-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 9999px;
+            padding: 2px;
+            background: linear-gradient(90deg, #F53151, #F742BD);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            z-index: -1;
+        }
+
+        .review-storyboard-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .review-storyboard-btn:active {
+            transform: translateY(0);
+        }
+
+        .review-storyboard-btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .review-storyboard-btn .loading-spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(245, 49, 81, 0.3);
+            border-radius: 50%;
+            border-top-color: #F53151;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        .review-storyboard-btn.loading .loading-spinner {
+            display: inline-block;
+        }
+
+        /* Warning Icon Styles */
+        .warning-icon {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 24px;
+            height: 24px;
+            z-index: 5;
+            cursor: pointer;
+        }
+
+        .warning-icon svg {
+            fill: #F53151;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+
+        .warning-tooltip {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            width: 250px;
+            font-size: 0.85rem;
+            color: #26201F;
+            display: none;
+            z-index: 10;
+        }
+
+        .warning-icon:hover .warning-tooltip {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -573,6 +676,9 @@
                 <div class="storyboard-grid-row2" id="storyboardGridRow2">
                     <!-- Last 3 frames will be added here -->
                 </div>
+                <button class="review-storyboard-btn" onclick="reviewStoryboard()" data-translation-key="storyboard-review-button">
+                    ${translations['storyboard-review-button'][getClientLanguage()]}
+                </button>
             </div>
         </main>
     </div>
@@ -580,6 +686,7 @@
     <script>
         let selectedCreatorDNA = null;
         let currentStoryboard = [];
+        const STORYBOARD_IMAGE_BATCH_SIZE = 2; // Adjust this number to control how many images are generated at once
 
         document.addEventListener('DOMContentLoaded', async () => {
             await translateUI();
@@ -725,6 +832,9 @@
                     <div class="storyboard-grid-row2" id="storyboardGridRow2">
                         <!-- Last 3 frames will be added here -->
                     </div>
+                    <button class="review-storyboard-btn" onclick="reviewStoryboard()" data-translation-key="storyboard-review-button">
+                        ${translations['storyboard-review-button'][getClientLanguage()]}
+                    </button>
                 `;
                 
                 const gridRow1 = document.getElementById('storyboardGridRow1');
@@ -770,32 +880,10 @@
                 // Store the current storyboard data
                 currentStoryboard = storyboard;
 
-                // Extract image prompts
-                const imagePrompts = storyboard.map(act => act.image_prompt);
-                
-                console.log('Sending image generation request with language:', clientLanguage);
-
-                // Generate images for all prompts
-                const imageResponse = await fetch(`${window.API_BASE_URL}/generateStoryboardImages`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        imagePrompts,
-                        language: getClientLanguage()
-                    })
-                });
-
-                if (!imageResponse.ok) {
-                    throw new Error(`HTTP error! status: ${imageResponse.status}`);
-                }
-
-                const imageData = await imageResponse.json();
-
+                // Hide loading container and show cards immediately with placeholder images
                 loadingContainer.style.display = 'none';
 
-                // Create cards with both content and images
+                // Create cards with text content first
                 storyboard.forEach((act, index) => {
                     const card = document.createElement('div');
                     card.className = 'storyboard-card';
@@ -806,38 +894,15 @@
                     const cardContent = document.createElement('div');
                     cardContent.className = 'card-content';
 
-                    // Add the generated image
-                    if (imageData.images[index]) {
-                        const imageWrapper = document.createElement('div');
-                        imageWrapper.className = 'image-wrapper';
-
-                        const img = document.createElement('img');
-                        img.src = `data:image/png;base64,${imageData.images[index]}`;
-                        img.className = 'storyboard-image';
-
-                        // Create download button
-                        const downloadButton = document.createElement('button');
-                        downloadButton.className = 'download-button';
-                        downloadButton.innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white">
-                                <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
-                            </svg>
-                        `;
-
-                        downloadButton.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const link = document.createElement('a');
-                            link.href = img.src;
-                            link.download = `storyboard-scene-${index + 1}.png`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                        });
-
-                        imageWrapper.appendChild(img);
-                        imageWrapper.appendChild(downloadButton);
-                        cardContent.appendChild(imageWrapper);
-                    }
+                    // Add placeholder image
+                    const imageWrapper = document.createElement('div');
+                    imageWrapper.className = 'image-wrapper';
+                    imageWrapper.innerHTML = `
+                        <div class="storyboard-image-loading">
+                            <div class="regenerating-spinner"></div>
+                        </div>
+                    `;
+                    cardContent.appendChild(imageWrapper);
 
                     // Create scene number
                     const sceneNumber = document.createElement('div');
@@ -862,7 +927,9 @@
                     promptButton.className = 'prompt-button';
                     promptButton.innerHTML = `
                         <span data-translation-key="storyboard-show-prompt">Show Prompt</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" 
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+                        class="chevron-icon">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
                     `;
@@ -957,31 +1024,101 @@
                     
                     card.appendChild(regeneratingIndicator);
                     
-                    // Add to the appropriate row
+                    // Add to appropriate row
                     if (index < 4) {
                         gridRow1.appendChild(card);
-                    } else if (index < 8) {
-                        gridRow2.appendChild(card);
                     } else {
-                        // If we have more than 8 cards, create a third row if needed
-                        let gridRow3 = document.getElementById('storyboardGridRow3');
-                        if (!gridRow3) {
-                            gridRow3 = document.createElement('div');
-                            gridRow3.className = 'storyboard-grid';
-                            gridRow3.id = 'storyboardGridRow3';
-                            storyboardContainer.appendChild(gridRow3);
-                        }
-                        gridRow3.appendChild(card);
+                        gridRow2.appendChild(card);
                     }
                 });
-                
-                await translateUI();
 
-                // Set up event listeners for all cards
+                // Generate images in batches
+                const generateImagesInBatches = async (allPrompts) => {
+                    const results = [];
+                    const totalImages = allPrompts.length;
+                    
+                    // Generate images in batches of STORYBOARD_IMAGE_BATCH_SIZE
+                    for (let i = 0; i < totalImages; i += STORYBOARD_IMAGE_BATCH_SIZE) {
+                        try {
+                            const batchPrompts = allPrompts.slice(i, i + STORYBOARD_IMAGE_BATCH_SIZE);
+                            const response = await fetch(`${window.API_BASE_URL}/generateStoryboardImages`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ 
+                                    imagePrompts: batchPrompts,
+                                    language: getClientLanguage()
+                                })
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            
+                            const data = await response.json();
+                            results.push(...data.images);
+                            
+                            // Update the UI with this batch
+                            data.images.forEach((imageBase64, batchIndex) => {
+                                const cardIndex = i + batchIndex;
+                                const card = document.querySelector(`.storyboard-card[data-index="${cardIndex}"]`);
+                                if (!card) return;
+                                
+                                const imageWrapper = card.querySelector('.image-wrapper');
+                                if (!imageWrapper) return;
+                                
+                                imageWrapper.innerHTML = ''; // Clear loading spinner
+                                
+                                const img = document.createElement('img');
+                                img.src = `data:image/png;base64,${imageBase64}`;
+                                img.className = 'storyboard-image';
+                                
+                                // Create download button
+                                const downloadButton = document.createElement('button');
+                                downloadButton.className = 'download-button';
+                                downloadButton.innerHTML = `
+                                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="white">
+                                        <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+                                    </svg>
+                                `;
+                                
+                                downloadButton.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const link = document.createElement('a');
+                                    link.href = img.src;
+                                    link.download = `storyboard-scene-${cardIndex + 1}.png`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                });
+                                
+                                imageWrapper.appendChild(img);
+                                imageWrapper.appendChild(downloadButton);
+                            });
+                        } catch (error) {
+                            console.error(`Error generating batch starting at index ${i}:`, error);
+                        }
+                    }
+                    
+                    return results;
+                };
+
+                // Generate images in batches
+                const imagePrompts = storyboard.map(act => act.image_prompt);
+                generateImagesInBatches(imagePrompts).catch(error => {
+                    console.error('Error in batch generation:', error);
+                });
+
+                // Set up event listeners and create add scene buttons
                 setupCardEventListeners();
-
-                // Create add scene buttons after cards are created
                 setTimeout(createAddSceneButtons, 500);
+
+                // Show the review button
+                const reviewButton = document.querySelector('.review-storyboard-btn');
+                if (reviewButton) {
+                    reviewButton.style.display = 'flex';
+                }
 
             } catch (error) {
                 console.error('Error:', error);
@@ -1849,6 +1986,110 @@
             // Set up all event listeners with the new indices
             setupCardEventListeners();
         }
+
+        // Function to review storyboard for brand DNA violations
+        async function reviewStoryboard() {
+            const reviewButton = document.querySelector('.review-storyboard-btn');
+            reviewButton.classList.add('loading');
+            const originalText = translations['storyboard-review-button'][getClientLanguage()];
+            reviewButton.innerHTML = '<div class="loading-spinner"></div>' + translations['storyboard-reviewing'][getClientLanguage()];
+
+            try {
+                const currentBrandDNA = getClientDNA();
+                if (!currentBrandDNA) {
+                    throw new Error('No brand DNA selected');
+                }
+
+                const campaignBrief = document.getElementById('campaignBrief').value.trim();
+                const videoConcept = document.getElementById('videoConcept').value.trim();
+
+                // Collect all scenes data
+                const scenes = currentStoryboard.map((scene, index) => ({
+                    sceneNumber: index + 1,
+                    sceneTitle: scene.act_title,
+                    sceneDescription: scene.act_description
+                }));
+
+                // Prepare request body
+                const requestBody = {
+                    scenes,
+                    brandDNA: currentBrandDNA,
+                    campaignBrief,
+                    campaignGoal: videoConcept,
+                    language: getClientLanguage()
+                };
+
+                const response = await fetch(`${window.API_BASE_URL}/reviewStoryboard`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Clear existing warnings
+                clearWarningIcons();
+
+                // Add warning icons for scenes with issues
+                data.sceneWarnings.forEach(warning => {
+                    if (warning.hasIssue) {
+                        addWarningIcon(warning.sceneNumber - 1, warning.explanation);
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error reviewing storyboard:', error);
+                alert(`Error: ${error.message}`);
+            } finally {
+                reviewButton.classList.remove('loading');
+                reviewButton.innerHTML = originalText;
+            }
+        }
+
+        // Function to clear all warning icons
+        function clearWarningIcons() {
+            const warningIcons = document.querySelectorAll('.warning-icon');
+            warningIcons.forEach(icon => icon.remove());
+        }
+
+        // Function to add a warning icon to a scene
+        function addWarningIcon(sceneIndex, explanation) {
+            const card = document.querySelector(`.storyboard-card[data-index="${sceneIndex}"]`);
+            if (!card) return;
+
+            const warningIcon = document.createElement('div');
+            warningIcon.className = 'warning-icon';
+            warningIcon.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
+                    <path d="M480-280q17 0 28.5-11.5T520-320q0-17-11.5-28.5T480-360q-17 0-28.5 11.5T440-320q0 17 11.5 28.5T480-280Zm-40-160h80v-240h-80v240Zm40 360q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/>
+                </svg>
+                <div class="warning-tooltip">${explanation}</div>
+            `;
+
+            card.style.position = 'relative';
+            card.insertBefore(warningIcon, card.firstChild);
+        }
+
+        // Remove warning icon when regenerating a frame
+        const originalRegenerateFrame = regenerateFrame;
+        regenerateFrame = async function(index) {
+            // Remove warning icon if it exists
+            const card = document.querySelector(`.storyboard-card[data-index="${index}"]`);
+            if (card) {
+                const warningIcon = card.querySelector('.warning-icon');
+                if (warningIcon) {
+                    warningIcon.remove();
+                }
+            }
+            // Call the original regenerateFrame function
+            await originalRegenerateFrame(index);
+        };
     </script>
 </body>
 </html> 

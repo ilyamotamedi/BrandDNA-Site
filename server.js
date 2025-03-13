@@ -1226,6 +1226,70 @@ Remember:
 ONLY RETURN VALID JSON WITH NO ADDITIONAL COMMENTARY OR EXPLANATION
 `;
 
+const STORYBOARD_REVIEW_SYSTEM_INSTRUCTIONS = `
+You are a brand DNA expert and content strategist. Your task is to review a storyboard and identify any scenes that may contradict or challenge the brand's DNA. This storyboard has been sent to you by a youtube creator who is collaborating with the brand.
+
+# Input Analysis Process
+
+1. Analyze the Brand DNA:
+   - Core values and personality traits
+   - Visual and tonal guidelines
+   - Target audience expectations
+   - Brand story and heritage
+   - Distinguish between foundational brand principles vs. stylistic preferences
+   - Recognize the difference between brand evolution and brand contradiction
+
+2. Analyze the Campaign Context:
+   - Campaign brief and objectives
+   - Intended message and impact
+   - Target audience alignment
+
+3. Review Each Scene:
+   - Scene content and messaging
+   - Visual elements and tone
+   - Character actions and dialogue
+   - Brand integration approach
+
+4. Scene Violation Threshold:
+   - MINOR VARIANCE: Creator's style or approach differs slightly from brand's typical execution (DO NOT FLAG)
+   - MODERATE TENSION: Scene challenges brand conventions but could be acceptable with context (YOU MAY FLAG BUT BE SELECTIVE)
+   - SIGNIFICANT VIOLATION: Scene directly contradicts core brand values or would damage brand perception (FLAG THIS)
+
+# Output Format
+Return a JSON object with an array of scene warnings:
+
+{
+    "sceneWarnings": [
+        {
+            "sceneNumber": 1,
+            "hasIssue": true/false,
+            "explanation": "Detailed explanation of why this scene may violate or challenge the brand DNA"
+        },
+        // ... repeat for each scene
+    ]
+}
+
+Guidelines for Warnings:
+1. Focus on substantive brand DNA contradictions
+2. Consider both explicit and implicit conflicts
+3. Evaluate tone, messaging, and visual elements
+4. Assess audience impact and perception
+5. Consider cultural sensitivity
+6. Evaluate authenticity and credibility
+
+Remember:
+- Only flag scenes that represent CLEAR, SIGNIFICANT violations of the brand's core DNA
+- Do not flag scenes that are simply different from the brand's DNA in a minor way.
+- Consider whether the scene would genuinely damage the brand's reputation or relationship with its audience
+- Successful creator partnerships require brand flexibility. Account for this and be very selective when flagging scenes.
+- Allow the creator to 'bend without breaking' the brand's DNA. This means they can take creative liberties as long as they don't break the brand's core DNA.
+- Focus more on explicit contradictions of the DNA and less on subjective or stylistic differences.
+- These storyboards are for videos that are collaborations between the brand and youtube creator. Your job is to help the creator make the best video they can that gives them creative liberties while aligning with and stewarding the brand's DNA.
+- This is a YouTube video so make sure not to flag scenes that follow expected online video conventions (e.g. thanking the brand for sponsoring the video, etc.)
+
+ONLY RETURN VALID JSON WITH NO ADDITIONAL COMMENTARY OR EXPLANATION
+`;
+
 async function callGeminiAPI(brandName, files = null, language = 'english') {
     const fetch = await import('node-fetch').then(module => module.default);
     
@@ -2935,6 +2999,111 @@ app.post('/regenerateStoryboardFrame', express.json(), async (req, res) => {
         const frameData = JSON.parse(cleanJSON);
         
         res.json(frameData);
+    } catch (error) {
+        console.error('Error processing request:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Endpoint handler for reviewing storyboard
+app.post('/reviewStoryboard', express.json(), async (req, res) => {
+    const { scenes, brandDNA, campaignBrief, campaignGoal } = req.body;
+    const language = getLanguageFromRequest(req);
+
+    if (!scenes || !Array.isArray(scenes)) {
+        return res.status(400).json({ error: 'Valid scenes array is required' });
+    }
+
+    if (!brandDNA) {
+        return res.status(400).json({ error: 'Brand DNA is required' });
+    }
+
+    if (!campaignBrief) {
+        return res.status(400).json({ error: 'Campaign brief is required' });
+    }
+
+    if (!campaignGoal) {
+        return res.status(400).json({ error: 'Campaign goal is required' });
+    }
+
+    try {
+        const fetch = await import('node-fetch').then(module => module.default);
+
+        // Prepare the prompt
+        let fullPrompt = `
+            Brand DNA:
+            ${JSON.stringify(brandDNA)}
+
+            Campaign Brief:
+            ${campaignBrief}
+
+            Campaign Goal:
+            ${campaignGoal}
+
+            Scenes to Review:
+            ${JSON.stringify(scenes)}
+
+            Please review each scene and identify any potential conflicts with the brand DNA.
+        `;
+
+        if (language === 'spanish') {
+            fullPrompt += "\nPLEASE RESPOND IN SPANISH";
+        }
+
+        // Prepare the parts array
+        const parts = [{
+            text: fullPrompt
+        }];
+
+        const requestBody = {
+            contents: [{
+                role: "user",
+                parts: parts
+            }],
+            systemInstruction: {
+                parts: [{
+                    text: STORYBOARD_REVIEW_SYSTEM_INSTRUCTIONS
+                }]
+            },
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 8192,
+                topP: 0.8
+            }
+        };
+
+        const client = await auth.getClient();
+        const accessToken = await client.getAccessToken();
+
+        const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken.token}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Error Response:', errorText);
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+
+        if (!responseText) {
+            throw new Error('No text content in API response');
+        }
+
+        // Parse the response and send it back
+        const cleanJSON = responseText.replace(/```json\n|\n```/g, '').trim();
+        const reviewData = JSON.parse(cleanJSON);
+        
+        res.json(reviewData);
     } catch (error) {
         console.error('Error processing request:', error);
         res.status(500).json({ error: error.message });

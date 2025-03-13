@@ -304,6 +304,14 @@ const translations = {
     'storyboard-generating-scene': {
         english: 'Generating scene...',
         spanish: 'Generando escena...'
+    },
+    'storyboard-review-button': {
+        english: 'REVIEW STORYBOARD',
+        spanish: 'REVISAR STORYBOARD'
+    },
+    'storyboard-reviewing': {
+        english: 'Reviewing...',
+        spanish: 'Revisando...'
     }
 };
 
