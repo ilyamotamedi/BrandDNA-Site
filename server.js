@@ -1896,7 +1896,7 @@ app.post('/saveCreatorDNA', express.json(), async (req, res) => {
         // Translate and save to other language file in the background
         (async () => {
             try {
-                const targetFile = requestLanguage === 'spanish' ? 'creator-dnas.json' : 'creator-dnas-spanish.json';
+                const targetFile = requestLanguage === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
                 const targetLanguage = requestLanguage === 'spanish' ? 'en' : 'es';
                 
                 // Translate the channel analysis
@@ -2065,7 +2065,8 @@ app.post('/getChannelTranscripts', async (req, res) => {
 
 app.post('/analyzeChannel', upload.array('file', 5), async (req, res) => {
     try {
-        const { channelName, transcripts } = req.body;
+        const { channelName, transcripts, language } = req.body;
+        const requestLanguage = language || currentLanguage;
         const files = req.files || [];
         
         const processedTranscripts = JSON.parse(transcripts).map(t => 
@@ -2085,7 +2086,7 @@ ${processedTranscripts.join('\n\n=== NEXT VIDEO ===\n\n')}
 2. Additional Channel Content and Context:`;
 
         // Add language instruction for Spanish
-        if (currentLanguage === 'spanish') {
+        if (requestLanguage === 'spanish') {
             analysisPrompt += "\n\nPLEASE GENERATE THE ENTIRE ANALYSIS IN SPANISH, INCLUDING ALL CONTENT AND DESCRIPTIONS.";
         }
 
@@ -2140,7 +2141,7 @@ ${processedTranscripts.join('\n\n=== NEXT VIDEO ===\n\n')}
             }],
             systemInstruction: {
                 parts: [{
-                    text: currentLanguage === 'spanish' ? 
+                    text: requestLanguage === 'spanish' ? 
                           CHANNEL_DNA_SYSTEM_INSTRUCTIONS_SPANISH : 
                           CHANNEL_DNA_SYSTEM_INSTRUCTIONS
                 }]

@@ -434,6 +434,7 @@
                 const formData = new FormData();
                 formData.append('channelName', currentChannelDetails.name);
                 formData.append('transcripts', JSON.stringify(transcriptData.transcripts));
+                formData.append('language', getClientLanguage());
                 
                 // Add selected files to form data
                 const fileList = document.getElementById('fileList');
@@ -935,6 +936,7 @@ Remember you MUST FOLLOW THIS EXACT JSON format for your output. Never give any 
         const formData = new FormData();
         formData.append('channelName', analysisPrompt); // Send prompt for analysis
         formData.append('transcripts', JSON.stringify(transcriptData.transcripts));
+        formData.append('language', getClientLanguage());
 
         // Analyze with Gemini
         loadingContainer.querySelector('.loading-text').textContent = 'analyzing channel DNA...';
