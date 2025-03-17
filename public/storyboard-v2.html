@@ -635,6 +635,36 @@
         .warning-icon:hover .warning-tooltip {
             display: block;
         }
+
+        /* Context Menu Styles */
+        .context-menu {
+            position: fixed;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            padding: 0.5rem 0;
+            z-index: 1000;
+            display: none;
+        }
+
+        .context-menu-item {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 0.85rem;
+            color: #26201F;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .context-menu-item:hover {
+            background: #f5f5f5;
+        }
+
+        .context-menu-item.delete {
+            color: #F53151;
+        }
     </style>
 </head>
 <body>
@@ -681,6 +711,16 @@
                 </button>
             </div>
         </main>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="frameContextMenu">
+        <div class="context-menu-item delete" onclick="deleteFrame()">
+            <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor">
+                <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/>
+            </svg>
+            Delete Scene
+        </div>
     </div>
 
     <script>
@@ -1463,160 +1503,14 @@
 
         // Function to add a placeholder card at the specified position
         function addPlaceholderCard(position, index, description) {
+            console.log('=== Starting Add Placeholder Card ===');
+            console.log('Position:', position);
+            console.log('Index:', index);
+            
             const currentBrandDNA = getClientDNA();
             const placeholderCard = createPlaceholderCard(description, currentBrandDNA);
             
-            const gridRow1 = document.getElementById('storyboardGridRow1');
-            const gridRow2 = document.getElementById('storyboardGridRow2');
-            let gridRow3 = document.getElementById('storyboardGridRow3');
-            
-            // Create third row if needed
-            if (!gridRow3 && (gridRow1.children.length + gridRow2.children.length) >= 8) {
-                gridRow3 = document.createElement('div');
-                gridRow3.className = 'storyboard-grid';
-                gridRow3.id = 'storyboardGridRow3';
-                document.querySelector('.storyboard-results-container').appendChild(gridRow3);
-                
-                // Move the review button to the end
-                const reviewButton = document.querySelector('.review-storyboard-btn');
-                if (reviewButton) {
-                    reviewButton.remove();
-                    document.querySelector('.storyboard-results-container').appendChild(reviewButton);
-                }
-            }
-            
-            // Insert the card at the appropriate position
-            if (position === 'before') {
-                // Insert before the first card
-                if (gridRow1.children.length > 0) {
-                    gridRow1.insertBefore(placeholderCard, gridRow1.children[0]);
-                } else {
-                    gridRow1.appendChild(placeholderCard);
-                }
-                
-                // If first row now has more than 4 cards, move the last one to the second row
-                if (gridRow1.children.length > 4) {
-                    const lastCard = gridRow1.children[4];
-                    gridRow1.removeChild(lastCard);
-                    if (gridRow2.children.length > 0) {
-                        gridRow2.insertBefore(lastCard, gridRow2.children[0]);
-                    } else {
-                        gridRow2.appendChild(lastCard);
-                    }
-                    
-                    // If second row now has more than 4 cards, move the last one to the third row
-                    if (gridRow2.children.length > 4) {
-                        const lastCard2 = gridRow2.children[4];
-                        gridRow2.removeChild(lastCard2);
-                        
-                        if (!gridRow3) {
-                            gridRow3 = document.createElement('div');
-                            gridRow3.className = 'storyboard-grid';
-                            gridRow3.id = 'storyboardGridRow3';
-                            document.querySelector('.storyboard-results-container').appendChild(gridRow3);
-                        }
-                        
-                        gridRow3.appendChild(lastCard2);
-                    }
-                }
-            } else if (position === 'between') {
-                // Determine which row to insert into
-                if (index < 4) {
-                    // First row
-                    if (index < gridRow1.children.length) {
-                        gridRow1.insertBefore(placeholderCard, gridRow1.children[index]);
-                    } else {
-                        gridRow1.appendChild(placeholderCard);
-                    }
-                    
-                    // If first row now has more than 4 cards, move the last one to the second row
-                    if (gridRow1.children.length > 4) {
-                        const lastCard = gridRow1.children[4];
-                        gridRow1.removeChild(lastCard);
-                        if (gridRow2.children.length > 0) {
-                            gridRow2.insertBefore(lastCard, gridRow2.children[0]);
-                        } else {
-                            gridRow2.appendChild(lastCard);
-                        }
-                        
-                        // If second row now has more than 4 cards, move the last one to the third row
-                        if (gridRow2.children.length > 4) {
-                            const lastCard2 = gridRow2.children[4];
-                            gridRow2.removeChild(lastCard2);
-                            
-                            if (!gridRow3) {
-                                gridRow3 = document.createElement('div');
-                                gridRow3.className = 'storyboard-grid';
-                                gridRow3.id = 'storyboardGridRow3';
-                                document.querySelector('.storyboard-results-container').appendChild(gridRow3);
-                            }
-                            
-                            gridRow3.appendChild(lastCard2);
-                        }
-                    }
-                } else if (index < 8) {
-                    // Second row
-                    const secondRowIndex = index - 4;
-                    if (secondRowIndex < gridRow2.children.length) {
-                        gridRow2.insertBefore(placeholderCard, gridRow2.children[secondRowIndex]);
-                    } else {
-                        gridRow2.appendChild(placeholderCard);
-                    }
-                    
-                    // If second row now has more than 4 cards, move the last one to the third row
-                    if (gridRow2.children.length > 4) {
-                        const lastCard = gridRow2.children[4];
-                        gridRow2.removeChild(lastCard);
-                        
-                        if (!gridRow3) {
-                            gridRow3 = document.createElement('div');
-                            gridRow3.className = 'storyboard-grid';
-                            gridRow3.id = 'storyboardGridRow3';
-                            document.querySelector('.storyboard-results-container').appendChild(gridRow3);
-                        }
-                        
-                        if (gridRow3.children.length > 0) {
-                            gridRow3.insertBefore(lastCard, gridRow3.children[0]);
-                        } else {
-                            gridRow3.appendChild(lastCard);
-                        }
-                    }
-                } else {
-                    // Third row
-                    if (!gridRow3) {
-                        gridRow3 = document.createElement('div');
-                        gridRow3.className = 'storyboard-grid';
-                        gridRow3.id = 'storyboardGridRow3';
-                        document.querySelector('.storyboard-results-container').appendChild(gridRow3);
-                    }
-                    
-                    const thirdRowIndex = index - 8;
-                    if (thirdRowIndex < gridRow3.children.length) {
-                        gridRow3.insertBefore(placeholderCard, gridRow3.children[thirdRowIndex]);
-                    } else {
-                        gridRow3.appendChild(placeholderCard);
-                    }
-                }
-            } else if (position === 'after') {
-                // Insert after the last card
-                const totalCards = gridRow1.children.length + gridRow2.children.length + (gridRow3 ? gridRow3.children.length : 0);
-                
-                if (gridRow1.children.length < 4) {
-                    gridRow1.appendChild(placeholderCard);
-                } else if (gridRow2.children.length < 4) {
-                    gridRow2.appendChild(placeholderCard);
-                } else {
-                    if (!gridRow3) {
-                        gridRow3 = document.createElement('div');
-                        gridRow3.className = 'storyboard-grid';
-                        gridRow3.id = 'storyboardGridRow3';
-                        document.querySelector('.storyboard-results-container').appendChild(gridRow3);
-                    }
-                    gridRow3.appendChild(placeholderCard);
-                }
-            }
-            
-            // Create a new frame object for the storyboard data
+            // Insert the new frame data at the correct position in currentStoryboard
             const newFrame = {
                 act_title: "New Scene",
                 act_description: description,
@@ -1624,18 +1518,41 @@
                 image_url: ""
             };
             
+            // Get the grid rows
+            const gridRow1 = document.getElementById('storyboardGridRow1');
+            const gridRow2 = document.getElementById('storyboardGridRow2');
+            
+            console.log('Current storyboard length before adding:', currentStoryboard.length);
+            
             // Update the storyboard data
-            let newIndex = 0;
             if (position === 'before') {
                 currentStoryboard.unshift(newFrame);
-                newIndex = 0;
             } else if (position === 'between') {
                 currentStoryboard.splice(index, 0, newFrame);
-                newIndex = index;
             } else if (position === 'after') {
                 currentStoryboard.push(newFrame);
-                newIndex = currentStoryboard.length - 1;
             }
+            
+            console.log('Current storyboard length after adding:', currentStoryboard.length);
+            
+            // Get all existing cards and add the new one
+            const allCards = [...document.querySelectorAll('.storyboard-card')];
+            
+            // Remove all cards from DOM first
+            allCards.forEach(card => card.remove());
+            
+            // Insert the new card at the correct position
+            allCards.splice(index, 0, placeholderCard);
+            
+            // Redistribute all cards
+            allCards.forEach((card, idx) => {
+                card.dataset.index = idx;
+                if (idx < 4) {
+                    gridRow1.appendChild(card);
+                } else {
+                    gridRow2.appendChild(card);
+                }
+            });
             
             // Update scene numbers
             updateSceneNumbers();
@@ -1647,7 +1564,9 @@
             createAddSceneButtons();
             
             // Generate the new scene content
-            generateNewSceneContent(newIndex, description, position);
+            generateNewSceneContent(index, description, position);
+            
+            console.log('=== Add Placeholder Card Complete ===');
         }
 
         // Function to set up event listeners for all cards
@@ -2119,6 +2038,163 @@
             // Call the original regenerateFrame function
             await originalRegenerateFrame(index);
         };
+
+        // Context Menu Handling
+        let selectedFrameIndex = null;
+        const contextMenu = document.getElementById('frameContextMenu');
+
+        // Close context menu when clicking outside
+        document.addEventListener('click', () => {
+            contextMenu.style.display = 'none';
+        });
+
+        // Prevent default right click on cards and show context menu
+        document.addEventListener('contextmenu', (e) => {
+            const card = e.target.closest('.storyboard-card');
+            if (card) {
+                console.log('Context menu triggered on card');
+                console.log('Card dataset index:', card.dataset.index);
+                console.log('Mouse position:', { x: e.pageX, y: e.pageY });
+                console.log('Card position:', card.getBoundingClientRect());
+                
+                e.preventDefault();
+                selectedFrameIndex = parseInt(card.dataset.index);
+                
+                // Get viewport dimensions and scroll position
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const scrollX = window.scrollX;
+                const scrollY = window.scrollY;
+                
+                // Get card position
+                const cardRect = card.getBoundingClientRect();
+                
+                // Show the menu first but hidden to get its dimensions
+                contextMenu.style.display = 'block';
+                contextMenu.style.visibility = 'hidden';
+                
+                // Get menu dimensions
+                const menuRect = contextMenu.getBoundingClientRect();
+                
+                // Calculate position relative to the viewport
+                let left = e.clientX;
+                let top = cardRect.top + scrollY; // Use card's top position
+                
+                // Adjust if menu would go outside right edge
+                if (left + menuRect.width > viewportWidth) {
+                    left = viewportWidth - menuRect.width - 10;
+                }
+                
+                // Adjust if menu would go outside bottom edge
+                const spaceBelow = viewportHeight - (e.clientY - scrollY);
+                if (spaceBelow < menuRect.height) {
+                    // If not enough space below, position above the click
+                    top = e.clientY - menuRect.height;
+                } else {
+                    // If enough space below, position at click
+                    top = e.clientY;
+                }
+                
+                // Ensure minimum positions
+                left = Math.max(10, left);
+                top = Math.max(scrollY + 10, top);
+                
+                // Position and show menu
+                contextMenu.style.left = `${left}px`;
+                contextMenu.style.top = `${top}px`;
+                contextMenu.style.visibility = 'visible';
+                
+                console.log('Context menu positioned at:', { left, top });
+                console.log('Viewport dimensions:', { width: viewportWidth, height: viewportHeight });
+                console.log('Scroll position:', { scrollX, scrollY });
+            }
+        });
+
+        // Function to delete a frame
+        function deleteFrame() {
+            console.log('=== Starting Frame Deletion ===');
+            console.log('Selected frame index:', selectedFrameIndex);
+            
+            if (selectedFrameIndex === null) {
+                console.log('No frame selected for deletion');
+                return;
+            }
+
+            console.log('Current storyboard length before deletion:', currentStoryboard.length);
+            
+            // Remove the frame from the storyboard data
+            currentStoryboard.splice(selectedFrameIndex, 1);
+            console.log('Current storyboard length after deletion:', currentStoryboard.length);
+
+            // Get all rows
+            const gridRow1 = document.getElementById('storyboardGridRow1');
+            const gridRow2 = document.getElementById('storyboardGridRow2');
+            const gridRow3 = document.getElementById('storyboardGridRow3');
+            
+            console.log('Found grid rows:', {
+                row1: gridRow1 ? 'exists' : 'not found',
+                row2: gridRow2 ? 'exists' : 'not found',
+                row3: gridRow3 ? 'exists' : 'not found'
+            });
+
+            // Get all cards and redistribute them
+            const allCards = [...document.querySelectorAll('.storyboard-card')];
+            console.log('Total cards found before redistribution:', allCards.length);
+            
+            // Remove all cards from DOM
+            allCards.forEach(card => {
+                card.remove();
+                console.log('Removed card from DOM');
+            });
+
+            // Redistribute remaining cards
+            let cardsRedistributed = 0;
+            allCards.forEach((card, index) => {
+                if (index !== selectedFrameIndex) {
+                    const newIndex = index < selectedFrameIndex ? index : index - 1;
+                    console.log(`Redistributing card ${index} to new position ${newIndex}`);
+                    
+                    if (newIndex < 4) {
+                        console.log(`Adding card to row 1, position ${newIndex}`);
+                        gridRow1.appendChild(card);
+                        cardsRedistributed++;
+                    } else if (newIndex < 8) {
+                        console.log(`Adding card to row 2, position ${newIndex}`);
+                        gridRow2.appendChild(card);
+                        cardsRedistributed++;
+                    } else if (gridRow3) {
+                        console.log(`Adding card to row 3, position ${newIndex}`);
+                        gridRow3.appendChild(card);
+                        cardsRedistributed++;
+                    }
+                }
+            });
+            
+            console.log('Total cards redistributed:', cardsRedistributed);
+
+            // Check row 3 status
+            if (gridRow3) {
+                console.log('Row 3 children count:', gridRow3.children.length);
+                if (gridRow3.children.length === 0) {
+                    console.log('Removing empty row 3');
+                    gridRow3.remove();
+                }
+            }
+
+            // Hide context menu
+            contextMenu.style.display = 'none';
+            console.log('Context menu hidden');
+
+            // Update scene numbers and indices
+            console.log('Updating scene numbers');
+            updateSceneNumbers();
+
+            // Recreate add scene buttons
+            console.log('Recreating add scene buttons');
+            createAddSceneButtons();
+            
+            console.log('=== Frame Deletion Complete ===');
+        }
     </script>
 </body>
 </html> 
