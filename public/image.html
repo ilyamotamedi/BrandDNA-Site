@@ -139,7 +139,7 @@
         /* Download button styles */
         .download-button {
             position: absolute;
-            bottom: 10px;
+            top: 10px;
             right: 10px;
             background: rgba(0, 0, 0, 0.5);
             border: none;
@@ -155,6 +155,126 @@
 
         .download-button:hover {
             background: rgba(0, 0, 0, 0.7);
+        }
+
+        /* Edit button styles */
+        .edit-button {
+            position: absolute;
+            top: 10px;
+            right: 60px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .edit-button:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        /* Edit overlay styles */
+        .edit-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            width: 80%;
+            max-width: 300px;
+        }
+
+        .edit-overlay h3 {
+            margin: 0 0 15px 0;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .edit-overlay input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 14px;
+        }
+
+        .edit-overlay button {
+            width: 100%;
+            padding: 10px;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .edit-overlay button:hover {
+            background: #333;
+        }
+        
+        /* Loading overlay for image editing */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            z-index: 900;
+        }
+        
+        .loading-overlay .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+        
+        .loading-overlay .loading-text {
+            color: white;
+            font-family: 'Unbounded', sans-serif;
+            font-size: 14px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Edit mode styling for prompt */
+        .brand-card-body.editing {
+            background-color: #f8f8f8;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            outline: none;
+            min-height: 60px;
+        }
+        
+        .brand-card-body.editing:focus {
+            border-color: #000;
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
@@ -335,6 +455,8 @@
         async function handleCardClick(index, prompt) {
             const cards = document.querySelectorAll('.concept-card');
             const imageContainer = cards[index].querySelector('.image-container');
+            const loadingContainer = document.querySelector('.loading-container');
+            const generationResults = document.querySelector('.generation-results');
             
             // Create and show loading state
             imageContainer.innerHTML = `
@@ -378,6 +500,99 @@
                     img.src = `data:image/png;base64,${base64Image}`;
                     img.className = 'generated-image';
                     
+                    const editButton = document.createElement('button');
+                    editButton.className = 'edit-button';
+                    editButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="white">
+                            <path d="M240-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T857-647L330-120H160Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28ZM260-480q0-92-64-156T40-700q92 0 156-64t64-156q0 92 64 156t156 64q-92 0-156 64t-64 156Z"/>
+                        </svg>
+                    `;
+
+                    editButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        
+                        // Remove any existing overlays
+                        document.querySelectorAll('.edit-overlay').forEach(overlay => overlay.remove());
+                        
+                        const overlay = document.createElement('div');
+                        overlay.className = 'edit-overlay';
+                        overlay.innerHTML = `
+                            <h3>Describe what you want to change</h3>
+                            <input type="text" placeholder="Enter your changes...">
+                            <button>REGENERATE</button>
+                        `;
+                        
+                        imageWrapper.appendChild(overlay);
+                        
+                        const input = overlay.querySelector('input');
+                        input.focus();
+                        
+                        // Close overlay when clicking outside
+                        const closeOverlay = (event) => {
+                            if (!overlay.contains(event.target) && event.target !== editButton) {
+                                overlay.remove();
+                                document.removeEventListener('click', closeOverlay);
+                            }
+                        };
+                        
+                        // Add click listener with a small delay to prevent immediate closing
+                        setTimeout(() => {
+                            document.addEventListener('click', closeOverlay);
+                        }, 100);
+                        
+                        // Handle regenerate button click
+                        overlay.querySelector('button').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const changes = input.value.trim();
+                            if (changes) {
+                                // Close the overlay immediately
+                                overlay.remove();
+                                
+                                // Show loading state on the image
+                                const originalImage = img.src;
+                                const loadingOverlay = document.createElement('div');
+                                loadingOverlay.className = 'loading-overlay';
+                                loadingOverlay.innerHTML = `
+                                    <div class="loading-spinner"></div>
+                                    <div class="loading-text">editing...</div>
+                                `;
+                                imageWrapper.appendChild(loadingOverlay);
+                                
+                                try {
+                                    // Call the edit image API
+                                    const response = await fetch(`${window.API_BASE_URL}/editImage`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            imageBase64: originalImage,
+                                            editDescription: changes
+                                        })
+                                    });
+                                    
+                                    if (!response.ok) {
+                                        throw new Error(`HTTP error! status: ${response.status}`);
+                                    }
+                                    
+                                    const data = await response.json();
+                                    
+                                    if (data.editedImageDataUrl) {
+                                        // Update the image with the returned base64 data URL
+                                        img.src = data.editedImageDataUrl;
+                                    }
+                                } catch (error) {
+                                    console.error('Error editing image:', error);
+                                    // Revert to original image on error
+                                    img.src = originalImage;
+                                } finally {
+                                    // Remove loading overlay
+                                    loadingOverlay.remove();
+                                }
+                            }
+                        });
+                    });
+                    
                     const downloadButton = document.createElement('button');
                     downloadButton.className = 'download-button';
                     downloadButton.innerHTML = `
@@ -397,6 +612,7 @@
                     });
                     
                     imageWrapper.appendChild(img);
+                    imageWrapper.appendChild(editButton);
                     imageWrapper.appendChild(downloadButton);
                     imageContainer.appendChild(imageWrapper);
                 });
@@ -404,33 +620,70 @@
             } catch (error) {
                 console.error('Error generating images:', error);
                 imageContainer.innerHTML = '';
+                loadingContainer.style.display = 'none';
             }
         }
-        function toggleEditMode(bodyElement, editIcon) {
-                const isEditing = bodyElement.contentEditable === 'true';
-                
-                if (isEditing) {
-                    // Exit edit mode
-                    bodyElement.contentEditable = 'false';
-                    bodyElement.classList.remove('editing');
-                    bodyElement.blur();
-                } else {
-                    // Enter edit mode
-                    bodyElement.contentEditable = 'true';
-                    bodyElement.classList.add('editing');
-                    bodyElement.focus();
-                    
-                    // Add handlers for auto-saving
-                    bodyElement.addEventListener('blur', () => {
-                        bodyElement.contentEditable = 'false';
-                        bodyElement.classList.remove('editing');
-                    }, { once: true }); // Remove listener after it fires once
-                }
-            }
 
-            document.addEventListener('DOMContentLoaded', async () => {
-            await translateUI(); // Translate UI on page load
-        });
+        async function toggleEditMode(body, editIcon) {
+            // Toggle the contentEditable attribute
+            const isEditable = body.contentEditable === 'true';
+            
+            // Get the parent element (icon container)
+            const iconContainer = editIcon.parentElement;
+            
+            // Get the generate icon (star) to preserve it
+            const generateIcon = iconContainer.querySelector('.generate-icon');
+            
+            if (isEditable) {
+                // Save mode - disable editing
+                body.contentEditable = 'false';
+                body.classList.remove('editing');
+                
+                // Replace only the edit icon
+                editIcon.outerHTML = `<img src="/icons/edit.svg" alt="Edit" class="card-icon edit-icon" />`;
+                
+                // Re-attach the event listener to the new icon
+                const newEditIcon = iconContainer.querySelector('.edit-icon');
+                newEditIcon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleEditMode(body, newEditIcon);
+                });
+                
+                // If content is empty, put placeholder back
+                if (!body.textContent.trim()) {
+                    body.textContent = 'Enter your prompt...';
+                }
+            } else {
+                // Edit mode - enable editing
+                body.contentEditable = 'true';
+                body.classList.add('editing');
+                
+                // Replace only the edit icon with the check icon
+                editIcon.outerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#022c10" class="card-icon edit-icon">
+                        <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/>
+                    </svg>
+                `;
+                
+                // Re-attach the event listener to the new icon
+                const newEditIcon = iconContainer.querySelector('.edit-icon');
+                newEditIcon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleEditMode(body, newEditIcon);
+                });
+                
+                // Focus and place cursor at the end
+                body.focus();
+                
+                // Place cursor at the end
+                const range = document.createRange();
+                const selection = window.getSelection();
+                range.selectNodeContents(body);
+                range.collapse(false); // false means collapse to end
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+        }
     </script>
 </body>
 </html>

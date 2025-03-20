@@ -14,6 +14,8 @@ const bucket = storage.bucket(process.env.BUCKET_NAME);
 const isProduction = process.env.NODE_ENV === 'production';
 
 const app = express();
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({limit: '50mb', extended: true }));
 app.use(cors({
     origin: process.env.NODE_ENV === 'production'
         ? ['https://branddna.googleplex.com']
@@ -21,7 +23,6 @@ app.use(cors({
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Configure multer for file uploads
@@ -3109,4 +3110,93 @@ app.post('/reviewStoryboard', express.json(), async (req, res) => {
         console.error('Error processing request:', error);
         res.status(500).json({ error: error.message });
     }
+});
+
+// Add Gemini AI Studio imports
+const {
+  GoogleGenerativeAI,
+  HarmCategory,
+  HarmBlockThreshold,
+} = require("@google/generative-ai");
+const { GoogleAIFileManager } = require("@google/generative-ai/server");
+// Using existing fs module but need synchronous version as well
+const fsSync = require('fs');
+const os = require('os');
+
+// Initialize Gemini for image editing
+const geminiApiKey = process.env.GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(geminiApiKey);
+const fileManager = new GoogleAIFileManager(geminiApiKey);
+const imageEditModel = genAI.getGenerativeModel({
+  model: "gemini-2.0-flash-exp-image-generation",
+  generationConfig: {
+    temperature: 1,
+    topP: 0.95,
+    topK: 40,
+    maxOutputTokens: 8192,
+    responseModalities: ['Text', 'Image']
+  }
+});
+
+/**
+ * Edit an image using Gemini's image generation capabilities
+ */
+async function editImageWithGemini(imageBuffer, editDescription) {
+  try {
+    // Convert image buffer to base64
+    const base64Image = imageBuffer.toString('base64');
+    
+    // Prepare the content parts
+    const contents = [
+      {
+        inlineData: {
+          mimeType: 'image/png',
+          data: base64Image
+        }
+      },
+      { text: editDescription }
+    ];
+    
+    // Generate content with the image and text
+    const result = await imageEditModel.generateContent(contents);
+    const response = result.response;
+    
+    // Check if response contains an image
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        // Return the base64 data of the edited image
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      }
+    }
+    
+    throw new Error('No image found in Gemini response');
+  } catch (error) {
+    console.error('Error in image editing:', error);
+    throw error;
+  }
+}
+
+// Add new endpoint for image editing
+app.post('/editImage', async (req, res) => {
+  const { imageBase64, editDescription } = req.body;
+  
+  if (!imageBase64 || !editDescription) {
+    return res.status(400).json({ error: 'Image and edit description are required' });
+  }
+
+  try {
+    // Extract base64 data from data URL
+    const base64Data = imageBase64.split(',')[1];
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    
+    // Get edited image as base64 data URL
+    const editedImageDataUrl = await editImageWithGemini(imageBuffer, editDescription);
+    
+    // Return the edited image directly
+    res.json({ editedImageDataUrl });
+  } catch (error) {
+    console.error('Error processing image edit request:', error);
+    res.status(500).json({ error: error.message });
+  }
 });

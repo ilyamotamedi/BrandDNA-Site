@@ -8,6 +8,7 @@ env_variables:
   GENERATE_CONTENT_API: "streamGenerateContent"
   BUCKET_NAME: "branddna-storage"
   SUPADATA_API_KEY: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImtpZCI6IjEifQ.eyJpc3MiOiJuYWRsZXMiLCJpYXQiOiIxNzQxMzYzMTA0IiwicHVycG9zZSI6ImFwaV9hdXRoZW50aWNhdGlvbiIsInN1YiI6Ijc0MmVjOTYwNzg4NDQzZjQ5ZWNjNTliNDExMDJiZDRjIn0.vuuE4v728jrwdt4gvmvMffay_RtK8XRIts_KB12HdJI"
+  GEMINI_API_KEY: "AIzaSyAmYhHxgUY4w38rif4Q8bjo04vYQHzvQAk"
 
 instance_class: F2
 
