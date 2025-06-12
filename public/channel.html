@@ -416,7 +416,7 @@
                 }
 
                 // Get transcripts
-                const transcriptResponse = await fetch(`${window.API_BASE_URL}/getChannelTranscripts`, {
+                const transcriptResponse = await fetch(`${window.API_BASE_URL}/transcripts/getChannelTranscripts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -881,7 +881,7 @@ async function regenerateDNA() {
         }
 
         // Get transcripts
-        const transcriptResponse = await fetch(`${window.API_BASE_URL}/getChannelTranscripts`, {
+        const transcriptResponse = await fetch(`${window.API_BASE_URL}/transcripts/getChannelTranscripts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
