@@ -1,6 +1,3 @@
-const express = require('express');
-const Router = express.Router({ mergeParams: true });
-
-Router.use('/transcripts', require('./transcripts'));
-
-module.exports = Router
+module.exports = function (app) {
+  app.use('/api/v1/transcripts', require('./api/v1/transcripts'));
+}

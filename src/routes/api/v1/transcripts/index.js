@@ -1,7 +1,6 @@
-const express = require('express');
-const TranscriptsRouter = express.Router({ mergeParams: true });
+const TranscriptsRouter = require('express').Router({ mergeParams: true });
 
-const { supadata } = require('../../utils/supadata.util');
+const { supadata } = require('../../../../utils/supadata.util'); // TODO: refactor biz logic to a service layer
 
 TranscriptsRouter.post('/test', async (req, res) => {
   try {

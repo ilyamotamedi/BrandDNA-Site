@@ -64,7 +64,7 @@
             try {
                 resultDiv.innerHTML = 'Loading...';
                 
-                const response = await fetch('/transcripts/test', {
+                const response = await fetch('/api/v1/transcripts/test', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
