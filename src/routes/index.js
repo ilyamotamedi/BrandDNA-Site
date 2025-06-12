@@ -1,3 +1,3 @@
 module.exports = function (app) {
-  app.use('/api/v1/transcripts', require('./api/v1/transcripts'));
+  app.use('/', require('./api')); // currently mismatched routes because there are still legacy routed in server.js
 }

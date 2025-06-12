@@ -67,7 +67,6 @@ initializeDNAsFile();
 
 const app = express();
 
-const appRouter = require('./src/routes/index.js');
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -80,7 +79,7 @@ app.use(cors({
 }));
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/api/v1/', appRouter);
+app.use('/api/', require('./src/routes/index.js'));
 
 // Configure multer for file uploads
 const upload = multer({
