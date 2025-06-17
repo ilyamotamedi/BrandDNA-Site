@@ -2,9 +2,7 @@ require('dotenv').config();
 const express = require('express');
 
 const { GoogleAuth } = require('google-auth-library');
-const cors = require('cors');
 const path = require('path');
-const multer = require('multer');
 const fs = require('fs').promises;
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
@@ -67,27 +65,14 @@ initializeDNAsFile();
 
 const app = express();
 
-
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://branddna.googleplex.com']
-    : 'http://localhost:3000',
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(require('./src/configs/cors.config.js'));
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/', require('./src/routes/index.js'));
 
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB limit
-  }
-});
+const upload = require('./src/configs/multer.config.js');
 
 const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
