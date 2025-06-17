@@ -548,7 +548,7 @@ async function initializeSettings() {
     // Load available models and populate dropdowns
     async function loadAvailableModels() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/getAvailableModels`);
+            const response = await fetch(`${window.API_BASE_URL}/api/v1/aiModels/getAvailableModels`);
             if (!response.ok) {
                 throw new Error('Failed to fetch models');
             }
@@ -601,7 +601,7 @@ async function initializeSettings() {
     // Handle model selection
     async function handleModelSelection(modelId, modelType) {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/setModel`, {
+            const response = await fetch(`${window.API_BASE_URL}/api/v1/aiModels/setModel`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -654,7 +654,7 @@ creatorDnaListSelect.addEventListener('change', (e) => {
     // Load current model selections
     async function loadCurrentModels() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/getCurrentModels`);
+            const response = await fetch(`${window.API_BASE_URL}/api/v1/aiModels/getCurrentModels`);
             if (response.ok) {
                 const { llmModelId, visionModelId } = await response.json();
                 languageModelSelect.value = llmModelId;

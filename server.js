@@ -78,52 +78,6 @@ const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
 });
 
-// Add a new endpoint to get available models
-app.get('/getAvailableModels', (req, res) => {
-  const llmModels = Object.entries(LLM_CONFIG).map(([key, config]) => ({
-    id: key,
-    displayName: config.displayName
-  }));
-
-  const visionModels = Object.entries(VISION_CONFIG).map(([key, config]) => ({
-    id: key,
-    displayName: config.displayName
-  }));
-
-  res.json({
-    llmModels,
-    visionModels
-  });
-});
-
-app.get('/getCurrentModels', (req, res) => {
-  res.json({
-    llmModelId: currentLlmModel.modelId,
-    visionModelId: currentVisionModel.modelId
-  });
-});
-
-// Update the setModel endpoint
-app.post('/setModel', express.json(), (req, res) => {
-  const { modelId, modelType } = req.body;
-
-  if (modelType === 'llm') {
-    if (!LLM_CONFIG[modelId]) {
-      return res.status(400).json({ error: 'Invalid LLM model selection' });
-    }
-    currentLlmModel = LLM_CONFIG[modelId];
-  } else if (modelType === 'vision') {
-    if (!VISION_CONFIG[modelId]) {
-      return res.status(400).json({ error: 'Invalid vision model selection' });
-    }
-    currentVisionModel = VISION_CONFIG[modelId];
-  } else {
-    return res.status(400).json({ error: 'Invalid model type' });
-  }
-
-  res.json({ success: true });
-});
-
 // Endpoint to get available creator DNA lists
 app.get('/getAvailableCreatorDnaLists', (req, res) => {
   res.json({ creatorDnaLists: AVAILABLE_CREATOR_DNA_LISTS });
