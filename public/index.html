@@ -353,7 +353,7 @@ async function deleteBrandDNA(brandName, event) {
         // Add language to formData
         formData.append('language', getClientLanguage());
 
-        const response = await fetch(`${window.API_BASE_URL}/getBrandDNA`, {
+        const response = await fetch(`${window.API_BASE_URL}/brandDna/getBrandDNA`, {
             method: 'POST',
             body: formData
         });

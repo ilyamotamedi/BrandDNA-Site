@@ -511,7 +511,7 @@ async function initializeSettings() {
     // Function to populate the Match dropdown with creator names
     async function populateMatchDropdown() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/getCreatorDNAs`);
+            const response = await fetch(`${window.API_BASE_URL}/creatorDna/getCreatorDNAs`);
             if (!response.ok) {
                 throw new Error('Failed to fetch creator DNAs');
             }
@@ -568,7 +568,7 @@ async function initializeSettings() {
 
                 const populateCreatorDnaListDropdown = async () => {
                     try {
-                        const response = await fetch(`${window.API_BASE_URL}/getAvailableCreatorDnaLists`);
+                        const response = await fetch(`${window.API_BASE_URL}/creatorDna/getAvailableCreatorDnaLists`);
                         if (!response.ok) {
                             throw new Error('Failed to fetch creator DNA lists');
                         }
@@ -692,7 +692,7 @@ async function loadCurrentLanguage() {
 
 async function loadCurrentCreatorDnaList() {
     try {
-        const response = await fetch(`${window.API_BASE_URL}/getCurrentCreatorDnaList`);
+        const response = await fetch(`${window.API_BASE_URL}/creatorDna/getCurrentCreatorDnaList`);
         if (response.ok) {
             const { currentCreatorDnaListFile } = await response.json();
             creatorDnaListSelect.value = currentCreatorDnaListFile;

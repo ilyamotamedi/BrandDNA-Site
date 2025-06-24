@@ -1,4 +1,5 @@
-{ Supadata } = require('@supdata/js');
+const { Supadata } = require('@supadata/js');
+require('dotenv').config();
 
 // Initialize Supadata client
 const supadata = new Supadata({
