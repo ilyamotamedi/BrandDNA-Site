@@ -4,7 +4,7 @@ const corsConfig = cors({
   origin: process.env.NODE_ENV === 'production'
     ? ['https://branddna.googleplex.com']
     : 'http://localhost:3000',
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 });
 
