@@ -47,6 +47,7 @@ const DNAS_FILE_PATH = path.join(__dirname, 'dnas.json');
 // initializeDNAsFile();
 
 const app = express();
+app.use('/api/', require('./src/routes/index.js'));
 
 
 app.use(express.json({ limit: '50mb' }));
