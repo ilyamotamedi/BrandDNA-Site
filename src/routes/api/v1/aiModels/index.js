@@ -49,4 +49,4 @@ AiModelsRouter.post('/setModel', express.json(), (req, res) => {
   res.json({ success: true });
 });
 
-module.exports = {AiModelsRouter};
+module.exports = AiModelsRouter;
