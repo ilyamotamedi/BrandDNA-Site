@@ -2,7 +2,7 @@ const express = require("express");
 const brandDnaRouter = express.Router();
 
 const { readJSONFromStorage, writeJSONToStorage, upload } = require('../../../../utils/apiHelpers.js');
-const {callGeminiAPI, saveDNAWithTranslation, translateText} = require('../../../../services/aicreation.js');
+const {callGeminiAPI, saveDNAWithTranslation, translateText, getDNAFilename, getOppositeLanguageFile} = require('../../../../services/geminiCreation.js');
 
 // Modify the /getBrandDNA endpoint 
 brandDnaRouter.post('/getBrandDNA', upload.array('file', 5), async (req, res) => {
@@ -26,13 +26,6 @@ brandDnaRouter.post('/getBrandDNA', upload.array('file', 5), async (req, res) =>
     res.status(500).json({ error: error.message });
   }
 });
-
-// Modify the /getBrandDNA endpoint 
-brandDnaRouter.post('/test', (req, res) => {
-    console.log("working")
-    res.json
-});
-
 
 brandDnaRouter.delete('/deleteDNA/:brandName', async (req, res) => {
   try {
@@ -90,6 +83,8 @@ brandDnaRouter.get('/getDNAs', async (req, res) => {
   }
 });
 
+// Initialize current language
+let currentLanguage = 'english'; // Default language
 
 module.exports= {
     brandDnaRouter,

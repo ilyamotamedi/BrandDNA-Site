@@ -10,6 +10,11 @@ const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fet
 
 const { creatorDnaRouter } = require("./src/routes/api/v1/creatorDna/index.js");
 const { brandDnaRouter } = require("./src/routes/api/v1/brandDna/index.js");
+const { transcriptsRouter } = require("./src/routes/api/v1/transcripts/index.js");
+const { AiModelsRouter } = require("./src/routes/api/v1/aiModels/index.js");
+const modelState = require('./src/services/modelState.js');
+// const { initializeDNAsFile } = require('./src/services/creatorDna');
+
 
 
 const { Storage } = require('@google-cloud/storage');
@@ -17,10 +22,6 @@ const storage = new Storage();
 const bucket = storage.bucket(process.env.BUCKET_NAME);
 
 const {
-  BRAND_DNA_SYSTEM_INSTRUCTIONS,
-  BRAND_DNA_SYSTEM_INSTRUCTIONS_SPANISH,
-  CHANNEL_DNA_SYSTEM_INSTRUCTIONS,
-  CHANNEL_DNA_SYSTEM_INSTRUCTIONS_SPANISH,
   IMAGE_GENERATION_SYSTEM_INSTRUCTIONS,
   VIDEO_GENERATION_SYSTEM_INSTRUCTIONS,
   MATCH_SYSTEM_INSTRUCTIONS,
@@ -32,15 +33,6 @@ const {
   BRAINSTORM_SYSTEM_INSTRUCTIONS
 } = require('./src/configs/systemInstructions.config.js');
 
-const {
-  LLM_CONFIG,
-  VISION_CONFIG,
-} = require('./src/configs/aiModels.config.js');
-
-// Initialize current model with default configuration
-let currentLlmModel = LLM_CONFIG['gemini-2.0-flash-001'];
-let currentVisionModel = VISION_CONFIG['imagen-3.0-generate-002'];
-
 const PROJECT_ID = process.env.PROJECT_ID;
 const LOCATION_ID = process.env.LOCATION_ID;
 
@@ -50,18 +42,9 @@ let currentCreatorDnaListFile = 'creator-dnas.json';
 // Initialize Brand DNAs file
 const DNAS_FILE_PATH = path.join(__dirname, 'dnas.json');
 
-// Initialize DNA storage file if it doesn't exist
-async function initializeDNAsFile() {
-  try {
-    await fs.access(DNAS_FILE_PATH);
-  } catch {
-    await fs.writeFile(DNAS_FILE_PATH, JSON.stringify({})); //English
-    await fs.writeFile(path.join(__dirname, 'dnas-spanish.json'), JSON.stringify({})); // Spanish
-  }
-}
 
-// Call this when starting the server
-initializeDNAsFile();
+// Call this when starting the server to ensure DNA files exist
+// initializeDNAsFile();
 
 const app = express();
 
@@ -91,56 +74,9 @@ const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
 });
 
-//  GET MODELS AVAILABLE 
-// Add a new endpoint to get available models
-app.get('/getAvailableModels', (req, res) => {
-  const llmModels = Object.entries(LLM_CONFIG).map(([key, config]) => ({
-    id: key,
-    displayName: config.displayName
-  }));
-
-  const visionModels = Object.entries(VISION_CONFIG).map(([key, config]) => ({
-    id: key,
-    displayName: config.displayName
-  }));
-
-  res.json({
-    llmModels,
-    visionModels
-  });
-});
-
-// GET CURRENT MODEL BEING USED 
-app.get('/getCurrentModels', (req, res) => {
-  res.json({
-    llmModelId: currentLlmModel.modelId,
-    visionModelId: currentVisionModel.modelId
-  });
-});
-
-// Update the setModel endpoint
-app.post('/setModel', express.json(), (req, res) => {
-  const { modelId, modelType } = req.body;
-
-  if (modelType === 'llm') {
-    if (!LLM_CONFIG[modelId]) {
-      return res.status(400).json({ error: 'Invalid LLM model selection' });
-    }
-    currentLlmModel = LLM_CONFIG[modelId];
-  } else if (modelType === 'vision') {
-    if (!VISION_CONFIG[modelId]) {
-      return res.status(400).json({ error: 'Invalid vision model selection' });
-    }
-    currentVisionModel = VISION_CONFIG[modelId];
-  } else {
-    return res.status(400).json({ error: 'Invalid model type' });
-  }
-
-  res.json({ success: true });
-});
-
 // USE FILE CREATOR DNA
 app.use("/creatorDNA", creatorDnaRouter);
+app.use("/aiModels", AiModelsRouter)
 
 
 
@@ -184,6 +120,7 @@ async function generateImagePrompts(prompt, brandDNA = null, language = 'english
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -243,6 +180,7 @@ async function generateImagesFromPrompt(prompt, aspectRatio = '4:3', language = 
 
   const predictionServiceClient = new PredictionServiceClient(clientOptions);
 
+  const currentVisionModel = modelState.getVision();
   const endpoint = `projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentVisionModel.modelId}`;
 
   let promptToUse = prompt; // Initialize with the original prompt
@@ -320,6 +258,7 @@ app.post('/generateImagesFromPrompt', express.json(), async (req, res) => {
 
 // USE FILE BRAND DNA
 app.use("/brandDna", brandDnaRouter);
+app.use("/transcriptsRouter", transcriptsRouter);
 
 app.get('/getCurrentDNA', async (req, res) => {
   res.json({ success: true });
@@ -373,6 +312,7 @@ async function generateVideoConcepts(prompt, brandDNA = null, language = 'englis
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -481,6 +421,7 @@ async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integratio
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -645,6 +586,7 @@ YOU MUST OUTPUT the matches in the specified JSON format. NEVER GIVE ANY ADDITIO
       }
     };
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -830,104 +772,6 @@ app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
 
-// Add this function after the getChannelTranscripts endpoint
-async function getAverageViews(channelId) {
-  const API_KEY = process.env.BRANDCONNECT_API_KEY;
-
-  try {
-    console.log(`Calculating average views for channel: ${channelId}`);
-
-    // Step 1: Get the uploads playlist ID for the channel
-    const channelResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${channelId}&key=${API_KEY}`
-    );
-    const channelData = await channelResponse.json();
-
-    if (!channelData.items || channelData.items.length === 0) {
-      console.error('No channel found with ID:', channelId);
-      return 0;
-    }
-
-    const uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
-    console.log(`Uploads playlist ID: ${uploadsPlaylistId}`);
-
-    // Step 2: Get the most recent videos from the uploads playlist (up to 50)
-    const playlistResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${uploadsPlaylistId}&maxResults=50&key=${API_KEY}`
-    );
-    const playlistData = await playlistResponse.json();
-
-    if (!playlistData.items || playlistData.items.length === 0) {
-      console.error('No videos found in uploads playlist');
-      return 0;
-    }
-
-    // Get the video IDs
-    const videoIds = playlistData.items.map(item => item.contentDetails.videoId);
-    console.log(`Found ${videoIds.length} videos in uploads playlist`);
-
-    // Step 3: Get video details including statistics and publish dates
-    const videosResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoIds.join(',')}&key=${API_KEY}`
-    );
-    const videosData = await videosResponse.json();
-
-    if (!videosData.items || videosData.items.length === 0) {
-      console.error('No video details found');
-      return 0;
-    }
-
-    // Step 4: Filter videos from the last 3 months and calculate average views
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-    // Sort videos by publish date (newest first)
-    const sortedVideos = videosData.items.sort((a, b) => {
-      const dateA = new Date(a.snippet.publishedAt);
-      const dateB = new Date(b.snippet.publishedAt);
-      return dateB - dateA;
-    });
-
-    // First try to get videos from the last 3 months
-    let recentVideos = sortedVideos.filter(video => {
-      const publishDate = new Date(video.snippet.publishedAt);
-      return publishDate >= threeMonthsAgo;
-    });
-
-    // If no videos in the last 3 months, use the 5 most recent videos
-    let timeframe = "past 3 months";
-    if (recentVideos.length === 0) {
-      console.log('No videos published in the last 3 months, using 5 most recent videos instead');
-      recentVideos = sortedVideos.slice(0, 5);
-      timeframe = "5 most recent videos";
-    }
-
-    console.log(`Found ${recentVideos.length} videos for average calculation (${timeframe})`);
-
-    if (recentVideos.length === 0) {
-      console.log('No videos available for average calculation');
-      return { averageViews: 0, timeframe: "no videos available" };
-    }
-
-    // Calculate total views and average
-    let totalViews = 0;
-
-    recentVideos.forEach(video => {
-      const views = parseInt(video.statistics.viewCount) || 0;
-      console.log(`Video ${video.id}: ${video.snippet.title} - ${views} views (published: ${video.snippet.publishedAt})`);
-      totalViews += views;
-    });
-
-    const averageViews = Math.round(totalViews / recentVideos.length);
-    console.log(`Total views: ${totalViews}, Average views: ${averageViews} (${timeframe})`);
-
-    return { averageViews, timeframe };
-  } catch (error) {
-    console.error('Error calculating average views:', error);
-    return { averageViews: 0, timeframe: "error" };
-  }
-}
-
 // Endpoint to regenerate content ideas for a specific creator
 app.post('/regenerateContentIdeas', async (req, res) => {
   try {
@@ -985,6 +829,7 @@ Based on this information, please generate 3-5 new content ideas that address th
       }
     };
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -1116,6 +961,7 @@ async function regenerateStoryboardFrame(videoConcept, brandDNA, creatorDNA, int
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -1276,6 +1122,7 @@ app.post('/reviewStoryboard', express.json(), async (req, res) => {
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -1321,6 +1168,7 @@ const { GoogleAIFileManager } = require("@google/generative-ai/server");
 // Using existing fs module but need synchronous version as well
 const fsSync = require('fs');
 const os = require('os');
+// const { AiModelsRouter } = require('./src/routes/api/v1/aiModels/index.js');
 // const { creatorDnaRouter } = require('./src/routes/api/v1/creatorDna/index.js');
 
 // Initialize Gemini for image editing

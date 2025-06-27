@@ -398,7 +398,7 @@
 
                 // Get channel stats (average views)
                 try {
-                    const statsResponse = await fetch(`${window.API_BASE_URL}/getChannelStats`, {
+                    const statsResponse = await fetch(`${window.API_BASE_URL}/creatorDNA/getChannelStats`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ channelId })
@@ -416,7 +416,7 @@
                 }
 
                 // Get transcripts
-                const transcriptResponse = await fetch(`${window.API_BASE_URL}/api/v1/transcripts/getChannelTranscripts`, {
+                const transcriptResponse = await fetch(`${window.API_BASE_URL}/transcriptsRouter/getChannelTranscripts`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -450,7 +450,7 @@
                 // Analyze with Gemini
                 loadingContainer.querySelector('.loading-text').textContent = 'analyzing channel DNA...';
                 
-                const analysisResponse = await fetch(`${window.API_BASE_URL}/analyzeChannel`, {
+                const analysisResponse = await fetch(`${window.API_BASE_URL}/creatorDNA/analyzeChannel`, {
                     method: 'POST',
                     body: formData
                 });
@@ -474,7 +474,7 @@
                     viewsTimeframe: currentChannelDetails.viewsTimeframe
                 };
 
-                await fetch(`${window.API_BASE_URL}/saveCreatorDNA`, {
+                await fetch(`${window.API_BASE_URL}/creatorDNA/saveCreatorDNA`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -863,7 +863,7 @@ async function regenerateDNA() {
         
         // Get channel stats (average views)
         try {
-            const statsResponse = await fetch(`${window.API_BASE_URL}/getChannelStats`, {
+            const statsResponse = await fetch(`${window.API_BASE_URL}/creatorDNA/getChannelStats`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ channelId })
@@ -881,7 +881,7 @@ async function regenerateDNA() {
         }
 
         // Get transcripts
-        const transcriptResponse = await fetch(`${window.API_BASE_URL}/api/v1/transcripts/getChannelTranscripts`, {
+        const transcriptResponse = await fetch(`${window.API_BASE_URL}/transcriptsRouter/getChannelTranscripts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 

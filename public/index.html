@@ -365,7 +365,7 @@ async function deleteBrandDNA(brandName, event) {
         const data = await response.json();
         
         // Save the DNA data
-        await fetch(`${window.API_BASE_URL}/saveDNA`, {
+        await fetch(`${window.API_BASE_URL}/brandDna/saveDNA`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

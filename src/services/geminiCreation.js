@@ -1,6 +1,7 @@
 const { GoogleAuth } = require('google-auth-library');
 const fs = require('fs');
 const path = require('path');
+const modelState = require('./modelState.js');
 
 const { readJSONFromStorage, writeJSONToStorage, upload } = require('../utils/apiHelpers.js');
 
@@ -8,28 +9,7 @@ const { readJSONFromStorage, writeJSONToStorage, upload } = require('../utils/ap
 const {
   BRAND_DNA_SYSTEM_INSTRUCTIONS,
   BRAND_DNA_SYSTEM_INSTRUCTIONS_SPANISH,
-  CHANNEL_DNA_SYSTEM_INSTRUCTIONS,
-  CHANNEL_DNA_SYSTEM_INSTRUCTIONS_SPANISH,
-  IMAGE_GENERATION_SYSTEM_INSTRUCTIONS,
-  VIDEO_GENERATION_SYSTEM_INSTRUCTIONS,
-  MATCH_SYSTEM_INSTRUCTIONS,
-  MATCH_V2_SYSTEM_INSTRUCTIONS,
-  STORYBOARD_GENERATION_SYSTEM_INSTRUCTIONS,
-  STORYBOARD_V2_GENERATION_SYSTEM_INSTRUCTIONS,
-  STORYBOARD_FRAME_REGENERATION_SYSTEM_INSTRUCTIONS,
-  STORYBOARD_REVIEW_SYSTEM_INSTRUCTIONS,
-  BRAINSTORM_SYSTEM_INSTRUCTIONS
 } = require('../configs/systemInstructions.config.js');
-
-
-const {
-  LLM_CONFIG,
-  VISION_CONFIG,
-} = require('../configs/aiModels.config.js');
-
-// Initialize current model with default configuration
-let currentLlmModel = LLM_CONFIG['gemini-2.0-flash-001'];
-let currentVisionModel = VISION_CONFIG['imagen-3.0-generate-002'];
 
 const PROJECT_ID = process.env.PROJECT_ID;
 const LOCATION_ID = process.env.LOCATION_ID;
@@ -118,7 +98,7 @@ async function callGeminiAPI(brandName, files = null, language = 'english') {
 
   // Add tools configuration for supported models
   const modelsWithToolUse = ['gemini-2.0-flash-001', 'gemini-2.0-pro-exp-02-05', 'gemini-2.0-flash-exp'];
-  if (modelsWithToolUse.includes(currentLlmModel.modelId)) {
+  if (modelsWithToolUse.includes(modelState.getLlm().modelId)) {
     requestBody.tools = [{
       googleSearch: {}
     }];
@@ -128,6 +108,7 @@ async function callGeminiAPI(brandName, files = null, language = 'english') {
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -251,6 +232,7 @@ async function translateText(text, targetLanguage = 'en') {
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -291,5 +273,7 @@ function getOppositeLanguageFile(currentFile) {
 module.exports={
   callGeminiAPI, 
   saveDNAWithTranslation,
-  translateText
+  translateText, 
+  getDNAFilename,
+  getOppositeLanguageFile
 };

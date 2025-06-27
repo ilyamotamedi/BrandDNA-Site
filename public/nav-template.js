@@ -548,7 +548,7 @@ async function initializeSettings() {
     // Load available models and populate dropdowns
     async function loadAvailableModels() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/getAvailableModels`);
+            const response = await fetch(`${window.API_BASE_URL}/aiModels/getAvailableModels`);
             if (!response.ok) {
                 throw new Error('Failed to fetch models');
             }
@@ -654,7 +654,7 @@ creatorDnaListSelect.addEventListener('change', (e) => {
     // Load current model selections
     async function loadCurrentModels() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/getCurrentModels`);
+            const response = await fetch(`${window.API_BASE_URL}/aiModels/getCurrentModels`);
             if (response.ok) {
                 const { llmModelId, visionModelId } = await response.json();
                 languageModelSelect.value = llmModelId;
@@ -742,7 +742,7 @@ async function initializeDNASelector() {
     // Load DNA options
     async function loadDNAOptions() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
+            const response = await fetch(`${window.API_BASE_URL}/brandDna/getDNAs`);
             const dnas = await response.json();
             
             // Clear previous brand options
@@ -798,7 +798,7 @@ async function setDNA(brandName) {
             return;
         }
 
-        const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
+        const response = await fetch(`${window.API_BASE_URL}/brandDna/getDNAs`);
         const dnas = await response.json();
 
         if (!dnas[brandName]) {
@@ -876,7 +876,7 @@ async function loadCurrentDNA() {
         const currentDNA = getClientDNA();
         if (currentDNA) {
             // Verify the DNA still exists in storage
-            const response = await fetch(`${window.API_BASE_URL}/getDNAs`);
+            const response = await fetch(`${window.API_BASE_URL}/brandDna/getDNAs`);
             const dnas = await response.json();
 
             if (dnas[currentDNA.brandName]) {

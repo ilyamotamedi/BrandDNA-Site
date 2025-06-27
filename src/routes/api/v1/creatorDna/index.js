@@ -1,12 +1,22 @@
 const express = require("express");
+const { GoogleAuth } = require('google-auth-library');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const { getAverageViews } = require('../../../../services/creatorDna');
+
 const creatorDnaRouter = express.Router();
-const path = require('path');
-const fs = require('fs').promises;
+
+const modelState = require('../../../../services/modelState.js');
+const { translateText } = require('../../../../services/geminiCreation.js');
 
 
 const { readJSONFromStorage, writeJSONToStorage, upload } = require('../../../../utils/apiHelpers.js');
 
-const DNAS_FILE_PATH = path.join(__dirname, 'dnas.json');
+const auth = new GoogleAuth({
+  scopes: 'https://www.googleapis.com/auth/cloud-platform'
+});
+
+const PROJECT_ID = process.env.PROJECT_ID;
+const LOCATION_ID = process.env.LOCATION_ID;
 
 let currentCreatorDnaListFile = 'creator-dnas.json';
 let currentLanguage = 'english'; // Default language
@@ -17,15 +27,10 @@ const AVAILABLE_CREATOR_DNA_LISTS = [
   'creator-dnas-japan.json', // add more filenames here
 ];
 
-async function initializeDNAsFile() {
-  try {
-    await fs.access(DNAS_FILE_PATH);
-  } catch {
-    await fs.writeFile(DNAS_FILE_PATH, JSON.stringify({})); //English
-    await fs.writeFile(path.join(__dirname, 'dnas-spanish.json'), JSON.stringify({})); // Spanish
-  }
-}
-initializeDNAsFile();
+const {
+  CHANNEL_DNA_SYSTEM_INSTRUCTIONS,
+  CHANNEL_DNA_SYSTEM_INSTRUCTIONS_SPANISH,
+} = require('../../../../../src/configs/systemInstructions.config.js');
 
 
 
@@ -97,7 +102,7 @@ creatorDnaRouter.post('/saveCreatorDNA', express.json(), async (req, res) => {
     // Translate and save to other language file in the background
     (async () => {
       try {
-        const targetFile = requestLanguage === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
+        const targetFile = requestLanguage === 'spanish' ? 'creator-dnas.json' : 'creator-dnas-spanish.json';
         const targetLanguage = requestLanguage === 'spanish' ? 'en' : 'es';
 
         // Translate the channel analysis
@@ -289,6 +294,7 @@ creatorDnaRouter.post('/analyzeChannel', upload.array('file', 5), async (req, re
 
     console.log('Making request with parts:', parts.length);
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -383,6 +389,7 @@ creatorDnaRouter.get('/test-average-views', async (req, res) => {
     res.status(500).send(`Error: ${error.message}`);
   }
 });
+
 
 module.exports = {
     creatorDnaRouter,
