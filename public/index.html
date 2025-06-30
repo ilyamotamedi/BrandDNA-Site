@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load saved brands into dropdown
     async function loadSavedBrands() {
     try {
-        const response = await fetch(`${window.API_BASE_URL}/getDNAs?language=${getClientLanguage()}`);
+        const response = await fetch(`${window.API_BASE_URL}/api/v1/getDNAs?language=${getClientLanguage()}`);
         const dnas = await response.json();
         const dropdownMenu = document.getElementById('brandsDropdown');
         dropdownMenu.innerHTML = '';
@@ -261,7 +261,7 @@ async function deleteBrandDNA(brandName, event) {
     event.stopPropagation(); // Prevent triggering the parent click event
     
     try {
-        const response = await fetch(`${window.API_BASE_URL}/deleteDNA/${encodeURIComponent(brandName)}?language=${getClientLanguage()}`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/deleteDNA/${encodeURIComponent(brandName)}?language=${getClientLanguage()}`, {
             method: 'DELETE'
         });
 
@@ -353,7 +353,7 @@ async function deleteBrandDNA(brandName, event) {
         // Add language to formData
         formData.append('language', getClientLanguage());
 
-        const response = await fetch(`${window.API_BASE_URL}/getBrandDNA`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/getBrandDNA`, {
             method: 'POST',
             body: formData
         });
@@ -365,7 +365,7 @@ async function deleteBrandDNA(brandName, event) {
         const data = await response.json();
         
         // Save the DNA data
-        await fetch(`${window.API_BASE_URL}/saveDNA`, {
+        await fetch(`${window.API_BASE_URL}/api/v1/brandDna/saveDNA`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -567,7 +567,7 @@ async function saveChanges() {
         };
 
         // Save to server
-        const response = await fetch(`${window.API_BASE_URL}/saveDNA`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/saveDNA`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -696,7 +696,7 @@ Remember you MUST GENERATE THE OUTPUT IN THE FOLLOWING EXACT JSON FORMAT. Never 
         formData.append('brandName', analysisPrompt);
         formData.append('language', getClientLanguage());
 
-        const response = await fetch(`${window.API_BASE_URL}/getBrandDNA`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/getBrandDNA`, {
             method: 'POST',
             body: formData
         });
@@ -715,7 +715,7 @@ Remember you MUST GENERATE THE OUTPUT IN THE FOLLOWING EXACT JSON FORMAT. Never 
         };
 
         // Save the updated DNA
-        await fetch(`${window.API_BASE_URL}/saveDNA`, {
+        await fetch(`${window.API_BASE_URL}/api/v1/brandDna/saveDNA`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

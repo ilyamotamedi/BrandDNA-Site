@@ -6,15 +6,15 @@ const path = require('path');
 const fs = require('fs').promises;
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
+const modelState = require('./src/services/modelState.js');
+// const { initializeDNAsFile } = require('./src/services/creatorDna');
+const upload = require('./src/configs/multer.config.js');
+
 const { Storage } = require('@google-cloud/storage');
 const storage = new Storage();
 const bucket = storage.bucket(process.env.BUCKET_NAME);
 
 const {
-  BRAND_DNA_SYSTEM_INSTRUCTIONS,
-  BRAND_DNA_SYSTEM_INSTRUCTIONS_SPANISH,
-  CHANNEL_DNA_SYSTEM_INSTRUCTIONS,
-  CHANNEL_DNA_SYSTEM_INSTRUCTIONS_SPANISH,
   IMAGE_GENERATION_SYSTEM_INSTRUCTIONS,
   VIDEO_GENERATION_SYSTEM_INSTRUCTIONS,
   MATCH_SYSTEM_INSTRUCTIONS,
@@ -26,23 +26,8 @@ const {
   BRAINSTORM_SYSTEM_INSTRUCTIONS
 } = require('./src/configs/systemInstructions.config.js');
 
-const {
-  LLM_CONFIG,
-  VISION_CONFIG,
-} = require('./src/configs/aiModels.config.js');
-
-// Initialize current model with default configuration
-let currentLlmModel = LLM_CONFIG['gemini-2.0-flash-001'];
-let currentVisionModel = VISION_CONFIG['imagen-3.0-generate-002'];
-
 const PROJECT_ID = process.env.PROJECT_ID;
 const LOCATION_ID = process.env.LOCATION_ID;
-
-// Initialize creator DNAs file
-const AVAILABLE_CREATOR_DNA_LISTS = [
-  'creator-dnas.json',
-  'creator-dnas-japan.json', // add more filenames here
-];
 
 // Initialize current creator DNAs file with default
 let currentCreatorDnaListFile = 'creator-dnas.json';
@@ -50,309 +35,29 @@ let currentCreatorDnaListFile = 'creator-dnas.json';
 // Initialize Brand DNAs file
 const DNAS_FILE_PATH = path.join(__dirname, 'dnas.json');
 
-// Initialize DNA storage file if it doesn't exist
-async function initializeDNAsFile() {
-  try {
-    await fs.access(DNAS_FILE_PATH);
-  } catch {
-    await fs.writeFile(DNAS_FILE_PATH, JSON.stringify({})); //English
-    await fs.writeFile(path.join(__dirname, 'dnas-spanish.json'), JSON.stringify({})); // Spanish
-  }
-}
 
-// Call this when starting the server
-initializeDNAsFile();
+// Call this when starting the server to ensure DNA files exist
+// initializeDNAsFile();
 
 const app = express();
 
+// Apply middleware before any routes are defined.
+// This is crucial for req.body to be populated.
+app.use(require('./src/configs/cors.configs.js'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(require('./src/configs/cors.config.js'));
 
+// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Register API routes AFTER middleware
 app.use('/api/', require('./src/routes/index.js'));
 
-const upload = require('./src/configs/multer.config.js');
 
 const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
 });
 
-// Add a new endpoint to get available models
-app.get('/getAvailableModels', (req, res) => {
-  const llmModels = Object.entries(LLM_CONFIG).map(([key, config]) => ({
-    id: key,
-    displayName: config.displayName
-  }));
-
-  const visionModels = Object.entries(VISION_CONFIG).map(([key, config]) => ({
-    id: key,
-    displayName: config.displayName
-  }));
-
-  res.json({
-    llmModels,
-    visionModels
-  });
-});
-
-app.get('/getCurrentModels', (req, res) => {
-  res.json({
-    llmModelId: currentLlmModel.modelId,
-    visionModelId: currentVisionModel.modelId
-  });
-});
-
-// Update the setModel endpoint
-app.post('/setModel', express.json(), (req, res) => {
-  const { modelId, modelType } = req.body;
-
-  if (modelType === 'llm') {
-    if (!LLM_CONFIG[modelId]) {
-      return res.status(400).json({ error: 'Invalid LLM model selection' });
-    }
-    currentLlmModel = LLM_CONFIG[modelId];
-  } else if (modelType === 'vision') {
-    if (!VISION_CONFIG[modelId]) {
-      return res.status(400).json({ error: 'Invalid vision model selection' });
-    }
-    currentVisionModel = VISION_CONFIG[modelId];
-  } else {
-    return res.status(400).json({ error: 'Invalid model type' });
-  }
-
-  res.json({ success: true });
-});
-
-// Endpoint to get available creator DNA lists
-app.get('/getAvailableCreatorDnaLists', (req, res) => {
-  res.json({ creatorDnaLists: AVAILABLE_CREATOR_DNA_LISTS });
-});
-
-// Endpoint to set the current creator DNA list file
-app.post('/setCurrentCreatorDnaList', express.json(), (req, res) => {
-  const { creatorDnaListFile } = req.body;
-  if (AVAILABLE_CREATOR_DNA_LISTS.includes(creatorDnaListFile)) {
-    currentCreatorDnaListFile = creatorDnaListFile;
-    res.json({ success: true });
-  } else {
-    res.status(400).json({ error: 'Invalid creator DNA list file selection' });
-  }
-});
-
-// Endpoint to get the current creator DNA list file
-app.get('/getCurrentCreatorDnaList', (req, res) => {
-  res.json({ currentCreatorDnaListFile: currentCreatorDnaListFile });
-});
-
-// Add these new endpoints to server.js
-app.get('/getDNAs', async (req, res) => {
-  try {
-    const language = req.query.language || currentLanguage;
-    const filename = getDNAFilename(language);
-
-    let dnas = {};
-    try {
-      dnas = await readJSONFromStorage(filename);
-    } catch (error) {
-      console.log('No existing DNAs file, returning empty object');
-    }
-
-    res.json(dnas);
-  } catch (error) {
-    console.error('Error getting DNAs:', error);
-    res.status(500).json({ error: 'Failed to get DNAs' });
-  }
-});
-
-// Modify the saveDNAWithTranslation function to handle background translation
-async function saveDNAWithTranslation(dna, sourceLanguage, backgroundTranslation = false) {
-  try {
-    // Get filenames
-    const sourceFile = getDNAFilename(sourceLanguage);
-
-    // Save to source language file immediately
-    const sourceDNAs = await readJSONFromStorage(sourceFile);
-    sourceDNAs[dna.brandName] = dna;
-    await writeJSONToStorage(sourceFile, sourceDNAs);
-
-    if (!backgroundTranslation) {
-      return true; // Return immediately after saving source language
-    }
-
-    // Handle translation and secondary save in the background
-    (async () => {
-      try {
-        const targetFile = getOppositeLanguageFile(sourceFile);
-        const targetLanguage = sourceLanguage === 'spanish' ? 'en' : 'es';
-        const translatedDNA = await translateDNAObject(dna, targetLanguage);
-
-        const targetDNAs = await readJSONFromStorage(targetFile);
-        targetDNAs[dna.brandName] = translatedDNA;
-        await writeJSONToStorage(targetFile, targetDNAs);
-
-        console.log(`Background translation completed for ${dna.brandName}`);
-      } catch (error) {
-        console.error('Error in background translation:', error);
-      }
-    })();
-
-    return true;
-  } catch (error) {
-    console.error('Error in saveDNAWithTranslation:', error);
-    throw error;
-  }
-}
-
-// Modify the /saveDNA endpoint
-app.post('/saveDNA', express.json(), async (req, res) => {
-  try {
-    const { dna, language } = req.body;
-    const requestLanguage = language || currentLanguage;
-
-    // Save immediately without waiting for translation
-    await saveDNAWithTranslation(dna, requestLanguage, true);
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error saving DNA:', error);
-    res.status(500).json({ error: 'Failed to save DNA' });
-  }
-});
-
-app.delete('/deleteDNA/:brandName', async (req, res) => {
-  try {
-    const brandName = decodeURIComponent(req.params.brandName);
-
-    // Delete from both language files to ensure consistency
-    const englishDNAs = await readJSONFromStorage('dnas.json');
-    const spanishDNAs = await readJSONFromStorage('dnas-spanish.json');
-
-    if (englishDNAs[brandName]) delete englishDNAs[brandName];
-    if (spanishDNAs[brandName]) delete spanishDNAs[brandName];
-
-    await writeJSONToStorage('dnas.json', englishDNAs);
-    await writeJSONToStorage('dnas-spanish.json', spanishDNAs);
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting DNA:', error);
-    res.status(500).json({ error: 'Failed to delete DNA' });
-  }
-});
-
-async function callGeminiAPI(brandName, files = null, language = 'english') {
-  const fetch = await import('node-fetch').then(module => module.default);
-
-  // Prepare the parts array
-  const parts = [];
-
-  // Add files if provided
-  if (files && files.length > 0) {
-    files.forEach(file => {
-      const filePart = {
-        inline_data: {
-          data: file.buffer.toString('base64'),
-          mimeType: file.mimetype
-        }
-      };
-      parts.push(filePart);
-    });
-  }
-
-  // Add the text prompt with language instruction if Spanish
-  let promptText = `Get the brand DNA of ${brandName}`;
-  if (language === 'spanish') {
-    promptText += "\nPLEASE RESPOND IN SPANISH";
-  }
-
-  parts.push({
-    text: promptText
-  });
-
-  // Base request configuration
-  const requestBody = {
-    contents: [{
-      role: "user",
-      parts: parts
-    }],
-    systemInstruction: {
-      parts: [{
-        text: language === 'spanish' ? BRAND_DNA_SYSTEM_INSTRUCTIONS_SPANISH : BRAND_DNA_SYSTEM_INSTRUCTIONS
-      }]
-    },
-    generationConfig: {
-      responseModalities: ["TEXT"],
-      temperature: 1,
-      maxOutputTokens: 8192,
-      topP: 0.95
-    },
-    safetySettings: [
-      {
-        category: "HARM_CATEGORY_HATE_SPEECH",
-        threshold: "OFF"
-      },
-      {
-        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-        threshold: "OFF"
-      },
-      {
-        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        threshold: "OFF"
-      },
-      {
-        category: "HARM_CATEGORY_HARASSMENT",
-        threshold: "OFF"
-      }
-    ]
-  };
-
-  // Add tools configuration for supported models
-  const modelsWithToolUse = ['gemini-2.0-flash-001', 'gemini-2.0-pro-exp-02-05', 'gemini-2.0-flash-exp'];
-  if (modelsWithToolUse.includes(currentLlmModel.modelId)) {
-    requestBody.tools = [{
-      googleSearch: {}
-    }];
-  }
-
-  try {
-    const client = await auth.getClient();
-    const accessToken = await client.getAccessToken();
-
-    const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken.token}`
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error Response:', errorText);
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
-
-    if (!rawText) {
-      throw new Error('No text content in API response');
-    }
-
-    // Clean up the text by removing markdown code blocks and extra whitespace
-    const cleanJson = rawText.replace(/```json\n|\n```/g, '').trim();
-
-    // Parse and verify the JSON structure
-    const parsedData = JSON.parse(cleanJson);
-    return parsedData;
-  } catch (error) {
-    console.error('Error:', error);
-    throw error;
-  }
-}
 
 async function generateImagePrompts(prompt, brandDNA = null, language = 'english') {
   const fetch = await import('node-fetch').then(module => module.default);
@@ -394,6 +99,7 @@ async function generateImagePrompts(prompt, brandDNA = null, language = 'english
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -425,7 +131,7 @@ async function generateImagePrompts(prompt, brandDNA = null, language = 'english
   }
 }
 
-app.post('/generateImages', express.json(), async (req, res) => {
+app.post('/generateImages', async (req, res) => {
   const { prompt, brandDNA } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -453,6 +159,7 @@ async function generateImagesFromPrompt(prompt, aspectRatio = '4:3', language = 
 
   const predictionServiceClient = new PredictionServiceClient(clientOptions);
 
+  const currentVisionModel = modelState.getVision();
   const endpoint = `projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentVisionModel.modelId}`;
 
   let promptToUse = prompt; // Initialize with the original prompt
@@ -511,7 +218,7 @@ async function generateImagesFromPrompt(prompt, aspectRatio = '4:3', language = 
 }
 
 // Add new endpoint for image generation
-app.post('/generateImagesFromPrompt', express.json(), async (req, res) => {
+app.post('/generateImagesFromPrompt', async (req, res) => {
   const { prompt, aspectRatio } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -528,37 +235,13 @@ app.post('/generateImagesFromPrompt', express.json(), async (req, res) => {
   }
 });
 
-// Modify the /getBrandDNA endpoint
-app.post('/getBrandDNA', upload.array('file', 5), async (req, res) => {
-  const brandName = req.body.brandName;
-  const language = req.body.language || currentLanguage;
-
-  if (!brandName) {
-    return res.status(400).json({ error: 'Brand name is required' });
-  }
-
-  try {
-    const files = req.files;
-    const result = await callGeminiAPI(brandName, files, language);
-
-    // Save the DNA in current language and trigger background translation
-    await saveDNAWithTranslation(result, language, true);
-
-    res.json(result);
-  } catch (error) {
-    console.error('Error processing request:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 app.get('/getCurrentDNA', async (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/setDNA', express.json(), async (req, res) => {
+app.post('/setDNA', async (req, res) => {
   res.json({ success: true });
 });
-
 
 async function generateVideoConcepts(prompt, brandDNA = null, language = 'english') {
   console.log('generateVideoConcepts function called with language:', language);
@@ -604,6 +287,7 @@ async function generateVideoConcepts(prompt, brandDNA = null, language = 'englis
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -635,7 +319,7 @@ async function generateVideoConcepts(prompt, brandDNA = null, language = 'englis
   }
 }
 
-app.post('/generateVideoConcepts', express.json(), async (req, res) => {
+app.post('/generateVideoConcepts', async (req, res) => {
   const { prompt, brandDNA } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -712,6 +396,7 @@ async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integratio
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -744,7 +429,7 @@ async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integratio
 }
 
 // Endpoint handler
-app.post('/generateStoryboard', express.json(), async (req, res) => {
+app.post('/generateStoryboard', async (req, res) => {
   const { videoConcept, brandDNA, creatorDNA, integrationType, version } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -776,9 +461,8 @@ app.post('/generateStoryboard', express.json(), async (req, res) => {
   }
 });
 
-
 // Add this new endpoint for storyboard image generation
-app.post('/generateStoryboardImages', express.json(), async (req, res) => {
+app.post('/generateStoryboardImages', async (req, res) => {
   const { imagePrompts } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -803,281 +487,6 @@ app.post('/generateStoryboardImages', express.json(), async (req, res) => {
   }
 });
 
-
-// CHANNEL DNA
-
-app.get('/getCreatorDNAs', async (req, res) => {
-  try {
-    const language = req.query.language || currentLanguage;
-    const filename = language === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
-
-    let dnas = {};
-    try {
-      dnas = await readJSONFromStorage(filename);
-    } catch (error) {
-      console.log('No existing creator DNAs file, returning empty object');
-    }
-
-    res.json(dnas);
-  } catch (error) {
-    console.error('Error reading creator DNAs:', error);
-    res.status(500).json({ error: 'Failed to retrieve creator DNAs' });
-  }
-});
-
-app.post('/saveCreatorDNA', express.json(), async (req, res) => {
-  try {
-    const { creatorDNA, language } = req.body;
-    const requestLanguage = language || currentLanguage;
-
-    // Save to source language file
-    const sourceFile = requestLanguage === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
-
-    let sourceDNAs = {};
-    try {
-      sourceDNAs = await readJSONFromStorage(sourceFile);
-    } catch (error) {
-      console.log('No existing creator DNAs file, creating new one');
-    }
-
-    sourceDNAs[creatorDNA.channelName] = creatorDNA;
-    await writeJSONToStorage(sourceFile, sourceDNAs);
-
-    // Translate and save to other language file in the background
-    (async () => {
-      try {
-        const targetFile = requestLanguage === 'spanish' ? 'creator-dnas-spanish.json' : 'creator-dnas.json';
-        const targetLanguage = requestLanguage === 'spanish' ? 'en' : 'es';
-
-        // Translate the channel analysis
-        const translatedDNA = JSON.parse(JSON.stringify(creatorDNA));
-
-        // Ensure channelName is preserved
-        const originalChannelName = translatedDNA.channelName;
-
-        // Log the structure for troubleshooting
-        console.log(`DNA structure for ${originalChannelName}:`,
-          `channelAnalysis type: ${translatedDNA.channelAnalysis ?
-            (Array.isArray(translatedDNA.channelAnalysis) ? 'array' : typeof translatedDNA.channelAnalysis) :
-            'undefined'}`
-        );
-
-        // Translate each section if channelAnalysis exists and is an array
-        if (translatedDNA.channelAnalysis && Array.isArray(translatedDNA.channelAnalysis)) {
-          for (const section of translatedDNA.channelAnalysis) {
-            // First translate the body to maintain context
-            section.sectionBody = await translateText(section.sectionBody, targetLanguage);
-
-            // Then translate the title if needed
-            if (requestLanguage === 'spanish') {
-              // Map Spanish to English titles
-              const titleMap = {
-                'ADN del Creador': 'CreatorDNA',
-                'Personalidad del Creador': 'Creator Personality',
-                'Estilo de Contenido': 'Content Style',
-                'Conexión con la Audiencia': 'Audience Connection',
-                'Historia del Canal': 'Channel Story'
-              };
-              section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguage);
-            } else {
-              // Map English to Spanish titles
-              const titleMap = {
-                'CreatorDNA': 'ADN del Creador',
-                'Creator Personality': 'Personalidad del Creador',
-                'Content Style': 'Estilo de Contenido',
-                'Audience Connection': 'Conexión con la Audiencia',
-                'Channel Story': 'Historia del Canal'
-              };
-              section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguage);
-            }
-          }
-        } else {
-          console.log(`Warning: channelAnalysis not found or not an array for channel ${creatorDNA.channelName}`);
-        }
-
-        // Restore original channel name
-        translatedDNA.channelName = originalChannelName;
-
-        const targetDNAs = await readJSONFromStorage(targetFile);
-        targetDNAs[creatorDNA.channelName] = translatedDNA;
-        await writeJSONToStorage(targetFile, targetDNAs);
-
-        console.log(`Background translation completed for channel ${creatorDNA.channelName}`);
-      } catch (error) {
-        console.error('Error in background translation:', error);
-      }
-    })();
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Error saving creator DNA:', error);
-    res.status(500).json({ error: 'Failed to save creator DNA' });
-  }
-});
-
-app.delete('/deleteCreatorDNA/:channelName', async (req, res) => {
-  try {
-    const channelName = decodeURIComponent(req.params.channelName);
-    console.log('Attempting to delete channel:', channelName);
-
-    // Delete from both language files
-    const englishDNAs = await readJSONFromStorage('creator-dnas.json');
-    const spanishDNAs = await readJSONFromStorage('creator-dnas-spanish.json');
-
-    if (englishDNAs[channelName]) delete englishDNAs[channelName];
-    if (spanishDNAs[channelName]) delete spanishDNAs[channelName];
-
-    await writeJSONToStorage('creator-dnas.json', englishDNAs);
-    await writeJSONToStorage('creator-dnas-spanish.json', spanishDNAs);
-
-    console.log('Successfully deleted channel:', channelName);
-    res.json({
-      success: true,
-      message: `Successfully deleted ${channelName}`
-    });
-  } catch (error) {
-    console.error('Error deleting creator DNA:', error);
-    res.status(500).json({
-      error: 'Failed to delete creator DNA',
-      details: error.message
-    });
-  }
-});
-
-app.post('/analyzeChannel', upload.array('file', 5), async (req, res) => {
-  try {
-    const { channelName, transcripts, language } = req.body;
-    const requestLanguage = language || currentLanguage;
-    const files = req.files || [];
-
-    const processedTranscripts = JSON.parse(transcripts).map(t =>
-      t.transcript.map(item => item.text).join(' ')
-    );
-
-    // Process uploaded files and split into text and binary files
-    const parts = [];
-    const maxTextSize = 500000; // 500KB limit for text content
-
-    // Add main text prompt part with language instruction
-    let analysisPrompt = `Analyze the YouTube channel "${channelName}" based on the following content:
-
-1. Video Transcripts:
-${processedTranscripts.join('\n\n=== NEXT VIDEO ===\n\n')}
-
-2. Additional Channel Content and Context:`;
-
-    // Add language instruction for Spanish
-    if (requestLanguage === 'spanish') {
-      analysisPrompt += "\n\nPLEASE GENERATE THE ENTIRE ANALYSIS IN SPANISH, INCLUDING ALL CONTENT AND DESCRIPTIONS.";
-    }
-
-    parts.push({
-      text: analysisPrompt
-    });
-
-    // Process each file
-    for (const file of files) {
-      try {
-        // Check if file is an image based on mimetype
-        if (file.mimetype.startsWith('image/')) {
-          parts.push({
-            inline_data: {
-              data: file.buffer.toString('base64'),
-              mime_type: file.mimetype
-            }
-          });
-        } else {
-          // For text files, check size and add content
-          const content = file.buffer.toString('utf8');
-          if (content.length > maxTextSize) {
-            console.warn(`File ${file.originalname} exceeds size limit, truncating...`);
-            parts.push({
-              text: `\n\nDocument (${file.originalname}):\n${content.substring(0, maxTextSize)}... (truncated)`
-            });
-          } else {
-            parts.push({
-              text: `\n\nDocument (${file.originalname}):\n${content}`
-            });
-          }
-        }
-      } catch (error) {
-        console.warn(`Error processing file ${file.originalname}:`, error);
-        // Continue with other files if one fails
-        continue;
-      }
-    }
-
-    // Add final prompt part
-    parts.push({
-      text: `\n\nPlease analyze all available content to provide a comprehensive understanding of the channel's DNA, considering the video transcripts, images, and any additional documents provided.`
-    });
-
-    const client = await auth.getClient();
-    const accessToken = await client.getAccessToken();
-
-    const requestBody = {
-      contents: [{
-        role: "user",
-        parts: parts
-      }],
-      systemInstruction: {
-        parts: [{
-          text: requestLanguage === 'spanish' ?
-            CHANNEL_DNA_SYSTEM_INSTRUCTIONS_SPANISH :
-            CHANNEL_DNA_SYSTEM_INSTRUCTIONS
-        }]
-      },
-      generationConfig: {
-        temperature: 1,
-        maxOutputTokens: 8192,
-        topP: 0.95
-      }
-    };
-
-    console.log('Making request with parts:', parts.length);
-
-    const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken.token}`
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error Response:', errorText);
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
-
-    if (!rawText) {
-      throw new Error('No text content in API response');
-    }
-
-    const cleanJson = rawText.replace(/```json\n|\n```/g, '').trim();
-    const analysis = JSON.parse(cleanJson);
-
-    res.json({
-      success: true,
-      analysis: {
-        channelName,
-        channelAnalysis: analysis.channelAnalysis
-      }
-    });
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
 
 app.post('/getMatch', upload.array('file', 5), async (req, res) => {
   try {
@@ -1152,6 +561,7 @@ YOU MUST OUTPUT the matches in the specified JSON format. NEVER GIVE ANY ADDITIO
       }
     };
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -1305,7 +715,7 @@ app.get('/getCurrentLanguage', (req, res) => {
 });
 
 // Endpoint to set the current language
-app.post('/setCurrentLanguage', express.json(), (req, res) => {
+app.post('/setCurrentLanguage', async (req, res) => {
   const { language } = req.body;
 
   if (language === 'english' || language === 'spanish') {
@@ -1316,7 +726,7 @@ app.post('/setCurrentLanguage', express.json(), (req, res) => {
   }
 });
 
-app.post('/translate', express.json(), async (req, res) => {
+app.post('/translate', async (req, res) => {
   const { text, targetLanguage } = req.body;
 
   if (!text) {
@@ -1332,243 +742,9 @@ app.post('/translate', express.json(), async (req, res) => {
   }
 });
 
-async function translateText(text, targetLanguage = 'en') {
-  const fetch = await import('node-fetch').then(module => module.default);
-
-  const parts = [{
-    text: `You are an expert translator. Translate the following text to ${targetLanguage}. Never give any commentary, just translate the text, and match the exact formatting that the text is already in:\n\n${text}`
-  }];
-
-  const requestBody = {
-    contents: [{
-      role: "user",
-      parts: parts
-    }],
-    generationConfig: {
-      temperature: 0.2, // Lower temperature for more precise translation
-      maxOutputTokens: 8192,
-      topP: 0.95
-    }
-  };
-
-  try {
-    const client = await auth.getClient();
-    const accessToken = await client.getAccessToken();
-
-    const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken.token}`
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error Response:', errorText);
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
-
-    if (!responseText) {
-      throw new Error('No text content in API response');
-    }
-    return responseText.trim(); // Clean up any extra whitespace.
-
-  } catch (error) {
-    console.error('Error during translation:', error);
-    throw error; // Re-throw so calling function can handle
-  }
-}
-
-// Helper function to get the appropriate filename based on language
-function getDNAFilename(language) {
-  return language === 'spanish' ? 'dnas-spanish.json' : 'dnas.json';
-}
-
-// Helper function to get the opposite language's filename
-function getOppositeLanguageFile(currentFile) {
-  return currentFile === 'dnas.json' ? 'dnas-spanish.json' : 'dnas.json';
-}
-
-// Helper function to translate DNA object
-async function translateDNAObject(dna, targetLanguage) {
-  try {
-    // Create a deep copy of the DNA object
-    const translatedDNA = JSON.parse(JSON.stringify(dna));
-
-    // Translate each section of the brand analysis
-    for (const section of translatedDNA.brandAnalysis) {
-      // Translate both the section title and body
-      section.sectionTitle = await translateText(section.sectionTitle, targetLanguage);
-      section.sectionBody = await translateText(section.sectionBody, targetLanguage);
-    }
-
-    return translatedDNA;
-  } catch (error) {
-    console.error('Error translating DNA:', error);
-    throw error;
-  }
-}
-
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
-});
-
-// Add this function after the getChannelTranscripts endpoint
-async function getAverageViews(channelId) {
-  const API_KEY = process.env.BRANDCONNECT_API_KEY;
-
-  try {
-    console.log(`Calculating average views for channel: ${channelId}`);
-
-    // Step 1: Get the uploads playlist ID for the channel
-    const channelResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${channelId}&key=${API_KEY}`
-    );
-    const channelData = await channelResponse.json();
-
-    if (!channelData.items || channelData.items.length === 0) {
-      console.error('No channel found with ID:', channelId);
-      return 0;
-    }
-
-    const uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
-    console.log(`Uploads playlist ID: ${uploadsPlaylistId}`);
-
-    // Step 2: Get the most recent videos from the uploads playlist (up to 50)
-    const playlistResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId=${uploadsPlaylistId}&maxResults=50&key=${API_KEY}`
-    );
-    const playlistData = await playlistResponse.json();
-
-    if (!playlistData.items || playlistData.items.length === 0) {
-      console.error('No videos found in uploads playlist');
-      return 0;
-    }
-
-    // Get the video IDs
-    const videoIds = playlistData.items.map(item => item.contentDetails.videoId);
-    console.log(`Found ${videoIds.length} videos in uploads playlist`);
-
-    // Step 3: Get video details including statistics and publish dates
-    const videosResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoIds.join(',')}&key=${API_KEY}`
-    );
-    const videosData = await videosResponse.json();
-
-    if (!videosData.items || videosData.items.length === 0) {
-      console.error('No video details found');
-      return 0;
-    }
-
-    // Step 4: Filter videos from the last 3 months and calculate average views
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-    // Sort videos by publish date (newest first)
-    const sortedVideos = videosData.items.sort((a, b) => {
-      const dateA = new Date(a.snippet.publishedAt);
-      const dateB = new Date(b.snippet.publishedAt);
-      return dateB - dateA;
-    });
-
-    // First try to get videos from the last 3 months
-    let recentVideos = sortedVideos.filter(video => {
-      const publishDate = new Date(video.snippet.publishedAt);
-      return publishDate >= threeMonthsAgo;
-    });
-
-    // If no videos in the last 3 months, use the 5 most recent videos
-    let timeframe = "past 3 months";
-    if (recentVideos.length === 0) {
-      console.log('No videos published in the last 3 months, using 5 most recent videos instead');
-      recentVideos = sortedVideos.slice(0, 5);
-      timeframe = "5 most recent videos";
-    }
-
-    console.log(`Found ${recentVideos.length} videos for average calculation (${timeframe})`);
-
-    if (recentVideos.length === 0) {
-      console.log('No videos available for average calculation');
-      return { averageViews: 0, timeframe: "no videos available" };
-    }
-
-    // Calculate total views and average
-    let totalViews = 0;
-
-    recentVideos.forEach(video => {
-      const views = parseInt(video.statistics.viewCount) || 0;
-      console.log(`Video ${video.id}: ${video.snippet.title} - ${views} views (published: ${video.snippet.publishedAt})`);
-      totalViews += views;
-    });
-
-    const averageViews = Math.round(totalViews / recentVideos.length);
-    console.log(`Total views: ${totalViews}, Average views: ${averageViews} (${timeframe})`);
-
-    return { averageViews, timeframe };
-  } catch (error) {
-    console.error('Error calculating average views:', error);
-    return { averageViews: 0, timeframe: "error" };
-  }
-}
-
-// Add a new endpoint to get channel stats
-app.post('/getChannelStats', async (req, res) => {
-  const { channelId } = req.body;
-
-  if (!channelId) {
-    return res.status(400).json({
-      success: false,
-      error: 'Channel ID is required'
-    });
-  }
-
-  try {
-    const result = await getAverageViews(channelId);
-
-    res.json({
-      success: true,
-      stats: {
-        averageViews: result.averageViews,
-        timeframe: result.timeframe
-      }
-    });
-  } catch (error) {
-    console.error('Error getting channel stats:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Add a test endpoint for average views
-app.get('/test-average-views', async (req, res) => {
-  const { channelId } = req.query;
-
-  if (!channelId) {
-    return res.status(400).send('Channel ID is required as a query parameter');
-  }
-
-  try {
-    const averageViews = await getAverageViews(channelId);
-
-    res.send(`
-            <h1>Average Views Test</h1>
-            <p>Channel ID: ${channelId}</p>
-            <p>Average Views (last 3 months): ${averageViews.toLocaleString()}</p>
-        `);
-  } catch (error) {
-    console.error('Error in test endpoint:', error);
-    res.status(500).send(`Error: ${error.message}`);
-  }
 });
 
 // Endpoint to regenerate content ideas for a specific creator
@@ -1628,6 +804,7 @@ Based on this information, please generate 3-5 new content ideas that address th
       }
     };
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -1759,6 +936,7 @@ async function regenerateStoryboardFrame(videoConcept, brandDNA, creatorDNA, int
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -1791,7 +969,7 @@ async function regenerateStoryboardFrame(videoConcept, brandDNA, creatorDNA, int
 }
 
 // Endpoint handler for regenerating a single storyboard frame
-app.post('/regenerateStoryboardFrame', express.json(), async (req, res) => {
+app.post('/regenerateStoryboardFrame', async (req, res) => {
   const { videoConcept, brandDNA, creatorDNA, integrationType, storyboard, frameIndex, feedback } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -1850,7 +1028,7 @@ app.post('/regenerateStoryboardFrame', express.json(), async (req, res) => {
 });
 
 // Endpoint handler for reviewing storyboard
-app.post('/reviewStoryboard', express.json(), async (req, res) => {
+app.post('/reviewStoryboard', async (req, res) => {
   const { scenes, brandDNA, campaignBrief, campaignGoal } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -1919,6 +1097,7 @@ app.post('/reviewStoryboard', express.json(), async (req, res) => {
     const client = await auth.getClient();
     const accessToken = await client.getAccessToken();
 
+    const currentLlmModel = modelState.getLlm();
     const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
 
     const response = await fetch(url, {
@@ -1964,6 +1143,8 @@ const { GoogleAIFileManager } = require("@google/generative-ai/server");
 // Using existing fs module but need synchronous version as well
 const fsSync = require('fs');
 const os = require('os');
+// const { AiModelsRouter } = require('./src/routes/api/v1/aiModels/index.js');
+// const { creatorDnaRouter } = require('./src/routes/api/v1/creatorDna/index.js');
 
 // Initialize Gemini for image editing
 const geminiApiKey = process.env.GEMINI_API_KEY;

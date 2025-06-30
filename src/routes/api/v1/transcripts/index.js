@@ -1,8 +1,9 @@
-const TranscriptsRouter = require('express').Router({ mergeParams: true });
+const express = require("express");
+const transcriptsRouter = express.Router();
 
 const { supadata } = require('../../../../utils/supadata.util'); // TODO: refactor biz logic to a service layer
 
-TranscriptsRouter.post('/test', async (req, res) => {
+transcriptsRouter.post('/test', async (req, res) => {
   try {
     const { videoUrl } = req.body;
 
@@ -27,7 +28,7 @@ TranscriptsRouter.post('/test', async (req, res) => {
   }
 });
 
-TranscriptsRouter.post('/getChannelTranscripts', async (req, res) => {
+transcriptsRouter.post('/getChannelTranscripts', async (req, res) => {
   const { videoUrls } = req.body;
 
   try {
@@ -96,4 +97,4 @@ TranscriptsRouter.post('/getChannelTranscripts', async (req, res) => {
   }
 });
 
-module.exports = TranscriptsRouter;
+module.exports = { transcriptsRouter };
