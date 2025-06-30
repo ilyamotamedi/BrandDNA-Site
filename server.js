@@ -2,9 +2,7 @@ require('dotenv').config();
 const express = require('express');
 
 const { GoogleAuth } = require('google-auth-library');
-const cors = require('cors');
 const path = require('path');
-const multer = require('multer');
 const fs = require('fs').promises;
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
@@ -54,6 +52,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Register API routes AFTER middleware
 app.use('/api/', require('./src/routes/index.js'));
+
 
 const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
