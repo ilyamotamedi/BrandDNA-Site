@@ -8,14 +8,9 @@ const multer = require('multer');
 const fs = require('fs').promises;
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
-const { creatorDnaRouter } = require("./src/routes/api/v1/creatorDna/index.js");
-const { brandDnaRouter } = require("./src/routes/api/v1/brandDna/index.js");
-const { transcriptsRouter } = require("./src/routes/api/v1/transcripts/index.js");
-const { AiModelsRouter } = require("./src/routes/api/v1/aiModels/index.js");
 const modelState = require('./src/services/modelState.js');
 // const { initializeDNAsFile } = require('./src/services/creatorDna');
-
-
+const upload = require('./src/configs/multer.config.js');
 
 const { Storage } = require('@google-cloud/storage');
 const storage = new Storage();
@@ -47,38 +42,22 @@ const DNAS_FILE_PATH = path.join(__dirname, 'dnas.json');
 // initializeDNAsFile();
 
 const app = express();
-app.use('/api/', require('./src/routes/index.js'));
 
-
+// Apply middleware before any routes are defined.
+// This is crucial for req.body to be populated.
+app.use(require('./src/configs/cors.configs.js'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://branddna.googleplex.com']
-    : 'http://localhost:3000',
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
 
+// Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/api/', require('./src/routes/index.js'));
 
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB limit
-  }
-});
+// Register API routes AFTER middleware
+app.use('/api/', require('./src/routes/index.js'));
 
 const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
 });
-
-// USE FILE CREATOR DNA
-app.use("/creatorDNA", creatorDnaRouter);
-app.use("/aiModels", AiModelsRouter)
-
 
 
 async function generateImagePrompts(prompt, brandDNA = null, language = 'english') {
@@ -153,7 +132,7 @@ async function generateImagePrompts(prompt, brandDNA = null, language = 'english
   }
 }
 
-app.post('/generateImages', express.json(), async (req, res) => {
+app.post('/generateImages', async (req, res) => {
   const { prompt, brandDNA } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -240,7 +219,7 @@ async function generateImagesFromPrompt(prompt, aspectRatio = '4:3', language = 
 }
 
 // Add new endpoint for image generation
-app.post('/generateImagesFromPrompt', express.json(), async (req, res) => {
+app.post('/generateImagesFromPrompt', async (req, res) => {
   const { prompt, aspectRatio } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -257,15 +236,11 @@ app.post('/generateImagesFromPrompt', express.json(), async (req, res) => {
   }
 });
 
-// USE FILE BRAND DNA
-app.use("/brandDna", brandDnaRouter);
-app.use("/transcriptsRouter", transcriptsRouter);
-
 app.get('/getCurrentDNA', async (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/setDNA', express.json(), async (req, res) => {
+app.post('/setDNA', async (req, res) => {
   res.json({ success: true });
 });
 
@@ -345,7 +320,7 @@ async function generateVideoConcepts(prompt, brandDNA = null, language = 'englis
   }
 }
 
-app.post('/generateVideoConcepts', express.json(), async (req, res) => {
+app.post('/generateVideoConcepts', async (req, res) => {
   const { prompt, brandDNA } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -455,7 +430,7 @@ async function generateStoryboard(videoConcept, brandDNA, creatorDNA, integratio
 }
 
 // Endpoint handler
-app.post('/generateStoryboard', express.json(), async (req, res) => {
+app.post('/generateStoryboard', async (req, res) => {
   const { videoConcept, brandDNA, creatorDNA, integrationType, version } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -488,7 +463,7 @@ app.post('/generateStoryboard', express.json(), async (req, res) => {
 });
 
 // Add this new endpoint for storyboard image generation
-app.post('/generateStoryboardImages', express.json(), async (req, res) => {
+app.post('/generateStoryboardImages', async (req, res) => {
   const { imagePrompts } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -741,7 +716,7 @@ app.get('/getCurrentLanguage', (req, res) => {
 });
 
 // Endpoint to set the current language
-app.post('/setCurrentLanguage', express.json(), (req, res) => {
+app.post('/setCurrentLanguage', async (req, res) => {
   const { language } = req.body;
 
   if (language === 'english' || language === 'spanish') {
@@ -752,7 +727,7 @@ app.post('/setCurrentLanguage', express.json(), (req, res) => {
   }
 });
 
-app.post('/translate', express.json(), async (req, res) => {
+app.post('/translate', async (req, res) => {
   const { text, targetLanguage } = req.body;
 
   if (!text) {
@@ -995,7 +970,7 @@ async function regenerateStoryboardFrame(videoConcept, brandDNA, creatorDNA, int
 }
 
 // Endpoint handler for regenerating a single storyboard frame
-app.post('/regenerateStoryboardFrame', express.json(), async (req, res) => {
+app.post('/regenerateStoryboardFrame', async (req, res) => {
   const { videoConcept, brandDNA, creatorDNA, integrationType, storyboard, frameIndex, feedback } = req.body;
   const language = getLanguageFromRequest(req);
 
@@ -1054,7 +1029,7 @@ app.post('/regenerateStoryboardFrame', express.json(), async (req, res) => {
 });
 
 // Endpoint handler for reviewing storyboard
-app.post('/reviewStoryboard', express.json(), async (req, res) => {
+app.post('/reviewStoryboard', async (req, res) => {
   const { scenes, brandDNA, campaignBrief, campaignGoal } = req.body;
   const language = getLanguageFromRequest(req);
 

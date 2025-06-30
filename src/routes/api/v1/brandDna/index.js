@@ -1,8 +1,9 @@
 const express = require("express");
 const brandDnaRouter = express.Router();
 
-const { readJSONFromStorage, writeJSONToStorage, upload } = require('../../../../utils/apiHelpers.js');
+const { readJSONFromStorage, writeJSONToStorage} = require('../../../../utils/apiHelpers.js');
 const {callGeminiAPI, saveDNAWithTranslation, translateText, getDNAFilename, getOppositeLanguageFile} = require('../../../../services/geminiCreation.js');
+const upload = require('../../../../../src/configs/multer.config.js');
 
 // Modify the /getBrandDNA endpoint 
 brandDnaRouter.post('/getBrandDNA', upload.array('file', 5), async (req, res) => {

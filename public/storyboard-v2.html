@@ -787,7 +787,7 @@
                 // Then load creator options and set selected creator
                 loadCreatorOptions().then(async () => {
                     // Get creator data
-                    const response = await fetch(`${window.API_BASE_URL}/creatorDNA/getCreatorDNAs`);
+                    const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDNA/getCreatorDNAs`);
                     const creators = await response.json();
 
                     // Set the selected creator DNA
@@ -803,7 +803,7 @@
 
         async function loadCreatorOptions() {
             try {
-                const response = await fetch(`${window.API_BASE_URL}/creatorDNA/getCreatorDNAs`);
+                const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDNA/getCreatorDNAs`);
                 const creators = await response.json();
                 const dropdownMenu = document.getElementById('creatorDropdown');
                 dropdownMenu.innerHTML = '';

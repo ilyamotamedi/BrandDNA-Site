@@ -511,7 +511,7 @@ async function initializeSettings() {
     // Function to populate the Match dropdown with creator names
     async function populateMatchDropdown() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/creatorDna/getCreatorDNAs`);
+            const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getCreatorDNAs`);
             if (!response.ok) {
                 throw new Error('Failed to fetch creator DNAs');
             }
@@ -548,7 +548,7 @@ async function initializeSettings() {
     // Load available models and populate dropdowns
     async function loadAvailableModels() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/aiModels/getAvailableModels`);
+            const response = await fetch(`${window.API_BASE_URL}/api/v1/aiModels/getAvailableModels`);
             if (!response.ok) {
                 throw new Error('Failed to fetch models');
             }
@@ -568,7 +568,7 @@ async function initializeSettings() {
 
                 const populateCreatorDnaListDropdown = async () => {
                     try {
-                        const response = await fetch(`${window.API_BASE_URL}/creatorDna/getAvailableCreatorDnaLists`);
+                        const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getAvailableCreatorDnaLists`);
                         if (!response.ok) {
                             throw new Error('Failed to fetch creator DNA lists');
                         }
@@ -601,7 +601,7 @@ async function initializeSettings() {
     // Handle model selection
     async function handleModelSelection(modelId, modelType) {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/setModel`, {
+            const response = await fetch(`${window.API_BASE_URL}/api/v1/aiModels/setModel`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -629,7 +629,7 @@ async function initializeSettings() {
      // Handle Creator DNA List selection
  async function handleCreatorDnaListSelection(creatorDnaListFile) {
     try {
-        const response = await fetch(`${window.API_BASE_URL}/setCurrentCreatorDnaList`, {
+        const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/setCurrentCreatorDnaList`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -654,7 +654,7 @@ creatorDnaListSelect.addEventListener('change', (e) => {
     // Load current model selections
     async function loadCurrentModels() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/aiModels/getCurrentModels`);
+            const response = await fetch(`${window.API_BASE_URL}/api/v1/aiModels/getCurrentModels`);
             if (response.ok) {
                 const { llmModelId, visionModelId } = await response.json();
                 languageModelSelect.value = llmModelId;
@@ -692,7 +692,7 @@ async function loadCurrentLanguage() {
 
 async function loadCurrentCreatorDnaList() {
     try {
-        const response = await fetch(`${window.API_BASE_URL}/creatorDna/getCurrentCreatorDnaList`);
+        const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getCurrentCreatorDnaList`);
         if (response.ok) {
             const { currentCreatorDnaListFile } = await response.json();
             creatorDnaListSelect.value = currentCreatorDnaListFile;
@@ -742,7 +742,7 @@ async function initializeDNASelector() {
     // Load DNA options
     async function loadDNAOptions() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/brandDna/getDNAs`);
+            const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/getDNAs`);
             const dnas = await response.json();
             
             // Clear previous brand options
@@ -798,7 +798,7 @@ async function setDNA(brandName) {
             return;
         }
 
-        const response = await fetch(`${window.API_BASE_URL}/brandDna/getDNAs`);
+        const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/getDNAs`);
         const dnas = await response.json();
 
         if (!dnas[brandName]) {
@@ -876,7 +876,7 @@ async function loadCurrentDNA() {
         const currentDNA = getClientDNA();
         if (currentDNA) {
             // Verify the DNA still exists in storage
-            const response = await fetch(`${window.API_BASE_URL}/brandDna/getDNAs`);
+            const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/getDNAs`);
             const dnas = await response.json();
 
             if (dnas[currentDNA.brandName]) {

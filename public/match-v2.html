@@ -757,7 +757,7 @@
                 
                 // Pre-fetch creator DNAs to ensure we have them for display
                 try {
-                    const creatorResponse = await fetch(`${window.API_BASE_URL}/creatorDNA/getCreatorDNAs`);
+                    const creatorResponse = await fetch(`${window.API_BASE_URL}/api/v1/creatorDNA/getCreatorDNAs`);
                     const creatorDNAs = await creatorResponse.json();
                     console.log('Fetched creator DNAs for display');
                     

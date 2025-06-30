@@ -2,6 +2,7 @@ const express = require("express");
 const { GoogleAuth } = require('google-auth-library');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const { getAverageViews } = require('../../../../services/creatorDna');
+const upload = require('../../../../../src/configs/multer.config.js');
 
 const creatorDnaRouter = express.Router();
 
@@ -9,7 +10,7 @@ const modelState = require('../../../../services/modelState.js');
 const { translateText } = require('../../../../services/geminiCreation.js');
 
 
-const { readJSONFromStorage, writeJSONToStorage, upload } = require('../../../../utils/apiHelpers.js');
+const { readJSONFromStorage, writeJSONToStorage} = require('../../../../utils/apiHelpers.js');
 
 const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
@@ -320,6 +321,7 @@ creatorDnaRouter.post('/analyzeChannel', upload.array('file', 5), async (req, re
     }
 
     const cleanJson = rawText.replace(/```json\n|\n```/g, '').trim();
+    // TODO: Fix Unexpected token 'O', "Okay, I'm "... is not valid JSON
     const analysis = JSON.parse(cleanJson);
 
     res.json({
