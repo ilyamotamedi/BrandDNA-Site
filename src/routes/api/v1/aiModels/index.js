@@ -1,6 +1,6 @@
 const express = require('express');
 const AiModelsRouter = require('express').Router({ mergeParams: true });
-const modelState = require('../../../../services/modelState.js');
+const modelState = require('../../../../services/modelState.service.js');
 
 const {
   LLM_CONFIG,

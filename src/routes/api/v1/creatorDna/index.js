@@ -1,16 +1,16 @@
 const express = require("express");
 const { GoogleAuth } = require('google-auth-library');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-const { getAverageViews } = require('../../../../services/creatorDna');
+const { getAverageViews } = require('../../../../services/creatorDna.service.js');
 const upload = require('../../../../../src/configs/multer.config.js');
 
 const creatorDnaRouter = express.Router();
 
-const modelState = require('../../../../services/modelState.js');
-const { translateText } = require('../../../../services/geminiCreation.js');
+const modelState = require('../../../../services/modelState.service.js');
+const { translateText } = require('../../../../services/geminiCreation.service.js');
 
 
-const { readJSONFromStorage, writeJSONToStorage} = require('../../../../utils/apiHelpers.js');
+const { readJSONFromStorage, writeJSONToStorage } = require('../../../../utils/apiHelpers.util.js');
 
 const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
@@ -394,5 +394,5 @@ creatorDnaRouter.get('/test-average-views', async (req, res) => {
 
 
 module.exports = {
-    creatorDnaRouter,
+  creatorDnaRouter,
 };
