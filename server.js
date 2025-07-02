@@ -6,8 +6,8 @@ const path = require('path');
 const fs = require('fs').promises;
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
-const modelState = require('./src/services/modelState.js');
-// const { initializeDNAsFile } = require('./src/services/creatorDna');
+const modelState = require('./src/services/modelState.service.js');
+// const { initializeDNAsFile } = require('./src/services/creatorDna.service');
 const upload = require('./src/configs/multer.config.js');
 
 const { Storage } = require('@google-cloud/storage');
@@ -53,11 +53,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Register API routes AFTER middleware
 app.use('/api/', require('./src/routes/index.js'));
 
-
 const auth = new GoogleAuth({
   scopes: 'https://www.googleapis.com/auth/cloud-platform'
 });
-
 
 async function generateImagePrompts(prompt, brandDNA = null, language = 'english') {
   const fetch = await import('node-fetch').then(module => module.default);
@@ -1140,11 +1138,6 @@ const {
   HarmBlockThreshold,
 } = require("@google/generative-ai");
 const { GoogleAIFileManager } = require("@google/generative-ai/server");
-// Using existing fs module but need synchronous version as well
-const fsSync = require('fs');
-const os = require('os');
-// const { AiModelsRouter } = require('./src/routes/api/v1/aiModels/index.js');
-// const { creatorDnaRouter } = require('./src/routes/api/v1/creatorDna/index.js');
 
 // Initialize Gemini for image editing
 const geminiApiKey = process.env.GEMINI_API_KEY;

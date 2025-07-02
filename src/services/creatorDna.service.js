@@ -110,7 +110,7 @@ async function getAverageViews(channelId) {
   }
 }
 
-module.exports={
+module.exports = {
   getAverageViews,
-//   initializeDNAsFile
+  //   initializeDNAsFile
 };

@@ -1,9 +1,9 @@
 const { GoogleAuth } = require('google-auth-library');
 const fs = require('fs');
 const path = require('path');
-const modelState = require('./modelState.js');
+const modelState = require('./modelState.service.js');
 
-const { readJSONFromStorage, writeJSONToStorage, upload } = require('../utils/apiHelpers.js');
+const { readJSONFromStorage, writeJSONToStorage, upload } = require('../utils/apiHelpers.util.js');
 
 
 const {
@@ -270,10 +270,10 @@ function getOppositeLanguageFile(currentFile) {
   return currentFile === 'dnas.json' ? 'dnas-spanish.json' : 'dnas.json';
 }
 
-module.exports={
-  callGeminiAPI, 
+module.exports = {
+  callGeminiAPI,
   saveDNAWithTranslation,
-  translateText, 
+  translateText,
   getDNAFilename,
   getOppositeLanguageFile
 };

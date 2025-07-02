@@ -31,7 +31,7 @@ async function writeJSONToStorage(filename, data) {
   }
 }
 
-module.exports ={
+module.exports = {
   readJSONFromStorage,
   writeJSONToStorage
 }
