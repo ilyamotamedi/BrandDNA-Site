@@ -8,7 +8,7 @@ env_variables:
   GENERATE_CONTENT_API: "streamGenerateContent"
   BUCKET_NAME: "branddna-testing"
   DATABASE_ID: "branddnadb"
-  SUPADATA_API_KEY: "sd_61da838f6b67dcb9ab7e1c99f37ae725"
+  SUPADATA_API_KEY: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImtpZCI6IjEifQ.eyJpc3MiOiJuYWRsZXMiLCJpYXQiOiIxNzQxMzYzMTA0IiwicHVycG9zZSI6ImFwaV9hdXRoZW50aWNhdGlvbiIsInN1YiI6Ijc0MmVjOTYwNzg4NDQzZjQ5ZWNjNTliNDExMDJiZDRjIn0.vuuE4v728jrwdt4gvmvMffay_RtK8XRIts_KB12HdJI"
   GEMINI_API_KEY: "AIzaSyDflz9EErhM8Th4LUYM0l6V2Mv9_i9D1z4"
 
 instance_class: F2
