@@ -633,16 +633,11 @@
                 const language = getClientLanguage();
                 const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getCreatorDNAs?language=${encodeURIComponent(language)}`);
                 const channels = await response.json();
-                // console.log(`Response of channels from loadSavedChannels: ${JSON.stringify(channels)}`);
+
                 const dropdownMenu = document.getElementById('channelsDropdown');
                 dropdownMenu.innerHTML = '';
-                
-                // const sortedChannelNames = Object.keys(channels).sort((a, b) => 
-                //     a.toLowerCase().localeCompare(b.toLowerCase())
-                // );
-                
-                // sortedChannelNames.forEach(channelName => {
-                // Assumes 'channels' is now an array from the server.
+
+                // Expected 'channels' as an array from the server.
                 if (Array.isArray(channels)) {
                     channels.sort((a, b) => a.channelName.localeCompare(b.channelName)); // Sort the array
                     channels.forEach(channelData => { // Iterate over array elements
@@ -651,22 +646,19 @@
                         item.className = 'dropdown-item';
                         
                         const nameSpan = document.createElement('span');
-                        // nameSpan.textContent = channelName;
                         nameSpan.textContent = channelData.channelName;
                         
                         const deleteIcon = document.createElement('img');
                         deleteIcon.src = '/icons/delete.svg';
                         deleteIcon.alt = 'Delete Channel';
                         deleteIcon.className = 'delete-icon-svg';
+
                         // Pass channelData.channelName for deletion
                         deleteIcon.addEventListener('click', (e) => deleteChannelDNA(channelData.channelName, e));
-                        // deleteIcon.addEventListener('click', (e) => deleteChannelDNA(channelName, e));
-                        
+
                         item.appendChild(nameSpan);
                         item.appendChild(deleteIcon);
-                        
-                        // item.addEventListener('click', () => loadChannelDNA(channels[channelName]));
-                        // Pass the full channelData object to loadChannelDNA
+
                         item.addEventListener('click', () => loadChannelDNA(channelData));
                         
                         dropdownMenu.appendChild(item);

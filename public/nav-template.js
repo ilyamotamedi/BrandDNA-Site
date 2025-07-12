@@ -524,15 +524,9 @@ async function initializeSettings() {
                 console.error("API response for creator DNAs was not an array:", creatorDNAsArray);
                 throw new Error("Invalid data format for creator DNAs.");
             }
-            
+
             // Start with the empty option
             let options = '<option value="">-</option>';
-            
-            // Add creator names as options
-            // options += Object.keys(creatorDNAs)
-            //     .sort((a, b) => a.localeCompare(b))
-            //     .map(creatorName => `<option value="${creatorName}">${creatorName}</option>`)
-            //     .join('');
 
             // Map over the array to create options
             options += creatorDNAsArray
