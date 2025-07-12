@@ -631,35 +631,50 @@
             try {
                 // Use query parameter for language in GET request
                 const language = getClientLanguage();
-                const response = await fetch(`${window.API_BASE_URL}/api/v1/getCreatorDNAs?language=${language}`);
+                const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getCreatorDNAs?language=${encodeURIComponent(language)}`);
                 const channels = await response.json();
+                // console.log(`Response of channels from loadSavedChannels: ${JSON.stringify(channels)}`);
                 const dropdownMenu = document.getElementById('channelsDropdown');
                 dropdownMenu.innerHTML = '';
                 
-                const sortedChannelNames = Object.keys(channels).sort((a, b) => 
-                    a.toLowerCase().localeCompare(b.toLowerCase())
-                );
+                // const sortedChannelNames = Object.keys(channels).sort((a, b) => 
+                //     a.toLowerCase().localeCompare(b.toLowerCase())
+                // );
                 
-                sortedChannelNames.forEach(channelName => {
-                    const item = document.createElement('div');
-                    item.className = 'dropdown-item';
-                    
-                    const nameSpan = document.createElement('span');
-                    nameSpan.textContent = channelName;
-                    
-                    const deleteIcon = document.createElement('img');
-                    deleteIcon.src = '/icons/delete.svg';
-                    deleteIcon.alt = 'Delete Channel';
-                    deleteIcon.className = 'delete-icon-svg';
-                    deleteIcon.addEventListener('click', (e) => deleteChannelDNA(channelName, e));
-                    
-                    item.appendChild(nameSpan);
-                    item.appendChild(deleteIcon);
-                    
-                    item.addEventListener('click', () => loadChannelDNA(channels[channelName]));
-                    
-                    dropdownMenu.appendChild(item);
-                });
+                // sortedChannelNames.forEach(channelName => {
+                // Assumes 'channels' is now an array from the server.
+                if (Array.isArray(channels)) {
+                    channels.sort((a, b) => a.channelName.localeCompare(b.channelName)); // Sort the array
+                    channels.forEach(channelData => { // Iterate over array elements
+
+                        const item = document.createElement('div');
+                        item.className = 'dropdown-item';
+                        
+                        const nameSpan = document.createElement('span');
+                        // nameSpan.textContent = channelName;
+                        nameSpan.textContent = channelData.channelName;
+                        
+                        const deleteIcon = document.createElement('img');
+                        deleteIcon.src = '/icons/delete.svg';
+                        deleteIcon.alt = 'Delete Channel';
+                        deleteIcon.className = 'delete-icon-svg';
+                        // Pass channelData.channelName for deletion
+                        deleteIcon.addEventListener('click', (e) => deleteChannelDNA(channelData.channelName, e));
+                        // deleteIcon.addEventListener('click', (e) => deleteChannelDNA(channelName, e));
+                        
+                        item.appendChild(nameSpan);
+                        item.appendChild(deleteIcon);
+                        
+                        // item.addEventListener('click', () => loadChannelDNA(channels[channelName]));
+                        // Pass the full channelData object to loadChannelDNA
+                        item.addEventListener('click', () => loadChannelDNA(channelData));
+                        
+                        dropdownMenu.appendChild(item);
+                    });
+            } else {
+                console.error('Error: Expected an array of channels, but received:', channels);
+                dropdownMenu.innerHTML = '<div class="dropdown-item">Error loading channels</div>';
+            }
             } catch (error) {
                 console.error('Error loading saved channels:', error);
             }
@@ -675,7 +690,7 @@
                 
                 // Use query parameter for language in DELETE request
                 const language = getClientLanguage();
-                const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/deleteCreatorDNA/${encodedChannelName}?language=${language}`, {
+                const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/deleteCreatorDNA/${encodedChannelName}?language=${encodeURIComponent(language)}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'
@@ -863,7 +878,7 @@ async function regenerateDNA() {
         
         // Get channel stats (average views)
         try {
-            const statsResponse = await fetch(`${window.API_BASE_URL}/api/v1/creatorDNA/getChannelStats`, {
+            const statsResponse = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getChannelStats`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ channelId })

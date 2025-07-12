@@ -1,11 +1,19 @@
-const { v1 } = require('@google-cloud/aiplatform');
+const express = require('express');
+const V1Router = express.Router({ mergeParams: true });
 
-const V1Router = require('express').Router({ mergeParams: true });
+module.exports = (db) => {
 
-V1Router.use('/transcripts', require('./transcripts').transcriptsRouter);
-V1Router.use('/aiModels', require('./aiModels'));
-V1Router.use('/brandDna', require('./brandDna').brandDnaRouter);
-V1Router.use('/creatorDna', require('./creatorDna').creatorDnaRouter);
+    const brandDnaRouterFunction = require('./brandDna/index.js');
+    const creatorDnaRouterFunction = require('./creatorDna/index.js');
 
+    const { transcriptsRouter } = require('./transcripts/index.js');
+    const aiModelsRouter = require('./aiModels/index.js');
 
-module.exports = V1Router;
+    V1Router.use('/brandDna', brandDnaRouterFunction(db));
+    V1Router.use('/creatorDna', creatorDnaRouterFunction(db));
+
+    V1Router.use('/transcripts', transcriptsRouter);
+    V1Router.use('/aiModels', aiModelsRouter);
+
+    return V1Router;
+};

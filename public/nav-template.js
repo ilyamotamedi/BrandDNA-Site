@@ -511,21 +511,35 @@ async function initializeSettings() {
     // Function to populate the Match dropdown with creator names
     async function populateMatchDropdown() {
         try {
-            const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getCreatorDNAs`);
+            const language = getClientLanguage();
+            const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getCreatorDNAs?language=${encodeURIComponent(language)}`);
+
             if (!response.ok) {
                 throw new Error('Failed to fetch creator DNAs');
             }
-            const creatorDNAs = await response.json();
+            const creatorDNAsArray = await response.json();
+
+            // Check if the response is actually an array
+            if (!Array.isArray(creatorDNAsArray)) {
+                console.error("API response for creator DNAs was not an array:", creatorDNAsArray);
+                throw new Error("Invalid data format for creator DNAs.");
+            }
             
             // Start with the empty option
             let options = '<option value="">-</option>';
             
             // Add creator names as options
-            options += Object.keys(creatorDNAs)
-                .sort((a, b) => a.localeCompare(b))
-                .map(creatorName => `<option value="${creatorName}">${creatorName}</option>`)
+            // options += Object.keys(creatorDNAs)
+            //     .sort((a, b) => a.localeCompare(b))
+            //     .map(creatorName => `<option value="${creatorName}">${creatorName}</option>`)
+            //     .join('');
+
+            // Map over the array to create options
+            options += creatorDNAsArray
+                .sort((a, b) => a.channelName.localeCompare(b.channelName)) // Sort by channelName
+                .map(creator => `<option value="${creator.channelName}">${creator.channelName}</option>`)
                 .join('');
-                
+
             matchSelect.innerHTML = options;
             
             // Set the current selection if available
@@ -568,17 +582,28 @@ async function initializeSettings() {
 
                 const populateCreatorDnaListDropdown = async () => {
                     try {
-                        const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getAvailableCreatorDnaLists`);
+                        const language = getClientLanguage(); // Get current language for the API call
+                        const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getCreatorDNAs?language=${encodeURIComponent(language)}`);
+                        console.log("Response object from API call for creator is: ", response);
                         if (!response.ok) {
                             throw new Error('Failed to fetch creator DNA lists');
                         }
-                        const { creatorDnaLists } = await response.json();
-                        creatorDnaListSelect.innerHTML = creatorDnaLists
-                            .map(list => `<option value="${list}">${list}</option>`)
-                            .join('');
+                        const creatorDnaArray = await response.json();
+                        // console.log("Printing creatorDnaArray:", creatorDnaArray); // Log the array
 
-                        // Load current Creator DNA List selection after populating
-                        await loadCurrentCreatorDnaList();
+                        // Ensure it's an array and map correctly
+                        if (Array.isArray(creatorDnaArray)) {
+                            creatorDnaListSelect.innerHTML = creatorDnaArray
+                                .map(creator => `<option value="${creator.channelName}">${creator.channelName}</option>`)
+                                .join('');
+
+                            // Load current Creator DNA List selection after populating
+                            await loadCurrentCreatorDnaList();
+                        } else {
+                            console.error("API response for creator DNA list was not an array:", creatorDnaArray);
+                            // Potentially, provide a fallback message or disable the dropdown
+                            creatorDnaListSelect.innerHTML = '<option value="">Error loading list</option>';
+                        }
 
                     } catch (error) {
                         console.error('Error loading creator DNA lists:', error);
@@ -671,7 +696,6 @@ creatorDnaListSelect.addEventListener('change', (e) => {
 
 }
 
-// --- MODIFIED FUNCTION TO LOAD CURRENT LANGUAGE ---
 async function loadCurrentLanguage() {
     try {
         // Get language from sessionStorage
@@ -696,6 +720,7 @@ async function loadCurrentCreatorDnaList() {
         if (response.ok) {
             const { currentCreatorDnaListFile } = await response.json();
             creatorDnaListSelect.value = currentCreatorDnaListFile;
+            // console.log("Full creator dna list: " + currentCreatorDnaListFile);
         }
     } catch (error) {
         console.error('Error loading current creator DNA list:', error);
@@ -743,25 +768,34 @@ async function initializeDNASelector() {
     async function loadDNAOptions() {
         try {
             const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/getDNAs`);
+            // This endpoint also returns an array now, so adjust here as well
             const dnas = await response.json();
             
             // Clear previous brand options
             brandOptions.clear();
             
             // Generate HTML for DNA options
-            dnaMenu.innerHTML = Object.entries(dnas)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([brandName, data], index) => {
-                const optionId = `dna-option-${index}`;
-                brandOptions.set(optionId, brandName);
-                
-                return `
-                <div class="dna-option" data-id="${optionId}">
-                    <div class="dna-option-color" style="background-color: ${data.brandColors[0]}"></div>
-                    <div class="dna-option-name">${brandName}</div>
-                </div>
-                `;
-            }).join('');
+            // Assuming dnas is an array from the server now
+            if (Array.isArray(dnas)) { // Add array check
+                dnaMenu.innerHTML = dnas
+                    .sort((a, b) => a.brandName.localeCompare(b.brandName)) // Sort by brandName
+                    .map((data, index) => { // Map over array elements
+                        const optionId = `dna-option-${index}`;
+                        brandOptions.set(optionId, data.brandName); // Store brandName
+                        
+                        return `
+                        <div class="dna-option" data-id="${optionId}">
+                            <div class="dna-option-color" style="background-color: ${data.brandColors[0]}"></div>
+                            <div class="dna-option-name">${data.brandName}</div>
+                        </div>
+                        `;
+                    }).join('');
+            } else {
+                console.error("Error: Expected an array from /getDNAs (Brand), but received:", dnas);
+            }
+            
+            dnaMenu.innerHTML = '<div class="dna-option">Error loading brands</div>';
+
         } catch (error) {
             console.error('Error loading DNAs:', error);
         }
@@ -771,7 +805,6 @@ async function initializeDNASelector() {
     await loadCurrentDNA();
 }
 
-// --- MODIFIED setClientDNA to be ASYNC ---
 async function setClientDNA(dna) {
     return new Promise(resolve => { // Wrap in a Promise
         if (dna) {
@@ -798,16 +831,20 @@ async function setDNA(brandName) {
             return;
         }
 
+        // Fetch all brand DNAs and then find the one by name
         const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/getDNAs`);
-        const dnas = await response.json();
+        const dnasArray = await response.json(); // Expecting an array now
 
-        if (!dnas[brandName]) {
+        // Find the specific brand DNA in the array
+        const selectedDna = dnasArray.find(dna => dna.brandName === brandName);
+
+        if (!selectedDna) {
             console.log('DNA not found for brand:', brandName);
             return;
         }
 
-        await setClientDNA(dnas[brandName]); // Await the setting
-        updateDNAButton(dnas[brandName]); // update after the await
+        await setClientDNA(selectedDna); // Await the setting
+        updateDNAButton(selectedDna); // update after the await
 
         // Close the menu
         document.querySelector('.dna-menu').classList.remove('active');
@@ -833,7 +870,6 @@ function hexToFilter(hex) {
     return `sepia(${sepia}%) saturate(${saturate}%) hue-rotate(${hueRotate}deg)`;
 }
 
-// Update the DNA button appearance function (CORRECTED)
 function updateDNAButton(dna) {
     const dnaButton = document.getElementById('dnaButton');
     const dnaText = dnaButton.querySelector('.dna-text');
@@ -849,9 +885,8 @@ function updateDNAButton(dna) {
         if (path) {
             path.style.fill = dna.brandColors[1];
         }
-        // Set a *fixed* translation key.
+
         dnaText.setAttribute('data-translation-key', 'using-dna');
-        //  IMPORTANT: We do NOT set textContent here.  translateUI will handle it.
 
     } else {
         dnaButton.classList.remove('active');
@@ -877,13 +912,18 @@ async function loadCurrentDNA() {
         if (currentDNA) {
             // Verify the DNA still exists in storage
             const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/getDNAs`);
-            const dnas = await response.json();
+            const dnasArray = await response.json(); // Expecting an array now
 
-            if (dnas[currentDNA.brandName]) {
-                updateDNAButton(currentDNA);
+            // Find the specific DNA in the array by brandName
+            const existingDna = dnasArray.find(dna => dna.brandName === currentDNA.brandName);
+
+            if (existingDna) {
+                updateDNAButton(existingDna); // Update with the re-fetched data
+                await setClientDNA(existingDna); // Update sessionStorage with fresh data
             } else {
                 // If the DNA no longer exists in storage, clear it
                 setClientDNA(null);
+                updateDNAButton(null);
             }
         } else {
             updateDNAButton(null);

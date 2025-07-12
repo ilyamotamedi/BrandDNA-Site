@@ -193,65 +193,70 @@
     <script>
 
 document.addEventListener('DOMContentLoaded', async () => {
-        await translateUI(); // Translate UI on page load
-           const dropdownArrow = document.querySelector('.dropdown-arrow');
-            const dropdownMenu = document.getElementById('brandsDropdown');
+    await translateUI(); // Translate UI on page load
+    const dropdownArrow = document.querySelector('.dropdown-arrow');
+    const dropdownMenu = document.getElementById('brandsDropdown');
 
-            // Add click event with logging for debugging
-            dropdownArrow.addEventListener('click', async (e) => {
-                e.stopPropagation(); // Prevent event from bubbling up
-                console.log('Dropdown arrow clicked'); // Debug log
-                dropdownMenu.classList.toggle('active');
-                if (dropdownMenu.classList.contains('active')) {
-                    await loadSavedBrands();
-                }
-            });
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!dropdownMenu.contains(e.target) && !dropdownArrow.contains(e.target)) {
-                    dropdownMenu.classList.remove('active');
-                }
-            });
+    // Add click event with logging for debugging
+    dropdownArrow.addEventListener('click', async (e) => {
+        e.stopPropagation(); // Prevent event from bubbling up
+        console.log('Dropdown arrow clicked'); // Debug log
+        dropdownMenu.classList.toggle('active');
+        if (dropdownMenu.classList.contains('active')) {
+            await loadSavedBrands();
+        }
     });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!dropdownMenu.contains(e.target) && !dropdownArrow.contains(e.target)) {
+            dropdownMenu.classList.remove('active');
+        }
+    });
+});
 
     // Load saved brands into dropdown
     async function loadSavedBrands() {
     try {
-        const response = await fetch(`${window.API_BASE_URL}/api/v1/getDNAs?language=${getClientLanguage()}`);
-        const dnas = await response.json();
+        const language = getClientLanguage(); // Get current language for the API call
+        const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/getDNAs?language=${encodeURIComponent(language)}`);
+        const dnasArray = await response.json(); // Expecting an array now
+
         const dropdownMenu = document.getElementById('brandsDropdown');
         dropdownMenu.innerHTML = '';
-        
-        // Sort brand names alphabetically (case-insensitive)
-        const sortedBrandNames = Object.keys(dnas).sort((a, b) => 
-            a.toLowerCase().localeCompare(b.toLowerCase())
-        );
-        
-        sortedBrandNames.forEach(brandName => {
-            const item = document.createElement('div');
-            item.className = 'dropdown-item';
-            
-            // Create wrapper for brand name
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = brandName;
-            
-            // Create delete icon
-            const deleteIcon = document.createElement('img');
-            deleteIcon.src = '/icons/delete.svg'; // Or '/icons/svgs/delete.svg' if you named it 'delete.svg'
-            deleteIcon.alt = 'Delete Brand';
-            deleteIcon.className = 'delete-icon-svg'; // Use a different class name for SVG delete icon
-            deleteIcon.addEventListener('click', (e) => deleteBrandDNA(brandName, e));
-            
-            // Add both elements to the item
-            item.appendChild(nameSpan);
-            item.appendChild(deleteIcon);
-            
-            // Add click handler for loading DNA
-            item.addEventListener('click', () => loadBrandDNA(dnas[brandName]));
-            
-            dropdownMenu.appendChild(item);
-        });
+
+        if (Array.isArray(dnasArray)) {
+            // Sort the array by brandName
+            dnasArray.sort((a, b) => a.brandName.toLowerCase().localeCompare(b.brandName.toLowerCase()));
+
+            dnasArray.forEach(brandData => { // Iterate over array elements
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+
+                // Create wrapper for brand name
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = brandData.brandName;
+                
+                // Create delete icon
+                const deleteIcon = document.createElement('img');
+                deleteIcon.src = '/icons/delete.svg';
+                deleteIcon.alt = 'Delete Brand';
+                deleteIcon.className = 'delete-icon-svg';
+                deleteIcon.addEventListener('click', (e) => deleteBrandDNA(brandData.brandName, e));
+                
+                // Add both elements to the item
+                item.appendChild(nameSpan);
+                item.appendChild(deleteIcon);
+                
+                // Add click handler for loading DNA
+                item.addEventListener('click', () => loadBrandDNA(brandData));
+                
+                dropdownMenu.appendChild(item);
+            });
+        } else {
+            console.error('Error: Expected an array of brands, but received:', dnasArray);
+            dropdownMenu.innerHTML = '<div class="dropdown-item">Error loading brands</div>';
+        }
     } catch (error) {
         console.error('Error loading saved brands:', error);
     }
@@ -261,11 +266,18 @@ async function deleteBrandDNA(brandName, event) {
     event.stopPropagation(); // Prevent triggering the parent click event
     
     try {
-        const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/deleteDNA/${encodeURIComponent(brandName)}?language=${getClientLanguage()}`, {
+        const encodedBrandName = encodeURIComponent(brandName);
+        console.log('Deleting brand:', brandName);
+        console.log('Encoded brand name:', encodedBrandName);
+        
+        const language = getClientLanguage(); // Get the language
+        const response = await fetch(`${window.API_BASE_URL}/api/v1/brandDna/deleteDNA/${encodedBrandName}?language=${encodeURIComponent(language)}`, {
             method: 'DELETE'
         });
 
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server response:', errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
@@ -281,9 +293,7 @@ async function deleteBrandDNA(brandName, event) {
         const resultsContainer = document.querySelector('.brand-results');
         document.querySelector('.brand-input').value = dnaData.brandName;
         document.getElementById('brandsDropdown').classList.remove('active');
-        
-        // Use the existing display logic
-        resultsContainer.innerHTML = '';
+
         displayBrandResults(dnaData);
     }
 
@@ -522,9 +532,8 @@ async function deleteBrandDNA(brandName, event) {
         button.textContent = window.currentLanguage === 'spanish' ? 'GUARDAR' : 'SAVE'; // Translate the save button
     } else {
         // Save changes
-        // --- KEY CHANGE: AWAIT saveChanges() ---
         const updatedDNA = await saveChanges();
-        // --- END KEY CHANGE ---
+
         if (updatedDNA) {
             // Disable editing for text areas
             cardBodies.forEach(body => {
@@ -537,9 +546,8 @@ async function deleteBrandDNA(brandName, event) {
             // Hide color inputs container
             colorInputsContainer.classList.remove('edit-mode'); // Remove 'edit-mode' class
 
-             // --- KEY CHANGE:  Await display ---
             await displayBrandResults(updatedDNA); //NOW we await displayBrandResults
-             // --- END KEY CHANGE ---
+
             button.textContent = window.currentLanguage === 'spanish' ? 'EDITAR' : 'EDIT'; //translate back the edit button
         }
     }
