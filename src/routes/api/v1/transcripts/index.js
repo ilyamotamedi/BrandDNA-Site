@@ -1,7 +1,7 @@
 const express = require("express");
 const transcriptsRouter = express.Router();
 
-const { supadata } = require('../../../../utils/supadata.util'); // TODO: refactor biz logic to a service layer
+const supadata = require('../../../../utils/supadata.util'); // TODO: refactor biz logic to a service layer
 
 transcriptsRouter.post('/test', async (req, res) => {
   try {
@@ -97,4 +97,4 @@ transcriptsRouter.post('/getChannelTranscripts', async (req, res) => {
   }
 });
 
-module.exports = { transcriptsRouter };
+module.exports = transcriptsRouter;

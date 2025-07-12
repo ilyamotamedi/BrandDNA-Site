@@ -763,7 +763,7 @@
                     
                     // Enhance matchesData with additional creator info if available
                     matchesData.forEach(match => {
-                        const creatorData = creatorDNAs[match.creatorName];
+                        const creatorData = creatorDNAs.find(c => c.channelName === match.creatorName);
                         if (creatorData) {
                             // Add any useful creator data that isn't already in the match
                             match.channelThumbnail = creatorData.channelThumbnail;

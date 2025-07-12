@@ -6,7 +6,7 @@ module.exports = (db) => {
     const brandDnaRouterFunction = require('./brandDna/index.js');
     const creatorDnaRouterFunction = require('./creatorDna/index.js');
 
-    const { transcriptsRouter } = require('./transcripts/index.js');
+    const transcriptsRouter = require('./transcripts/index.js');
     const aiModelsRouter = require('./aiModels/index.js');
 
     V1Router.use('/brandDna', brandDnaRouterFunction(db));

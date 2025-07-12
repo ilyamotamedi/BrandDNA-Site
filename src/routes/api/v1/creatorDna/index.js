@@ -6,7 +6,7 @@ const { getAverageViews } = require('../../../../services/creatorDna.service.js'
 const upload = require('../../../../../src/configs/multer.config.js');
 
 const modelState = require('../../../../services/modelState.service.js');
-const { translateText } = require('../../../../services/geminiCreation.service.js');
+// const { translateText } = require('../../../../services/geminiCreation.service.js');
 
 const auth = new GoogleAuth({
     scopes: 'https://www.googleapis.com/auth/cloud-platform'
@@ -24,6 +24,8 @@ const {
 
 module.exports = (db) => {
     const creatorsCollection = db.collection('creators'); // Reference to the 'creators' Firestore collection
+    const geminiCreationServiceSetup = require('../../../../services/geminiCreation.service.js');
+    const { translateText } = geminiCreationServiceSetup(db);
 
     creatorDnaRouter.get('/getAvailableCreatorDnaLists', (req, res) => {
         console.log('[DEBUG] Hit /getAvailableCreatorDnaLists (static route)');
@@ -195,7 +197,7 @@ module.exports = (db) => {
 
             // Update/add the specific language translation
             newDocData.translations[langCode] = {
-                channelDisplayName: creatorDNA.channelDisplayName,
+                channelDisplayName: creatorDNA.channelDisplayName || creatorDNA.channelName,
                 channelDescription: creatorDNA.channelDescription,
                 channelAnalysis: creatorDNA.channelAnalysis
             };
@@ -208,7 +210,7 @@ module.exports = (db) => {
                 }
             });
 
-            await docRef.set(newDocData, { merge: true }); // Use merge: true to update parts of the document
+    await docRef.set(newDocData, { merge: true }); // Use merge: true to update parts of the document
             console.log(`[DEBUG] Firestore: Document ${docId} set successfully.`);
 
             // Background translation to the other language
@@ -223,24 +225,27 @@ module.exports = (db) => {
 
                         const translatedDNA = JSON.parse(JSON.stringify(creatorDNA)); // Deep copy
 
+                        console.log("Type of translateText:", typeof translateText);
+                        console.log("Is translateText a function?", typeof translateText === 'function');
+
                         // Translate channelDescription
-                        translatedDNA.channelDescription = await translateText(creatorDNA.channelDescription, targetLanguageCode);
+                        translatedDNA.channelDescription = await translateText(creatorDNA.channelDescription, targetLanguageFull);
 
                         // Translate channelAnalysis sections
                         if (translatedDNA.channelAnalysis && Array.isArray(translatedDNA.channelAnalysis)) {
                             for (const section of translatedDNA.channelAnalysis) {
-                                section.sectionBody = await translateText(section.sectionBody, targetLanguageCode);
+                                section.sectionBody = await translateText(section.sectionBody, targetLanguageFull);
 
                                 // Special handling for section titles based on language for consistency
                                 if (langCode === 'en' && targetLanguageCode === 'es') {
                                     const titleMap = {
-                                        'CreatorDNA': 'ADN del Creador',
+                                        'CreatorDNA': 'AxcDN del Creador',
                                         'Creator Personality': 'Personalidad del Creador',
                                         'Content Style': 'Estilo de Contenido',
                                         'Audience Connection': 'Conexión con la Audiencia',
                                         'Channel Story': 'Historia del Canal'
                                     };
-                                    section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguageCode);
+                                    section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguageFull);
                                 } else if (langCode === 'es' && targetLanguageCode === 'en') {
                                     const titleMap = {
                                         'ADN del Creador': 'CreatorDNA',
@@ -249,9 +254,9 @@ module.exports = (db) => {
                                         'Audience Connection': 'Audience Connection',
                                         'Historia del Canal': 'Channel Story'
                                     };
-                                    section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguageCode);
+                                    section.sectionTitle = titleMap[section.sectionTitle] || await translateText(section.sectionTitle, targetLanguageFull);
                                 } else {
-                                    section.sectionTitle = await translateText(section.sectionTitle, targetLanguageCode);
+                                    section.sectionTitle = await translateText(section.sectionTitle, targetLanguageFull);
                                 }
                             }
                         }
@@ -259,7 +264,7 @@ module.exports = (db) => {
                         // Update the translations field in the Firestore document
                         const updateData = {
                             [`translations.${targetLanguageCode}`]: {
-                                channelDisplayName: translatedDNA.channelDisplayName, // Usually same as original
+                                channelDisplayName: translatedDNA.channelDisplayName || creatorDNA.channelName, // Usually same as original
                                 channelDescription: translatedDNA.channelDescription,
                                 channelAnalysis: translatedDNA.channelAnalysis
                             }
@@ -270,7 +275,7 @@ module.exports = (db) => {
                         console.log(`Translation for channel ${creatorDNA.channelName} to ${targetLanguageCode} already exists or is not needed.`);
                     }
                 } catch (translationError) {
-                    console.log(`[DEBUG] Translation for channel ${creatorDNA.channelName} to ${targetLanguageCode} already exists or is not needed.`);
+                    console.log(`[DEBUG] Translation for channel ${creatorDNA.channelName} to ${targetLanguageCode} already exists or is not needed.`, translationError.message);
                 }
             })();
 

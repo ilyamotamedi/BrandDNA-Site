@@ -35,11 +35,6 @@ const modelState = require('./src/services/modelState.service.js');
 // const { initializeDNAsFile } = require('./src/services/creatorDna.service');
 const upload = require('./src/configs/multer.config.js');
 
-const { Storage } = require('@google-cloud/storage');
-const storage = new Storage();
-console.log("bucket name is: ", process.env.BUCKET_NAME);
-const bucket = storage.bucket(process.env.BUCKET_NAME);
-
 const app = express();
 
 // Apply middleware before any routes are defined.
@@ -520,8 +515,9 @@ app.post('/getMatch', upload.array('file', 5), async (req, res) => {
     const files = req.files || [];
 
     // Read available creator DNAs
-    const creatorDnasCollection = db.collection('creatorDnas');
+    const creatorDnasCollection = db.collection('creators');
     const snapshot = await creatorDnasCollection.get();
+
     const creatorDNAs = {};
     snapshot.docs.forEach(doc => {
       const data = doc.data();

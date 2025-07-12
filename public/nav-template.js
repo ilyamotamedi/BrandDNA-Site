@@ -786,9 +786,10 @@ async function initializeDNASelector() {
                     }).join('');
             } else {
                 console.error("Error: Expected an array from /getDNAs (Brand), but received:", dnas);
+                dnaMenu.innerHTML = '<div class="dna-option">Error loading brands</div>';
             }
             
-            dnaMenu.innerHTML = '<div class="dna-option">Error loading brands</div>';
+
 
         } catch (error) {
             console.error('Error loading DNAs:', error);
