@@ -204,141 +204,180 @@ creatorDnaRouter.delete('/deleteCreatorDNA/:channelName', async (req, res) => {
 
 // Analyze Creator Channel 
 creatorDnaRouter.post('/analyzeChannel', upload.array('file', 5), async (req, res) => {
-  try {
-    const { channelName, transcripts, language } = req.body;
-    const requestLanguage = language || currentLanguage;
-    const files = req.files || [];
+        console.log('[DEBUG] Hit /analyzeChannel (POST route)');
+        try {
+            const { channelName, transcripts, language } = req.body;
+            const requestLanguage = language || currentLanguage;
+            const files = req.files || [];
 
-    const processedTranscripts = JSON.parse(transcripts).map(t =>
-      t.transcript.map(item => item.text).join(' ')
-    );
+            const processedTranscripts = JSON.parse(transcripts).map(t =>
+                t.transcript.map(item => item.text).join(' ')
+            );
 
-    // Process uploaded files and split into text and binary files
-    const parts = [];
-    const maxTextSize = 500000; // 500KB limit for text content
+            const parts = [];
+            const maxTextSize = 500000; // 500KB limit for text content
 
-    // Add main text prompt part with language instruction
-    let analysisPrompt = `Analyze the YouTube channel "${channelName}" based on the following content:
+            let analysisPrompt = `Analyze the YouTube channel "${channelName}" based on the following content:
+            1. Video Transcripts:
+            ${processedTranscripts.join('\n\n=== NEXT VIDEO ===\n\n')}
+            2. Additional Channel Content and Context:`;
 
-    1. Video Transcripts:
-    ${processedTranscripts.join('\n\n=== NEXT VIDEO ===\n\n')}
-
-    2. Additional Channel Content and Context:`;
-
-    // Add language instruction for Spanish
-    if (requestLanguage === 'spanish') {
-      analysisPrompt += "\n\nPLEASE GENERATE THE ENTIRE ANALYSIS IN SPANISH, INCLUDING ALL CONTENT AND DESCRIPTIONS.";
-    }
-
-    parts.push({
-      text: analysisPrompt
-    });
-
-    // Process each file
-    for (const file of files) {
-      try {
-        // Check if file is an image based on mimetype
-        if (file.mimetype.startsWith('image/')) {
-          parts.push({
-            inline_data: {
-              data: file.buffer.toString('base64'),
-              mime_type: file.mimetype
+            if (requestLanguage === 'spanish') {
+                analysisPrompt += "\n\nPLEASE GENERATE THE ENTIRE ANALYSIS IN SPANISH, INCLUDING ALL CONTENT AND DESCRIPTIONS.";
             }
-          });
-        } else {
-          // For text files, check size and add content
-          const content = file.buffer.toString('utf8');
-          if (content.length > maxTextSize) {
-            console.warn(`File ${file.originalname} exceeds size limit, truncating...`);
+
             parts.push({
-              text: `\n\nDocument (${file.originalname}):\n${content.substring(0, maxTextSize)}... (truncated)`
+                text: analysisPrompt
             });
-          } else {
+
+            for (const file of files) {
+                try {
+                    if (file.mimetype.startsWith('image/')) {
+                        parts.push({
+                            inline_data: {
+                                data: file.buffer.toString('base64'),
+                                mime_type: file.mimetype
+                            }
+                        });
+                    } else {
+                        const content = file.buffer.toString('utf8');
+                        if (content.length > maxTextSize) {
+                            console.warn(`[WARN] File ${file.originalname} exceeds size limit, truncating...`);
+                            parts.push({
+                                text: `\n\nDocument (${file.originalname}):\n${content.substring(0, maxTextSize)}... (truncated)`
+                            });
+                        } else {
+                            parts.push({
+                                text: `\n\nDocument (${file.originalname}):\n${content}`
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.warn(`[WARN] Error processing file ${file.originalname}:`, error);
+                    continue;
+                }
+            }
+
             parts.push({
-              text: `\n\nDocument (${file.originalname}):\n${content}`
+                text: `\n\nPlease analyze all available content to provide a comprehensive understanding of the channel's DNA, considering the video transcripts, images, and any additional documents provided.`
             });
-          }
+
+            const client = await auth.getClient();
+            const accessToken = await client.getAccessToken();
+
+            const requestBody = {
+                contents: [{
+                    role: "user",
+                    parts: parts
+                }],
+                systemInstruction: {
+                    parts: [{
+                        text: requestLanguage === 'spanish' ?
+                            CHANNEL_DNA_SYSTEM_INSTRUCTIONS_SPANISH :
+                            CHANNEL_DNA_SYSTEM_INSTRUCTIONS
+                    }]
+                },
+                generationConfig: {
+                    temperature: 1,
+                    maxOutputTokens: 8192,
+                    topP: 0.95
+                }
+            };
+
+            // console.log('[DEBUG] Making Gemini API request with parts:', parts.length);
+
+            const currentLlmModel = modelState.getLlm();
+            const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
+
+            
+            //Aqui tenemos que poner retries por si no viene un json
+            
+                for(var i=0; i<5; i++){
+                    console.log("trying:");
+                    console.log(i);
+                    try{
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${accessToken.token}`
+                            },
+                            body: JSON.stringify(requestBody)
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error('[ERROR] API Error Response (analyzeChannel):', response.status, errorText);
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+                        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+
+                        if (!rawText) {
+                            throw new Error('No text content in API response');
+                        }
+
+                        console.log(rawText)
+
+
+                        // The regular expression to find the JSON string
+                        const jsonRegex = /\{.*\}/s;
+
+                        // Find the first match in the response text
+                        const match = rawText.match(jsonRegex);
+
+                        let jsonData = null;
+                        var jsonString=null;
+
+                        if (match) {
+                            jsonString = match[0];
+                          try {
+                            // Parse the extracted string into a JavaScript object
+                            //jsonData = JSON.parse(jsonString);
+                            console.log("Successfully extracted and parsed JSON:");
+                            //console.log(jsonData);
+                          } catch (error) {
+                            console.error("Failed to parse JSON:", error);
+                          }
+                        } else {
+                          console.log("No JSON object found in the response.");
+                        }
+
+
+
+                        const JSON5 = require('json5')
+
+                        console.log("entering legacy...")
+                        //const cleanJson = rawText.replace(/```json\n|\n```/g, '').trim();
+                        const analysis = JSON5.parse(jsonString);
+                        console.log("ANALYSIS");
+                        console.log(analysis);
+
+                        res.json({
+                            success: true,
+                            analysis: {
+                                channelName,
+                                channelAnalysis: analysis.channelAnalysis // Assuming analysis structure matches expectation
+                            }
+                        });
+                        break;
+
+                            }catch(error){
+                        console.log("Fue error y trato de nuevo hacer el analyze channel");
+                        console.log(error.message);
+                        continue;
+                    }
+                    }
+            
+        } catch (error) {
+            console.error('[ERROR] Error in /analyzeChannel:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
         }
-      } catch (error) {
-        console.warn(`Error processing file ${file.originalname}:`, error);
-        // Continue with other files if one fails
-        continue;
-      }
-    }
-
-    // Add final prompt part
-    parts.push({
-      text: `\n\nPlease analyze all available content to provide a comprehensive understanding of the channel's DNA, considering the video transcripts, images, and any additional documents provided.`
     });
-
-    const client = await auth.getClient();
-    const accessToken = await client.getAccessToken();
-
-    const requestBody = {
-      contents: [{
-        role: "user",
-        parts: parts
-      }],
-      systemInstruction: {
-        parts: [{
-          text: requestLanguage === 'spanish' ?
-            CHANNEL_DNA_SYSTEM_INSTRUCTIONS_SPANISH :
-            CHANNEL_DNA_SYSTEM_INSTRUCTIONS
-        }]
-      },
-      generationConfig: {
-        temperature: 1,
-        maxOutputTokens: 8192,
-        topP: 0.95
-      }
-    };
-
-    console.log('Making request with parts:', parts.length);
-
-    const currentLlmModel = modelState.getLlm();
-    const url = `https://${currentLlmModel.apiEndpoint}/v1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${currentLlmModel.modelId}:generateContent`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken.token}`
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Error Response:', errorText);
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
-
-    if (!rawText) {
-      throw new Error('No text content in API response');
-    }
-
-    const cleanJson = rawText.replace(/```json\n|\n```/g, '').trim();
-    // TODO: Fix Unexpected token 'O', "Okay, I'm "... is not valid JSON
-    const analysis = JSON.parse(cleanJson);
-
-    res.json({
-      success: true,
-      analysis: {
-        channelName,
-        channelAnalysis: analysis.channelAnalysis
-      }
-    });
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
 
 // Add a new endpoint to get channel stats
 creatorDnaRouter.post('/getChannelStats', async (req, res) => {
