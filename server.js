@@ -1,6 +1,31 @@
 require('dotenv').config();
 const express = require('express');
 
+// --- Firebase Admin SDK Imports and Initialization ---
+const admin = require('firebase-admin');
+const { getApps, getApp } = require('firebase-admin/app'); // Import necessary Firestore functions
+const { getFirestore } = require('firebase-admin/firestore');
+// Ensure this matches the database ID in your Firebase Console (e.g., 'branddnadb')
+const databaseId = 'branddnadb';
+
+// Attempt to initialize Firebase Admin SDK with Application Default Credentials (ADC)
+// TODO: Update to another authentication method later.
+if (!getApps().length) { // Check if a Firebase app is already initialized
+  try {
+    admin.initializeApp({
+      projectId: process.env.PROJECT_ID, // Use PROJECT_ID from environment variables
+      databaseId: databaseId, // Explicitly specify your non-default database ID
+    });
+    console.log(`[INIT] Firebase Admin SDK initialized for project: ${process.env.PROJECT_ID}, database: ${databaseId}`);
+  } catch (e) {
+    console.error(`[INIT] Failed to initialize Firebase Admin SDK:`, e.message);
+    process.exit(1); // Exit if Firebase initialization fails
+  }
+}
+
+// Get a reference to the Firestore database, ensuring to specify the databaseId
+const db = getFirestore(getApp(), databaseId);
+
 const { GoogleAuth } = require('google-auth-library');
 const path = require('path');
 const fs = require('fs').promises;
@@ -10,9 +35,31 @@ const modelState = require('./src/services/modelState.service.js');
 // const { initializeDNAsFile } = require('./src/services/creatorDna.service');
 const upload = require('./src/configs/multer.config.js');
 
-const { Storage } = require('@google-cloud/storage');
-const storage = new Storage();
-const bucket = storage.bucket(process.env.BUCKET_NAME);
+const app = express();
+
+// Apply middleware before any routes are defined.
+// This is crucial for req.body to be populated.
+app.use(require('./src/configs/cors.configs.js'));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Register API routes, passing the Firestore 'db' instance to them
+const apiRoutes = require('./src/routes/index.js');
+
+// Pass db to main API router if it needs it or wraps other db-dependent routes
+app.use('/api/', apiRoutes(db));
+
+const auth = new GoogleAuth({
+  scopes: 'https://www.googleapis.com/auth/cloud-platform'
+});
+
+const PROJECT_ID = process.env.PROJECT_ID;
+const LOCATION_ID = process.env.LOCATION_ID;
+
+let currentLanguage = 'english';
 
 const {
   IMAGE_GENERATION_SYSTEM_INSTRUCTIONS,
@@ -26,39 +73,7 @@ const {
   BRAINSTORM_SYSTEM_INSTRUCTIONS
 } = require('./src/configs/systemInstructions.config.js');
 
-const PROJECT_ID = process.env.PROJECT_ID;
-const LOCATION_ID = process.env.LOCATION_ID;
-
-// Initialize current creator DNAs file with default
-let currentCreatorDnaListFile = 'creator-dnas.json';
-
-// Initialize Brand DNAs file
-const DNAS_FILE_PATH = path.join(__dirname, 'dnas.json');
-
-
-// Call this when starting the server to ensure DNA files exist
-// initializeDNAsFile();
-
-const app = express();
-
-// Apply middleware before any routes are defined.
-// This is crucial for req.body to be populated.
-app.use(require('./src/configs/cors.configs.js'));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// Serve static files from the 'public' directory
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Register API routes AFTER middleware
-app.use('/api/', require('./src/routes/index.js'));
-
-const auth = new GoogleAuth({
-  scopes: 'https://www.googleapis.com/auth/cloud-platform'
-});
-
 async function generateImagePrompts(prompt, brandDNA = null, language = 'english') {
-  const fetch = await import('node-fetch').then(module => module.default);
 
   // Prepare the prompt with brand DNA if available
   let fullPrompt = prompt;
@@ -164,7 +179,8 @@ async function generateImagesFromPrompt(prompt, aspectRatio = '4:3', language = 
   if (language === 'spanish') {
     try {
       // Translate Spanish prompt to English for better image generation results
-      promptToUse = await translateText(prompt, 'en');
+      const { translateText } = require('./src/services/geminiCreation.service.js'); // Re-import for local scope
+      promptToUse = await translateText(prompt, 'english');
       console.log('Original Prompt (Spanish):', prompt);
       console.log('Translated Prompt (English):', promptToUse);
     } catch (error) {
@@ -499,8 +515,19 @@ app.post('/getMatch', upload.array('file', 5), async (req, res) => {
     const files = req.files || [];
 
     // Read available creator DNAs
-    const creatorDNAs = await readJSONFromStorage('creator-dnas.json');
+    const creatorDnasCollection = db.collection('creators');
+    const snapshot = await creatorDnasCollection.get();
 
+    const creatorDNAs = {};
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      // Ensure 'channelName' exists as the key for consistency
+      if (data.channelName) {
+        creatorDNAs[data.channelName] = data;
+      } else {
+        creatorDNAs[doc.id] = data; // Fallback to doc ID if no channelName
+      }
+    });
     // Prepare the parts array for Gemini
     const parts = [];
 
@@ -572,6 +599,8 @@ YOU MUST OUTPUT the matches in the specified JSON format. NEVER GIVE ANY ADDITIO
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -655,38 +684,6 @@ app.get('/proxy-image', async (req, res) => {
   }
 });
 
-async function readJSONFromStorage(filename) {
-  try {
-    const file = bucket.file(filename);
-    const [exists] = await file.exists();
-
-    if (!exists) {
-      await file.save(JSON.stringify({}));
-      return {};
-    }
-
-    const [content] = await file.download();
-    return JSON.parse(content.toString());
-  } catch (error) {
-    console.error(`Error reading ${filename}:`, error);
-    return {};
-  }
-}
-
-async function writeJSONToStorage(filename, data) {
-  try {
-    const file = bucket.file(filename);
-    await file.save(JSON.stringify(data, null, 2));
-  } catch (error) {
-    console.error(`Error writing ${filename}:`, error);
-    throw error;
-  }
-}
-
-
-// Initialize current language
-let currentLanguage = 'english'; // Default language
-
 // Helper function to get language from request or use default
 function getLanguageFromRequest(req) {
   console.log('getLanguageFromRequest - Request body:', req.body);
@@ -732,17 +729,13 @@ app.post('/translate', async (req, res) => {
   }
 
   try {
+        const { translateText } = require('./src/services/geminiCreation.service.js'); // Re-import for local scope if not global
     const translatedText = await translateText(text, targetLanguage);
     res.json({ translatedText });
   } catch (error) {
     console.error('Error in /translate endpoint:', error);
     res.status(500).json({ error: 'Translation failed.' });
   }
-});
-
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
 });
 
 // Endpoint to regenerate content ideas for a specific creator
@@ -815,6 +808,8 @@ Based on this information, please generate 3-5 new content ideas that address th
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -1215,4 +1210,9 @@ app.post('/editImage', async (req, res) => {
     console.error('Error processing image edit request:', error);
     res.status(500).json({ error: error.message });
   }
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });

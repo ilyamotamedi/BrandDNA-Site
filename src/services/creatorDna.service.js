@@ -1,16 +1,5 @@
 const path = require('path');
 const fs = require('fs').promises;
-const DNAS_FILE_PATH = path.join(__dirname, 'dnas.json');
-
-
-// async function initializeDNAsFile() {
-//   try {
-//     await fs.access(DNAS_FILE_PATH);
-//   } catch {
-//     await fs.writeFile(DNAS_FILE_PATH, JSON.stringify({})); //English
-//     await fs.writeFile(path.join(__dirname, 'dnas-spanish.json'), JSON.stringify({})); // Spanish
-//   }
-// }
 
 // Add this function after the getChannelTranscripts endpoint
 async function getAverageViews(channelId) {
@@ -112,5 +101,4 @@ async function getAverageViews(channelId) {
 
 module.exports = {
   getAverageViews,
-  //   initializeDNAsFile
 };
