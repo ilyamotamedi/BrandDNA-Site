@@ -2,6 +2,8 @@ const { GoogleAuth } = require('google-auth-library');
 const fs = require('fs');
 const path = require('path');
 const modelState = require('./modelState.service.js');
+const { YtDlp } = require('ytdlp-nodejs'); // <-- ADDED: For video downloading
+
 
 const {
   BRAND_DNA_SYSTEM_INSTRUCTIONS,
@@ -27,6 +29,8 @@ const auth = new GoogleAuth({
 });
 module.exports = (db) => {
   const brandsCollection = db.collection('brands');
+  const ytdlp = new YtDlp(); // <-- ADDED: Initialize ytdlp client
+
 
   async function callGeminiAPI(brandName, files = null, language = 'english') {
     const fetch = await import('node-fetch').then(module => module.default);
@@ -325,9 +329,76 @@ module.exports = (db) => {
     }
   }
 
+  /**
+   * @function transcribeVideo
+   * @description Downloads audio from a video URL and transcribes it using Gemini,
+   * matching the existing authentication and API call pattern.
+   * @param {string} absolutePath The path from the URL of the video to transcribe.
+   * @returns {Promise<string>} The transcribed text.
+   */
+  async function transcribeVideo(absolutePath) {
+   
+      const audioData = fs.readFileSync(absolutePath);
+      const requestBody = {
+        contents: [{
+          role: "user",
+          parts: [
+            { text: "Transcribe the spoken words in this audio file accurately. Provide only the text, without any commentary." },
+            {
+              inline_data: {
+                data: audioData.toString('base64'),
+                mimeType: 'audio/mp3'
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1, // Lower temp for more deterministic transcription
+        }
+      };
+
+      const client = await auth.getClient();
+      const accessToken = await client.getAccessToken();
+
+      // Use a model known for multimodal capabilities.
+      // The beta endpoint is often used for the latest features.
+      const modelId = 'gemini-2.5-flash-001';
+      const url = `https://${LOCATION_ID}-aiplatform.googleapis.com/v1beta1/projects/${PROJECT_ID}/locations/${LOCATION_ID}/publishers/google/models/${modelId}:generateContent`;
+
+      console.log(`[DEBUG] Transcription: Calling Gemini API at ${url}`);
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken.token}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response during transcription:', errorText);
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const transcript = data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+
+      if (!transcript) {
+        throw new Error('No text content in transcription API response');
+      }
+
+      console.log('[DEBUG] Transcription: Successfully received transcript from Gemini.');
+      return transcript.trim();
+
+    
+}
+
   return {
     callGeminiAPI,
     saveDNAWithTranslation,
     translateText,
+    transcribeVideo, // <-- ADDED: The new function is now exported
+
   };
 };
