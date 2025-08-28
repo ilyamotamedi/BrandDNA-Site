@@ -1,0 +1,30 @@
+{
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "run:test"
+      },
+      {
+        "source": "/proxy-image",
+        "run": {
+          "serviceId": "test",
+          "region": "us-central1"
+        }
+      }
+    ],
+    "apphosting": {
+      "backendId": "test",
+      "rootDir": "/",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "functions"
+      ]
+    }
+    
+  }
+}

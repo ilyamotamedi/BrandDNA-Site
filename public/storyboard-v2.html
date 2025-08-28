@@ -803,26 +803,36 @@
 
         async function loadCreatorOptions() {
             try {
-                const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDNA/getCreatorDNAs`);
+                const language = getClientLanguage();
+                const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getCreatorDNAs?language=${encodeURIComponent(language)}`);                
+                // const response = await fetch(`${window.API_BASE_URL}/api/v1/creatorDNA/getCreatorDNAs`);
                 const creators = await response.json();
                 const dropdownMenu = document.getElementById('creatorDropdown');
                 dropdownMenu.innerHTML = '';
 
-                const sortedCreatorNames = Object.keys(creators).sort((a, b) =>
-                    a.toLowerCase().localeCompare(b.toLowerCase())
-                );
+                // Expected 'channels' as an array from the server.
+                if (Array.isArray(creators)) {
+                    creators.sort((a, b) => a.channelName.localeCompare(b.channelName)); // Sort the array
 
-                sortedCreatorNames.forEach(creatorName => {
-                    const item = document.createElement('div');
-                    item.className = 'creator-dropdown-item';
-                    item.textContent = creatorName;
-                    item.addEventListener('click', () => {
-                        selectedCreatorDNA = creators[creatorName];
-                        document.getElementById('creatorInput').value = creatorName;
-                        dropdownMenu.classList.remove('active');
+                    creators.forEach(channelData => { // Iterate over array elements
+
+                        const item = document.createElement('div');
+                        item.className = 'creator-dropdown-item';
+                        
+                        item.textContent = channelData.channelName;
+
+                        item.addEventListener('click', () => {
+                            selectedCreatorDNA = channelData;
+                            document.getElementById('creatorInput').value = channelData.channelName;
+                            dropdownMenu.classList.remove('active');
+                        });
+                        
+                        dropdownMenu.appendChild(item);
                     });
-                    dropdownMenu.appendChild(item);
-                });
+            } else {
+                console.error('Error: Expected an array of channels, but received:', creators);
+                dropdownMenu.innerHTML = '<div class="dropdown-item">Error loading channels</div>';
+            }
             } catch (error) {
                 console.error('Error loading creators:', error);
             }
@@ -845,7 +855,7 @@
                 return;
             }
 
-            if (!selectedCreatorDNA) {
+            if (!selectedCreatorDNA || !selectedCreatorDNA.channelName) {
                 alert('Please select a creator');
                 return;
             }
