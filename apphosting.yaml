@@ -20,11 +20,11 @@ env:
   - variable: DATABASE_ID
     value: "branddnadb"
   - variable: BRANDCONNECT_API_KEY
-    value: "AIzaSyCYcWlXhQrZOYOoavWoe5TpuZI9R6-8GEo"
+    value: "abcd"
   - variable: SUPADATA_API_KEY
-    value: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImtpZCI6IjEifQ.eyJpc3MiOiJuYWRsZXMiLCJpYXQiOiIxNzQxMzYzMTA0IiwicHVycG9zZSI6ImFwaV9hdXRoZW50aWNhdGlvbiIsInN1YiI6Ijc0MmVjOTYwNzg4NDQzZjQ5ZWNjNTliNDExMDJiZDRjIn0.vuuE4v728jrwdt4gvmvMffay_RtK8XRIts_KB12HdJI"
+    value: "efgh"
   - variable: GEMINI_API_KEY
-    value: "AIzaSyCYcWlXhQrZOYOoavWoe5TpuZI9R6-8GEo"
+    value: "abcd"
   - variable: NODE_ENV
     value: "production"
   # Configure environment variables.
