@@ -1,5 +1,6 @@
 const express = require("express");
 const transcriptsRouter = express.Router();
+const transcriptionService = require('../../../../services/transcription.service')
 
 const supadata = require('../../../../utils/supadata.util'); // TODO: refactor biz logic to a service layer
 
@@ -13,11 +14,13 @@ transcriptsRouter.post('/test', async (req, res) => {
       throw new Error('Invalid YouTube URL');
     }
 
+    const trasnscript = await transcriptionService.transcribeVideo(videoId);
+
     // Get transcript with plain text option
-    const transcript = await supadata.youtube.transcript({
-      videoId,
-      text: true
-    });
+    // const transcript = await supadata.youtube.transcript({
+    //   videoId,
+    //   text: true
+    // });
 
     res.json(transcript);
   } catch (error) {
@@ -55,6 +58,8 @@ transcriptsRouter.post('/getChannelTranscripts', async (req, res) => {
 
         // Use Supadata API with rate limiting - using text=true for plain text
         console.log(`Fetching transcript for video ID: ${videoId}`);
+
+        // TODO: Call function to do transcript with a  service called "transcription.service.js"
 
         const transcriptData = await supadata.youtube.transcript({
           videoId,

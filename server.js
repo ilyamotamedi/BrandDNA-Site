@@ -6,7 +6,7 @@ const admin = require('firebase-admin');
 const { getApps, getApp } = require('firebase-admin/app'); // Import necessary Firestore functions
 const { getFirestore } = require('firebase-admin/firestore');
 // Ensure this matches the database ID in your Firebase Console (e.g., 'branddnadb')
-const databaseId = 'branddnadb';
+const databaseId = process.env.DATABASE_NAME;
 
 // Attempt to initialize Firebase Admin SDK with Application Default Credentials (ADC)
 // TODO: Update to another authentication method later.
