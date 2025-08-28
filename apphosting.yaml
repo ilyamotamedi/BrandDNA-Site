@@ -1,0 +1,41 @@
+# Settings for Backend (on Cloud Run).
+# See https://firebase.google.com/docs/app-hosting/configure#cloud-run
+runConfig:
+  minInstances: 0
+  # maxInstances: 100
+  # concurrency: 80
+  # cpu: 1
+  # memoryMiB: 512
+
+# Environment variables and secrets.
+env:
+  - variable: PROJECT_ID
+    value: "branddna"
+  - variable: API_ENDPOINT
+    value: "us-central1-aiplatform.googleapis.com"
+  - variable: LOCATION_ID
+    value: "us-central1"
+  - variable: GENERATE_CONTENT_API
+    value: "streamGenerateContent"
+  - variable: DATABASE_ID
+    value: "branddnadb"
+  - variable: BRANDCONNECT_API_KEY
+    value: "AIzaSyCYcWlXhQrZOYOoavWoe5TpuZI9R6-8GEo"
+  - variable: SUPADATA_API_KEY
+    value: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiIsImtpZCI6IjEifQ.eyJpc3MiOiJuYWRsZXMiLCJpYXQiOiIxNzQxMzYzMTA0IiwicHVycG9zZSI6ImFwaV9hdXRoZW50aWNhdGlvbiIsInN1YiI6Ijc0MmVjOTYwNzg4NDQzZjQ5ZWNjNTliNDExMDJiZDRjIn0.vuuE4v728jrwdt4gvmvMffay_RtK8XRIts_KB12HdJI"
+  - variable: GEMINI_API_KEY
+    value: "AIzaSyCYcWlXhQrZOYOoavWoe5TpuZI9R6-8GEo"
+  - variable: NODE_ENV
+    value: "production"
+  # Configure environment variables.
+  # See https://firebase.google.com/docs/app-hosting/configure#user-defined-environment
+  # - variable: MESSAGE
+  #   value: Hello world!
+  #   availability:
+  #     - BUILD
+  #     - RUNTIME
+
+  # Grant access to secrets in Cloud Secret Manager.
+  # See https://firebase.google.com/docs/app-hosting/configure#secret-parameters
+  # - variable: MY_SECRET
+  #   secret: mySecretRef

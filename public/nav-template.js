@@ -112,6 +112,10 @@ const translations = {
         english: 'GET DNA',
         spanish: 'OBTENER ADN'
     },
+    'channel-upload-dnas-button': {
+        english: 'UPLOAD DNAS',
+        spanish: 'SUBIR ADN'
+    },
     'channel-edit-button': {  // For the dynamically created button
         english: 'EDIT',
         spanish: 'EDITAR'

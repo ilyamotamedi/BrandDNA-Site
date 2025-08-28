@@ -205,7 +205,7 @@ module.exports = (db) => {
             // Also update top-level fields (like channelName, channelId, etc.) if they come with the new data
             // This assumes the top-level fields are language-agnostic or primarily English/default.
             Object.keys(creatorDNA).forEach(key => {
-                if (key !== 'translations') { // Don't overwrite the entire translations object
+                if (key !== 'translations' && key !== 'channelAnalysis' && key !== 'channelDescription' && key !== 'channelDisplayName') { // Don't overwrite the entire translations object
                     newDocData[key] = creatorDNA[key];
                 }
             });

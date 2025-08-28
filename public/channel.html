@@ -169,9 +169,11 @@
                         <img src="/icons/drop_down.svg" alt="Dropdown" class="dropdown-arrow">
                     </div>
                     <input type="file" id="fileInput" class="file-input" multiple onchange="handleFileSelect(event)">
+                    <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="handleCsvFileSelect(event)">
                     <div class="dropdown-menu" id="channelsDropdown"></div>
                 </div>
                 <button class="get-dna-btn" onclick="getChannelDNA()" data-translation-key="channel-get-dna-button">GET DNA</button>
+                <button class="get-dna-btn" onclick="uploadChannelDNAs()" data-translation-key="channel-upload-dnas-button">UPLOAD DNAS</button>
             </div>
             <div class="file-list" id="fileList"></div>
             <div id="channel-preview" style="max-width: 600px; width: 100%; margin: 1rem auto; display: none;">
@@ -212,6 +214,11 @@
         // Store channel details globally
         let currentChannelDetails = null;
         let selectedFiles = new Set();
+        let API_KEY = 'AIzaSyCn-POpcBdtSgoS1c8TBLNbZJkw3cUBmM8'; // BrandDNA Key - AIzaSyDwFkoH0_iCXFy559_HKveTlZYWEjUhXGQ - DreamTeam Video - AIzaSyCn-POpcBdtSgoS1c8TBLNbZJkw3cUBmM8
+        const CHANNELS_URL = 'https://www.googleapis.com/youtube/v3/channels';
+        const PLAYLIST_ITEMS_URL = 'https://www.googleapis.com/youtube/v3/playlistItems';
+        const NUM_VIDEOS = 3;
+    
 
         function handleFileSelect(event) {
             const files = event.target.files;
@@ -289,6 +296,7 @@
                         const statistics = channelData.items[0].statistics;
                         // Store channel details
                         currentChannelDetails = {
+                            id: channelId, // Add channel ID for consistent use
                             name: channel.title,
                             thumbnail: channel.thumbnails.medium.url,
                             description: channel.description,
@@ -300,7 +308,7 @@
                         previewImage.src = `/proxy-image?url=${encodeURIComponent(currentChannelDetails.thumbnail)}`;
                         previewTitle.innerHTML = `
                             <a href="${currentChannelDetails.channelUrl}" target="_blank" class="channel-link">
-                                ${currentChannelDetails.name}
+                                <span id="preview-name">${currentChannelDetails.name}</span>
                                 <span class="arrow">↗</span>
                                 <span class="underline"></span>
                             </a>
@@ -325,11 +333,6 @@
                 currentChannelDetails = null;
             }
         }, 300);
-
-        const API_KEY = 'AIzaSyCn-POpcBdtSgoS1c8TBLNbZJkw3cUBmM8'; // BrandDNA Key - AIzaSyDwFkoH0_iCXFy559_HKveTlZYWEjUhXGQ - DreamTeam Video - AIzaSyCn-POpcBdtSgoS1c8TBLNbZJkw3cUBmM8
-        const CHANNELS_URL = 'https://www.googleapis.com/youtube/v3/channels';
-        const PLAYLIST_ITEMS_URL = 'https://www.googleapis.com/youtube/v3/playlistItems';
-        const NUM_VIDEOS = 3;
 
         async function findChannel(query) {
             const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(query)}&key=${API_KEY}`;
@@ -376,79 +379,270 @@
             return formatSubscriberCount(count);
         }
 
-        async function getChannelDNA() {
-            if (!currentChannelDetails) {
-                console.error('No channel selected');
+        /**
+         * uploadChannelDNAs
+         * * Opens a file selector that gets a CSV file of Channel IDs and channel URLs,
+         * then extracts all the Creator DNAs from the list.
+         **/
+        async function uploadChannelDNAs() {
+            document.getElementById('csvFileInput').click(); // Trigger the hidden CSV file input
+        }
+
+        // Add this function to your script to extract the channel ID from a URL
+        function getChannelIdFromUrl(url) {
+        const channelIdRegex = /(?:youtube\.com\/(?:c\/|channel\/|user\/|@))([^/?&]+)/;
+        const match = url.match(channelIdRegex);
+        if (match && match[1]) {
+            const channelId = match[1];
+            if (channelId.startsWith('UC')) {
+            return channelId;
+            }
+        }
+        return null;
+        }
+
+        /**
+         * @function handleCsvFileSelect
+         * @description Handles the selection of a CSV file, reads its content, and processes each channel.
+         * Assumes CSV format: "Channel Name,Channel URL"
+         */
+        async function handleCsvFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) {
                 return;
             }
 
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const csvContent = e.target.result;
+                // Split by newlines, ignore the first line (header)
+                const lines = csvContent.split('\n').slice(1).filter(line => line.trim() !== '');
+
+                const loadingContainer = document.querySelector('.loading-container');
+                const resultsContainer = document.querySelector('.channel-results');
+                loadingContainer.style.display = 'flex';
+                resultsContainer.innerHTML = ''; // Clear previous results
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    // Use a simple regex to handle commas inside double quotes.
+                    // This is a common and reliable way to parse simple CSVs.
+                    const [channelName, channelUrl] = line.match(/(?:"[^"]*"|[^,])+/g).map(s => s.replace(/"/g, '').trim());
+
+                    if (channelName || channelU) {
+                        try {
+                            loadingContainer.querySelector('.loading-text').textContent = 
+                                `processing channel ${i + 1} of ${lines.length}: ${channelName || channelUrl}...`;
+                            await getChannelDNA(channelName, null, null, channelUrl); // Pass both
+                        } catch (error) {
+                            console.error(`Error processing channel ${channelName || channelUrl} from CSV:`, error);
+                        }
+                    }
+                }
+                loadingContainer.style.display = 'none';
+                alert('All channels from CSV processed!');
+                loadSavedChannels();
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        /**
+         * @function getChannelDNA
+         * @description Main function to generate and save Creator DNA.
+         * @param {string|null} channelNameInput - The channel name (optional).
+         * @param {object|null} initialChannelDetails - Pre-fetched channel details (optional).
+         * @param {string|null} userFeedback - User feedback for regeneration (optional).
+         * @param {string|null} initialChannelUrl - The channel URL (optional).
+         */
+        async function getChannelDNA(channelNameInput = null, initialChannelDetails = null, userFeedback = null, initialChannelUrl = null) {
+            let targetChannelDetails;
             const resultsContainer = document.querySelector('.channel-results');
             const loadingContainer = document.querySelector('.loading-container');
-            const fileInput = document.getElementById('fileInput');
-
+            
+            // Determine targetChannelDetails
+            if (initialChannelDetails) {
+                targetChannelDetails = initialChannelDetails;
+    } else if (initialChannelUrl) {
+        const channelId = getChannelIdFromUrl(initialChannelUrl);
+        if (channelId) {
+            // Found ID from URL, proceed with fetching details
             try {
-                loadingContainer.style.display = 'flex';
-                loadingContainer.querySelector('.loading-text').textContent = 'downloading transcripts...';
-                resultsContainer.innerHTML = '';
+                const channelDetailsUrl = `${CHANNELS_URL}?part=snippet,statistics&id=${channelId}&key=${API_KEY}`;
+                const channelResponse = await fetch(channelDetailsUrl);
+                const channelData = await channelResponse.json();
 
-                // Find channel and get recent video URLs
-                const channelData = await findChannel(currentChannelDetails.name);
-                const channelId = channelData.items[0].id;
-                const videoUrls = await getRecentVideoUrls(channelId);
-
-                // Get channel stats (average views)
-                try {
-                    const statsResponse = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getChannelStats`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ channelId })
-                    });
-                    
-                    const statsData = await statsResponse.json();
-                    if (statsData.success && statsData.stats) {
-                        currentChannelDetails.averageViews = statsData.stats.averageViews;
-                        currentChannelDetails.viewsTimeframe = statsData.stats.timeframe;
-                        console.log(`Average views: ${currentChannelDetails.averageViews} (${currentChannelDetails.viewsTimeframe})`);
-                    }
-                } catch (statsError) {
-                    console.warn('Error getting channel stats:', statsError);
-                    // Continue without average views
+                if (channelData.items && channelData.items.length > 0) {
+                    const channel = channelData.items[0].snippet;
+                    const statistics = channelData.items[0].statistics;
+                    targetChannelDetails = {
+                        id: channelId,
+                        name: channel.title,
+                        thumbnail: channel.thumbnails.medium.url,
+                        description: channel.description,
+                        channelUrl: initialChannelUrl,
+                        subscriberCount: statistics.subscriberCount
+                    };
+                } else {
+                    // URL failed to return data, fall back to name search
+                    console.warn('URL lookup failed, falling back to name search...');
                 }
+            } catch (error) {
+                console.error('Error fetching channel details from URL:', error);
+                console.warn('URL lookup failed, falling back to name search...');
+            }
+        }
+    }
 
-                // Get transcripts
-                const transcriptResponse = await fetch(`${window.API_BASE_URL}/api/v1/transcripts/getChannelTranscripts`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        videoUrls,
-                        language: getClientLanguage()
-                    })
-                });
+    // Fallback to name search if URL failed or was not provided
+    if (!targetChannelDetails && channelNameInput) {
+        try {
+            const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${encodeURIComponent(channelNameInput)}&key=${API_KEY}`;
+            const searchResponse = await fetch(searchUrl);
+            const searchData = await searchResponse.json();
 
-                const transcriptData = await transcriptResponse.json();
-                if (!transcriptData.success) {
-                    throw new Error(transcriptData.error);
-                }
+            if (!searchData.items || searchData.items.length === 0) {
+                throw new Error('No channels found matching that name.');
+            }
+            const channelId = searchData.items[0].id.channelId;
+            const channelUrl = `https://www.youtube.com/channel/${channelId}`;
 
-                // Prepare form data with files and transcripts
-                const formData = new FormData();
-                formData.append('channelName', currentChannelDetails.name);
-                formData.append('transcripts', JSON.stringify(transcriptData.transcripts));
-                formData.append('language', getClientLanguage());
+            const channelDetailsUrl = `${CHANNELS_URL}?part=snippet,statistics&id=${channelId}&key=${API_KEY}`;
+            const channelResponse = await fetch(channelDetailsUrl);
+            const channelData = await channelResponse.json();
+
+            if (channelData.items && channelData.items.length > 0) {
+                const channel = channelData.items[0].snippet;
+                const statistics = channelData.items[0].statistics;
+                targetChannelDetails = {
+                    id: channelId,
+                    name: channel.title,
+                    thumbnail: channel.thumbnails.medium.url,
+                    description: channel.description,
+                    channelUrl: channelUrl,
+                    subscriberCount: statistics.subscriberCount
+                };
+            } else {
+                throw new Error('Could not retrieve channel details.');
+            }
+        } catch (error) {
+            console.error('Error fetching channel details for DNA generation:', error);
+            throw new Error(`Failed to get channel details for ${channelNameInput}: ${error.message}`);
+        }
+    } else if (!targetChannelDetails && !initialChannelDetails) {
+        // Final fallback to global currentChannelDetails if no arguments provided
+        if (!currentChannelDetails) {
+            console.error('No channel selected and no initial details provided');
+            return;
+        }
+        targetChannelDetails = currentChannelDetails;
+    }
+
+    try {
+        // Display loading status (only if it's not a bulk upload from CSV, or if we want individual status)
+        // For bulk uploads, the loading text is set by handleCsvFileSelect
+        if (!userFeedback) {
+            loadingContainer.style.display = 'flex';
+            loadingContainer.querySelector('.loading-text').textContent = 'downloading transcripts...';
+            resultsContainer.innerHTML = '';
+        }
+
+        const videoUrls = await getRecentVideoUrls(targetChannelDetails.id);                
+
+        // Get channel stats (average views)
+        try {
+            const statsResponse = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getChannelStats`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ channelId: targetChannelDetails.id })
+            });
+            
+            const statsData = await statsResponse.json();
+            if (statsData.success && statsData.stats) {
+                targetChannelDetails.averageViews = statsData.stats.averageViews;
+                targetChannelDetails.viewsTimeframe = statsData.stats.timeframe;
+                console.log(`Average views for ${targetChannelDetails.name}: ${targetChannelDetails.averageViews} (${targetChannelDetails.viewsTimeframe})`);
+            }
+        } catch (statsError) {
+            console.warn(`Error getting channel stats for ${targetChannelDetails.name}:`, statsError);
+            // Continue without average views
+        }
+
+        // Get transcripts
+        loadingContainer.querySelector('.loading-text').textContent = `downloading transcripts for ${targetChannelDetails.name}...`;
+        const transcriptResponse = await fetch(`${window.API_BASE_URL}/api/v1/transcripts/getChannelTranscripts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                videoUrls,
+                language: getClientLanguage()
+            })
+        });
+
+        const transcriptData = await transcriptResponse.json();
+        if (!transcriptData.success) {
+            throw new Error(transcriptData.error);
+        }
+
+        // Prepare form data with files and transcripts
+        const formData = new FormData();
+        formData.append('channelName', targetChannelDetails.name);
+        formData.append('transcripts', JSON.stringify(transcriptData.transcripts));
+        formData.append('language', getClientLanguage());
                 
-                // Add selected files to form data
-                const fileList = document.getElementById('fileList');
-                const fileItems = fileList.getElementsByClassName('file-item');
-                for (const item of Array.from(fileItems)) {
-                    const fileName = item.firstElementChild.textContent;
-                    const fileObj = Array.from(fileInput.files).find(f => f.name === fileName);
-                    if (fileObj) {
-                        formData.append('file', fileObj);
-                    }
+        // Add selected files to form data (only for single channel manual upload/reprompt)
+        if (selectedFiles.size > 0 && !initialChannelDetails && !userFeedback) { // Check if it's a new manual upload
+            const fileInput = document.getElementById('fileInput');
+            const fileItems = fileList.getElementsByClassName('file-item');
+            for (const item of Array.from(fileItems)) {
+                const fileName = item.firstElementChild.textContent;
+                const fileObj = Array.from(fileInput.files).find(f => f.name === fileName);
+                if (fileObj) {
+                    formData.append('file', fileObj);
                 }
+            }
+        }
+
+        const analysisPrompt = `REVISION REQUEST: The following is a request to revise a channel's DNA analysis.
+
+CREATOR FEEDBACK:
+${userFeedback || 'No feedback provided, this is the initial analysis.'}
+
+CURRENT DNA ANALYSIS:
+${userFeedback ? JSON.stringify(initialChannelDetails.channelAnalysis, null, 2) : 'No previous analysis.'}
+
+Please analyze the YouTube channel "${targetChannelDetails.name}" with the above feedback in mind, also considering the provided video transcripts.
+
+Remember you MUST FOLLOW THIS EXACT JSON format for your output. Never give any commentary:
+{
+  "channelAnalysis": [
+    {
+      "sectionTitle": "CreatorDNA", //The core essence and DNA of the creator/channel, the qualities to stay true to when 'bending without breaking'
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Creator Personality",
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Content Style",
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Audience Connection",
+      "sectionBody": "<content>"
+    },
+    {
+      "sectionTitle": "Channel Story",
+      "sectionBody": "<content>"
+    }
+  ]
+}`;
+
+                formData.append('channelName', analysisPrompt); // Use prompt for analysis
 
                 // Analyze with Gemini
-                loadingContainer.querySelector('.loading-text').textContent = 'analyzing channel DNA...';
+                loadingContainer.querySelector('.loading-text').textContent = `analyzing channel DNA for ${targetChannelDetails.name}...`;
                 
                 const analysisResponse = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/analyzeChannel`, {
                     method: 'POST',
@@ -463,18 +657,18 @@
                 // Save the complete DNA with channel details
                 const fullDNAData = {
                     // Extract channelAnalysis from the nested analysis property
+                    channelId: targetChannelDetails.id,
+                    channelName: targetChannelDetails.name,
                     channelAnalysis: analysisData.analysis.channelAnalysis,
-                    channelId,
-                    channelName: currentChannelDetails.name,
-                    channelUrl: currentChannelDetails.channelUrl,
-                    channelThumbnail: currentChannelDetails.thumbnail,
-                    subscriberCount: currentChannelDetails.subscriberCount,
-                    channelDescription: currentChannelDetails.description,
-                    averageViews: currentChannelDetails.averageViews,
-                    viewsTimeframe: currentChannelDetails.viewsTimeframe
+                    channelThumbnail: targetChannelDetails.thumbnail,
+                    channelDescription: targetChannelDetails.description,
+                    channelUrl: targetChannelDetails.channelUrl,
+                    subscriberCount: targetChannelDetails.subscriberCount,
+                    averageViews: targetChannelDetails.averageViews,
+                    viewsTimeframe: targetChannelDetails.viewsTimeframe
                 };
 
-                await fetch(`${window.API_BASE_URL}/api/v1/creatorDNA/saveCreatorDNA`, {
+                await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/saveCreatorDNA`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -483,18 +677,26 @@
                     })
                 });
 
-                // Clear file list after successful submission
-                fileList.innerHTML = '';
-                selectedFiles.clear();
+                // Clear file list after successful submission if it's a new upload
+                if (!initialChannelDetails && !userFeedback) {
+                    fileList.innerHTML = '';
+                    selectedFiles.clear();
+                }
 
-                // Display results
-                loadingContainer.style.display = 'none';
-                displayChannelResults(fullDNAData);
+                // Display results (if it's not a bulk upload that just processed the last item)
+                if (!channelNameInput) {
+                    loadingContainer.style.display = 'none';
+                    displayChannelResults(fullDNAData);
+                    currentChannelDetails = fullDNAData;
+                }
 
             } catch (error) {
-                console.error('Error:', error);
-                loadingContainer.style.display = 'none';
-                resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+                console.error(`Error processing DNA for ${targetChannelDetails ? targetChannelDetails.name : 'unknown channel'}:`, error);
+                if (!initialChannelDetails && !userFeedback) {
+                    loadingContainer.style.display = 'none';
+                    resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+                }
+                throw error; // Re-throw to indicate failure for handleCsvFileSelect
             }
         }
 
@@ -714,7 +916,7 @@
             // Update title with channel link
             previewTitle.innerHTML = `
                 <a href="${channelData.channelUrl}" target="_blank" class="channel-link">
-                    ${channelData.channelName}
+                    <span id="preview-name">${channelData.channelName}</span>
                     <span class="arrow">↗</span>
                     <span class="underline"></span>
                 </a>
@@ -745,13 +947,15 @@
             
             // Store the channel details
             currentChannelDetails = {
+                id: channelData.channelId, // Ensure ID is stored
                 name: channelData.channelName,
                 thumbnail: channelData.channelThumbnail,
                 description: channelData.channelDescription,
                 channelUrl: channelData.channelUrl,
                 subscriberCount: channelData.subscriberCount,
                 averageViews: channelData.averageViews,
-                viewsTimeframe: channelData.viewsTimeframe
+                viewsTimeframe: channelData.viewsTimeframe,
+                channelAnalysis: channelData.channelAnalysis // Include channelAnalysis for reprompting
             };
             
             document.querySelector('.brand-input').value = channelData.channelName;
@@ -802,10 +1006,14 @@ async function saveChanges() {
         
         // Create updated DNA data
         const updatedDNA = {
+            channelId: currentChannelDetails.id, // Ensure ID is included
             channelName: channelName,
             channelThumbnail: currentChannelDetails.thumbnail,
             channelDescription: currentChannelDetails.description,
             channelUrl: currentChannelDetails.channelUrl,
+            subscriberCount: currentChannelDetails.subscriberCount,
+            averageViews: currentChannelDetails.averageViews,
+            viewsTimeframe: currentChannelDetails.viewsTimeframe,
             channelAnalysis: cards
         };
 
@@ -822,6 +1030,9 @@ async function saveChanges() {
         if (!response.ok) {
             throw new Error('Failed to save changes');
         }
+        
+        // Update global currentChannelDetails after saving
+        currentChannelDetails = updatedDNA;
 
         return updatedDNA;
     } catch (error) {
@@ -863,31 +1074,35 @@ async function regenerateDNA() {
         loadingContainer.querySelector('.loading-text').textContent = 'downloading transcripts...';
         resultsContainer.innerHTML = '';
 
-        // Get channel ID and recent videos
-        const channelData = await findChannel(currentChannelDetails.name);
-        const channelId = channelData.items[0].id;
-        const videoUrls = await getRecentVideoUrls(channelId);
+        // Use currentChannelDetails for regeneration
+        if (!currentChannelDetails || !currentChannelDetails.id) {
+            throw new Error('No channel details available for regeneration.');
+        }
+
+        // Get recent video URLs
+        const videoUrls = await getRecentVideoUrls(currentChannelDetails.id);
         
         // Get channel stats (average views)
         try {
             const statsResponse = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/getChannelStats`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ channelId })
+                body: JSON.stringify({ channelId: currentChannelDetails.id })
             });
             
             const statsData = await statsResponse.json();
             if (statsData.success && statsData.stats) {
                 currentChannelDetails.averageViews = statsData.stats.averageViews;
                 currentChannelDetails.viewsTimeframe = statsData.stats.timeframe;
-                console.log(`Average views: ${currentChannelDetails.averageViews} (${currentChannelDetails.viewsTimeframe})`);
+                console.log(`Average views for ${currentChannelDetails.name}: ${currentChannelDetails.averageViews} (${currentChannelDetails.viewsTimeframe})`);
             }
         } catch (statsError) {
-            console.warn('Error getting channel stats:', statsError);
+            console.warn(`Error getting channel stats for ${currentChannelDetails.name}:`, statsError);
             // Continue without average views
         }
 
         // Get transcripts
+        loadingContainer.querySelector('.loading-text').textContent = `downloading transcripts for ${currentChannelDetails.name}...`;
         const transcriptResponse = await fetch(`${window.API_BASE_URL}/api/v1/transcripts/getChannelTranscripts`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -911,7 +1126,7 @@ ${userFeedback}
 CURRENT DNA ANALYSIS:
 ${JSON.stringify(currentChannelDetails.channelAnalysis, null, 2)}
 
-Please analyze the YouTube channel "${currentChannelDetails.name}" with the above feedback in mind.
+Please analyze the YouTube channel "${currentChannelDetails.name}" with the above feedback in mind, also considering the provided video transcripts.
 
 Remember you MUST FOLLOW THIS EXACT JSON format for your output. Never give any commentary:
 {
@@ -946,7 +1161,7 @@ Remember you MUST FOLLOW THIS EXACT JSON format for your output. Never give any 
         formData.append('language', getClientLanguage());
 
         // Analyze with Gemini
-        loadingContainer.querySelector('.loading-text').textContent = 'analyzing channel DNA...';
+        loadingContainer.querySelector('.loading-text').textContent = `analyzing channel DNA for ${currentChannelDetails.name}...`;
         
         const analysisResponse = await fetch(`${window.API_BASE_URL}/api/v1/creatorDna/analyzeChannel`, {
             method: 'POST',
@@ -960,8 +1175,9 @@ Remember you MUST FOLLOW THIS EXACT JSON format for your output. Never give any 
 
         // Create the full DNA data with the original channel name
         const fullDNAData = {
-            channelName: currentChannelDetails.name, // Use the original channel name
-            channelAnalysis: analysisData.analysis.channelAnalysis, // Use just the analysis part
+            channelId: currentChannelDetails.id,
+            channelName: currentChannelDetails.name,
+            channelAnalysis: analysisData.analysis.channelAnalysis,
             channelThumbnail: currentChannelDetails.thumbnail,
             channelDescription: currentChannelDetails.description,
             channelUrl: currentChannelDetails.channelUrl,
@@ -986,10 +1202,11 @@ Remember you MUST FOLLOW THIS EXACT JSON format for your output. Never give any 
 
         // Display results
         displayChannelResults(fullDNAData);
+        currentChannelDetails = fullDNAData; // Update global after successful regeneration
     } catch (error) {
-        console.error('Error:', error);
-        loadingContainer.style.display = 'none';
-        resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
+        console.error('Error regenerating DNA:', error);
+            loadingContainer.style.display = 'none';
+            resultsContainer.innerHTML = `<p>Error: ${error.message}</p>`;
     }
 }
     </script>
