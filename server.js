@@ -660,29 +660,29 @@ YOU MUST OUTPUT the matches in the specified JSON format. NEVER GIVE ANY ADDITIO
   }
 });
 
-app.get('/proxy-image', async (req, res) => {
-  const imageUrl = req.query.url;
+// app.get('/proxy-image', async (req, res) => {
+//   const imageUrl = req.query.url;
 
-  if (!imageUrl) {
-    return res.status(400).send('Image URL is required');
-  }
+//   if (!imageUrl) {
+//     return res.status(400).send('Image URL is required');
+//   }
 
-  try {
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
-    }
+//   try {
+//     const response = await fetch(imageUrl);
+//     if (!response.ok) {
+//       throw new Error(`Failed to fetch image: ${response.statusText}`);
+//     }
 
-    // Forward the content type
-    res.set('Content-Type', response.headers.get('content-type'));
+//     // Forward the content type
+//     res.set('Content-Type', response.headers.get('content-type'));
 
-    // Pipe the image data directly to the response
-    response.body.pipe(res);
-  } catch (error) {
-    console.error('Error proxying image:', error);
-    res.status(500).send('Error fetching image');
-  }
-});
+//     // Pipe the image data directly to the response
+//     response.body.pipe(res);
+//   } catch (error) {
+//     console.error('Error proxying image:', error);
+//     res.status(500).send('Error fetching image');
+//   }
+// });
 
 // Helper function to get language from request or use default
 function getLanguageFromRequest(req) {
@@ -1212,7 +1212,8 @@ app.post('/editImage', async (req, res) => {
   }
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+const port = process.env.PORT || 8080;
+const host = '0.0.0.0';
+app.listen(port, host, () => {
+  console.log(`Server running on http://${host}:${port}`);
 });
