@@ -684,6 +684,30 @@ YOU MUST OUTPUT the matches in the specified JSON format. NEVER GIVE ANY ADDITIO
 //   }
 // });
 
+app.get('/proxy-image', async (req, res) => {
+  const imageUrl = req.query.url;
+
+  if (!imageUrl) {
+    return res.status(400).send('Image URL is required');
+  }
+
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    }
+
+    // Forward the content type
+    res.set('Content-Type', response.headers.get('content-type'));
+
+    // Pipe the image data directly to the response
+    response.body.pipe(res);
+  } catch (error) {
+    console.error('Error proxying image:', error);
+    res.status(500).send('Error fetching image');
+  }
+});
+
 // Helper function to get language from request or use default
 function getLanguageFromRequest(req) {
   console.log('getLanguageFromRequest - Request body:', req.body);
